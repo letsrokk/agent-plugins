@@ -240,18 +240,18 @@ class MarketplaceValidationTests(unittest.TestCase):
 
         self.assertTrue(any("invalid TOML" in error for error in errors))
 
-    def test_rejects_malformed_custom_agent_without_tomllib(self) -> None:
+    def test_requires_tomllib_for_custom_agent_validation(self) -> None:
         self._write_catalogs(codex_plugins=[self._codex_entry("bad-agent")])
         self._write_portable_manifest("bad-agent")
         self._write_skill("bad-agent", "bad-agent")
         agent = self.root / "plugins/bad-agent/skills/bad-agent/agents/bad_agent.toml"
         agent.parent.mkdir(parents=True)
-        agent.write_text('name = "unterminated\n', encoding="utf-8")
+        agent.write_text("name = 'bad_agent'\n", encoding="utf-8")
 
         with patch.object(marketplace_validator, "tomllib", None):
             errors = validate_repository(self.root)
 
-        self.assertTrue(any("invalid TOML" in error for error in errors))
+        self.assertTrue(any("requires Python 3.11 or later" in error for error in errors))
 
     def test_rejects_custom_agent_name_that_differs_from_filename(self) -> None:
         self._write_catalogs(codex_plugins=[self._codex_entry("bad-agent-name")])

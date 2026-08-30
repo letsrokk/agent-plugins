@@ -131,50 +131,6 @@ def _skill_frontmatter_name(path: Path, relative_path: Path, errors: list[str]) 
     return None
 
 
-def _load_custom_agent_toml(text: str) -> dict[str, Any]:
-    if tomllib is not None:
-        try:
-            return tomllib.loads(text)
-        except tomllib.TOMLDecodeError as error:
-            raise ValueError(str(error)) from error
-
-    payload: dict[str, Any] = {}
-    lines = iter(enumerate(text.splitlines(), start=1))
-    for line_number, line in lines:
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        match = re.fullmatch(r"([A-Za-z0-9_-]+)\s*=\s*(.*)", stripped)
-        if match is None:
-            raise ValueError(f"invalid assignment at line {line_number}")
-        key, value = match.groups()
-        if key in payload:
-            raise ValueError(f"duplicate key '{key}' at line {line_number}")
-        if value.startswith('"""'):
-            remainder = value[3:]
-            chunks = []
-            while '"""' not in remainder:
-                chunks.append(remainder)
-                try:
-                    _, remainder = next(lines)
-                except StopIteration as error:
-                    raise ValueError(f"unterminated string at line {line_number}") from error
-            before_close, after_close = remainder.split('"""', 1)
-            if after_close.strip() and not after_close.lstrip().startswith("#"):
-                raise ValueError(f"unexpected content at line {line_number}")
-            chunks.append(before_close)
-            payload[key] = "\n".join(chunks)
-            continue
-        scalar = re.fullmatch(r'("(?:[^"\\]|\\.)*")\s*(?:#.*)?', value)
-        if scalar is None:
-            raise ValueError(f"expected a quoted string at line {line_number}")
-        try:
-            payload[key] = json.loads(scalar.group(1))
-        except json.JSONDecodeError as error:
-            raise ValueError(f"invalid string at line {line_number}: {error.msg}") from error
-    return payload
-
-
 def _validate_custom_agents(
     root: Path, skill_directory: Path, relative_skill: Path, errors: list[str]
 ) -> None:
@@ -184,11 +140,16 @@ def _validate_custom_agents(
     if not agents.is_dir():
         errors.append(f"{relative_skill / 'agents'}: must be a directory")
         return
+    if tomllib is None:
+        errors.append(
+            f"{relative_skill / 'agents'}: custom-agent TOML validation requires Python 3.11 or later"
+        )
+        return
     for agent in sorted(agents.glob("*.toml")):
         relative_agent = agent.relative_to(root)
         try:
-            payload = _load_custom_agent_toml(agent.read_text(encoding="utf-8"))
-        except (OSError, UnicodeDecodeError, ValueError) as error:
+            payload = tomllib.loads(agent.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as error:
             errors.append(f"{relative_agent}: invalid TOML: {error}")
             continue
         if payload.get("name") != agent.stem:

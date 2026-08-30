@@ -11,7 +11,7 @@ Add plugins one at a time under `plugins/<plugin-name>/`. Every plugin must use 
 
 Keep catalog entries ordered intentionally. Codex entries must include `policy.installation`, `policy.authentication`, and `category`. Use `AVAILABLE` and `ON_INSTALL` unless a plugin has a documented reason to differ.
 
-Before committing, run:
+Repository validation requires Python 3.11 or later. Before committing, run:
 
 ```sh
 python3 -m unittest discover -s tests -v
