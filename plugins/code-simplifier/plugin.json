@@ -1,0 +1,19 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "code-simplifier",
+  "version": "0.1.0",
+  "description": "Simplify a precise code scope without changing observable behavior.",
+  "author": {
+    "name": "Rokk Club",
+    "url": "https://github.com/letsrokk"
+  },
+  "homepage": "https://github.com/letsrokk/agent-plugins",
+  "repository": "https://github.com/letsrokk/agent-plugins",
+  "license": "Apache-2.0",
+  "keywords": [
+    "codex",
+    "code-quality",
+    "refactoring",
+    "simplification"
+  ]
+}

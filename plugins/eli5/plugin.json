@@ -6,6 +6,6 @@
   "author": {
     "name": "Thariq Shihipar"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "keywords": ["explain", "eli5", "learning", "explainer", "html"]
 }
