@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "rokk-club-claude-plugins",
+  "owner": {
+    "name": "Rokk Club"
+  },
+  "plugins": []
+}
