@@ -1,0 +1,5 @@
+Code Simplifier includes modified material from Anthropic's Code Simplifier plugin:
+https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-simplifier
+
+Rokk Club adapted the original Claude Code agent into a Codex skill and custom agent,
+including Codex-specific scope resolution, dispatch, and user-interface metadata.

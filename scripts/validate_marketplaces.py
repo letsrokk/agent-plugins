@@ -8,6 +8,7 @@ import json
 import os
 import re
 import sys
+import tomllib
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -18,6 +19,29 @@ CLAUDE_CATALOG = Path(".claude-plugin/marketplace.json")
 AGENT_PLUGIN_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
 CLAUDE_MARKETPLACE_SCHEMA = "https://json.schemastore.org/claude-code-marketplace.json"
 PLUGIN_NAME = re.compile(r"^[a-z0-9](?:[a-z0-9.-]{0,62}[a-z0-9])?$")
+PORTABLE_MANIFEST_FIELDS = {
+    "$schema",
+    "name",
+    "version",
+    "description",
+    "author",
+    "homepage",
+    "repository",
+    "license",
+    "keywords",
+    "extensions",
+}
+STRING_MANIFEST_FIELDS = {
+    "version",
+    "description",
+    "homepage",
+    "repository",
+    "license",
+}
+AUTHOR_FIELDS = {"name", "email", "url"}
+UPSTREAM_CODE_SIMPLIFIER = (
+    "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-simplifier"
+)
 
 
 def _load_json(root: Path, relative_path: Path, errors: list[str]) -> dict[str, Any] | None:
@@ -46,6 +70,155 @@ def _valid_plugin_name(name: object) -> bool:
     )
 
 
+def _validate_manifest_metadata(
+    relative_path: Path, manifest: dict[str, Any], errors: list[str]
+) -> None:
+    for field in sorted(manifest.keys() - PORTABLE_MANIFEST_FIELDS):
+        errors.append(f"{relative_path}: unknown field '{field}'")
+
+    for field in sorted(STRING_MANIFEST_FIELDS):
+        if field in manifest and not isinstance(manifest[field], str):
+            errors.append(f"{relative_path}: {field} must be a string")
+
+    author = manifest.get("author")
+    if author is not None:
+        if not isinstance(author, dict):
+            errors.append(f"{relative_path}: author must be an object")
+        else:
+            for field in sorted(author.keys() - AUTHOR_FIELDS):
+                errors.append(f"{relative_path}: author has unknown field '{field}'")
+            for field, value in author.items():
+                if field in AUTHOR_FIELDS and not isinstance(value, str):
+                    errors.append(f"{relative_path}: author.{field} must be a string")
+
+    keywords = manifest.get("keywords")
+    if keywords is not None and (
+        not isinstance(keywords, list) or any(not isinstance(keyword, str) for keyword in keywords)
+    ):
+        errors.append(f"{relative_path}: keywords must be an array of strings")
+
+    extensions = manifest.get("extensions")
+    if extensions is not None and (
+        not isinstance(extensions, dict)
+        or any(not isinstance(value, dict) for value in extensions.values())
+    ):
+        errors.append(f"{relative_path}: extensions must map namespaces to objects")
+
+
+def _skill_frontmatter_name(path: Path, relative_path: Path, errors: list[str]) -> str | None:
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except UnicodeDecodeError:
+        errors.append(f"{relative_path}: must be UTF-8 text")
+        return None
+    if not lines or lines[0] != "---":
+        errors.append(f"{relative_path}: must start with YAML frontmatter")
+        return None
+    try:
+        closing = lines.index("---", 1)
+    except ValueError:
+        errors.append(f"{relative_path}: YAML frontmatter is not closed")
+        return None
+    for line in lines[1:closing]:
+        match = re.fullmatch(r"name:\s*([^#]+?)\s*", line)
+        if match:
+            return match.group(1).strip("'\"")
+    errors.append(f"{relative_path}: YAML frontmatter must define name")
+    return None
+
+
+def _validate_custom_agents(
+    root: Path, skill_directory: Path, relative_skill: Path, errors: list[str]
+) -> None:
+    agents = skill_directory / "agents"
+    if not agents.exists():
+        return
+    if not agents.is_dir():
+        errors.append(f"{relative_skill / 'agents'}: must be a directory")
+        return
+    for agent in sorted(agents.glob("*.toml")):
+        relative_agent = agent.relative_to(root)
+        try:
+            payload = tomllib.loads(agent.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as error:
+            errors.append(f"{relative_agent}: invalid TOML: {error}")
+            continue
+        if payload.get("name") != agent.stem:
+            errors.append(f"{relative_agent}: agent name must match filename '{agent.stem}'")
+
+
+def _validate_plugin_components(root: Path, name: str, errors: list[str]) -> None:
+    plugin = root / "plugins" / name
+    skills = plugin / "skills"
+    mcp = plugin / "mcp.json"
+    discovered_skills = 0
+
+    if skills.exists():
+        if not skills.is_dir():
+            errors.append(f"plugins/{name}/skills: must be a directory")
+        else:
+            for skill_directory in sorted(path for path in skills.iterdir() if path.is_dir()):
+                skill_file = skill_directory / "SKILL.md"
+                if not skill_file.is_file():
+                    continue
+                discovered_skills += 1
+                relative_skill = skill_directory.relative_to(root)
+                relative_file = skill_file.relative_to(root)
+                skill_name = _skill_frontmatter_name(skill_file, relative_file, errors)
+                if skill_name is not None and skill_name != skill_directory.name:
+                    errors.append(
+                        f"{relative_file}: skill name must match directory '{skill_directory.name}'"
+                    )
+                _validate_custom_agents(root, skill_directory, relative_skill, errors)
+
+    has_mcp = mcp.is_file()
+    if discovered_skills == 0 and not has_mcp:
+        errors.append(f"plugins/{name}: must provide at least one skill or mcp.json")
+
+
+def _validate_code_simplifier(root: Path, errors: list[str]) -> None:
+    plugin = root / "plugins/code-simplifier"
+    skill = plugin / "skills/code-simplifier"
+    notice = plugin / "NOTICE"
+    license_file = plugin / "LICENSE"
+    skill_file = skill / "SKILL.md"
+    interface = skill / "agents/openai.yaml"
+    agent = skill / "agents/code_simplifier.toml"
+
+    if not notice.is_file():
+        errors.append("plugins/code-simplifier/NOTICE is missing")
+    else:
+        text = notice.read_text(encoding="utf-8")
+        for marker in ("Anthropic", "Rokk Club", "adapt", UPSTREAM_CODE_SIMPLIFIER):
+            if marker not in text:
+                errors.append(f"plugins/code-simplifier/NOTICE: missing attribution marker '{marker}'")
+
+    if license_file.is_file():
+        text = license_file.read_text(encoding="utf-8")
+        if "Apache License" not in text or "Version 2.0" not in text:
+            errors.append("plugins/code-simplifier/LICENSE: must contain Apache License 2.0")
+
+    if skill_file.is_file():
+        text = skill_file.read_text(encoding="utf-8")
+        if "Anthropic's Code Simplifier" not in text or "code_simplifier" not in text:
+            errors.append("plugins/code-simplifier/skills/code-simplifier/SKILL.md: adaptation notice is missing")
+    interface_text = interface.read_text(encoding="utf-8") if interface.is_file() else ""
+    if re.search(r"^\s*display_name:\s*['\"]?Code Simplifier['\"]?\s*$", interface_text, re.M) is None:
+        errors.append(
+            "plugins/code-simplifier/skills/code-simplifier/agents/openai.yaml: "
+            "Code Simplifier interface metadata is missing"
+        )
+    if not agent.is_file():
+        errors.append(
+            "plugins/code-simplifier/skills/code-simplifier/agents/code_simplifier.toml is missing"
+        )
+    elif "Adapted from Anthropic's Code Simplifier" not in agent.read_text(encoding="utf-8"):
+        errors.append(
+            "plugins/code-simplifier/skills/code-simplifier/agents/code_simplifier.toml: "
+            "adaptation notice is missing"
+        )
+
+
 def _validate_portable_manifest(root: Path, name: str, catalog: Path, errors: list[str]) -> None:
     relative_path = Path("plugins") / name / "plugin.json"
     manifest = _load_json(root, relative_path, errors)
@@ -57,6 +230,17 @@ def _validate_portable_manifest(root: Path, name: str, catalog: Path, errors: li
         errors.append(f"{relative_path}: $schema must be {AGENT_PLUGIN_SCHEMA}")
     if manifest.get("name") != name:
         errors.append(f"{relative_path}: name must match catalog entry '{name}'")
+    _validate_manifest_metadata(relative_path, manifest, errors)
+    _validate_plugin_components(root, name, errors)
+
+    license_name = manifest.get("license")
+    if isinstance(license_name, str) and license_name != "MIT":
+        if not (root / "plugins" / name / "LICENSE").is_file():
+            errors.append(
+                f"plugins/{name}: declares {license_name} but has no package LICENSE"
+            )
+    if name == "code-simplifier":
+        _validate_code_simplifier(root, errors)
 
 
 def _validate_claude_manifest(root: Path, name: str, errors: list[str]) -> None:
