@@ -1,8 +1,8 @@
 # Rokk Club Agent Plugins
 
-Rokk Club publishes portable agent plugins for Codex and Claude Code from one repository.
+Rokk Club publishes portable agent plugins for Codex and Claude Code from one repository. Plugins are added one at a time under [`plugins/`](plugins/README.md).
 
-The marketplace catalogs are ready, but no plugins have been published yet. Plugins will be added one at a time under [`plugins/`](plugins/README.md).
+The Codex marketplace currently publishes [`code-simplifier`](plugins/code-simplifier/) for behavior-preserving code cleanup and [`eli5`](plugins/eli5/README.md) for visual explanations.
 
 ## Marketplaces
 
