@@ -1,8 +1,12 @@
+from __future__ import annotations
+
 import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+import scripts.validate_marketplaces as marketplace_validator
 from scripts.validate_marketplaces import validate_repository
 
 
@@ -233,6 +237,19 @@ class MarketplaceValidationTests(unittest.TestCase):
         agent.write_text('name = "unterminated\n', encoding="utf-8")
 
         errors = validate_repository(self.root)
+
+        self.assertTrue(any("invalid TOML" in error for error in errors))
+
+    def test_rejects_malformed_custom_agent_without_tomllib(self) -> None:
+        self._write_catalogs(codex_plugins=[self._codex_entry("bad-agent")])
+        self._write_portable_manifest("bad-agent")
+        self._write_skill("bad-agent", "bad-agent")
+        agent = self.root / "plugins/bad-agent/skills/bad-agent/agents/bad_agent.toml"
+        agent.parent.mkdir(parents=True)
+        agent.write_text('name = "unterminated\n', encoding="utf-8")
+
+        with patch.object(marketplace_validator, "tomllib", None):
+            errors = validate_repository(self.root)
 
         self.assertTrue(any("invalid TOML" in error for error in errors))
 
