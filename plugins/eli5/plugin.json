@@ -1,12 +1,14 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "eli5",
-  "version": "1.0.0",
+  "version": "0.1.1",
   "description": "Explain any topic like I'm 5: a dead-simple visual explainer with big pictures and few words. Use $eli5 <topic>.",
   "author": {
     "name": "Rokk Club",
     "url": "https://github.com/letsrokk"
   },
+  "homepage": "https://github.com/letsrokk/agent-plugins",
+  "repository": "https://github.com/letsrokk/agent-plugins",
   "license": "Apache-2.0",
   "keywords": ["explain", "eli5", "learning", "explainer", "html"]
 }
