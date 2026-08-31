@@ -231,6 +231,8 @@ The MCP server exposes:
 
 Each tool has an explicit input schema and structured output. Read operations carry read-only annotations. Lodge, vote, resolve, and reopen are mutating but non-destructive. `apply_prune` is destructive. MCP does not expose configuration mutation or arbitrary journal paths.
 
+Every MCP tool requires an absolute `project_root`. The skill supplies the active workspace root on each call. The server validates that it names an existing directory, derives project identity from it, and then applies the normal project or user scope configuration. The server does not infer the project from its process working directory because a bundled MCP server runs from the plugin installation directory. It also does not depend on MCP roots discovery, which is deprecated in the current protocol. CLI calls continue to discover the project from their working directory.
+
 CLI stdout contains one JSON envelope per command. Errors use one structured envelope on stderr and a nonzero exit. `list --format md` is the only human-oriented stdout mode. Empty list results are successful.
 
 ## Automatic agent behavior
