@@ -1,10 +1,12 @@
 {
   "name": "eli5",
-  "version": "1.0.0",
+  "version": "0.1.1",
   "description": "Explain any topic like I'm 5: a dead-simple visual explainer with big pictures and few words.",
   "author": {
     "name": "Thariq Shihipar"
   },
+  "homepage": "https://github.com/letsrokk/agent-plugins",
+  "repository": "https://github.com/letsrokk/agent-plugins",
   "license": "Apache-2.0",
   "keywords": [
     "explain",
@@ -25,6 +27,7 @@
       "Read",
       "Write"
     ],
+    "websiteURL": "https://github.com/letsrokk/agent-plugins",
     "defaultPrompt": [
       "Explain this topic like I'm five with big pictures and few words."
     ],

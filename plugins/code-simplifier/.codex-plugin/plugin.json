@@ -1,6 +1,6 @@
 {
   "name": "code-simplifier",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Simplify a precise code scope without changing observable behavior.",
   "author": {
     "name": "Rokk Club",
