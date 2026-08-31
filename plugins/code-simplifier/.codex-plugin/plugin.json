@@ -1,0 +1,39 @@
+{
+  "name": "code-simplifier",
+  "version": "0.1.0",
+  "description": "Simplify a precise code scope without changing observable behavior.",
+  "author": {
+    "name": "Rokk Club",
+    "url": "https://github.com/letsrokk"
+  },
+  "homepage": "https://github.com/letsrokk/agent-plugins",
+  "repository": "https://github.com/letsrokk/agent-plugins",
+  "license": "Apache-2.0",
+  "keywords": [
+    "codex",
+    "code-quality",
+    "refactoring",
+    "simplification"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Code Simplifier",
+    "shortDescription": "Simplify code without changing behavior",
+    "longDescription": "Resolve a precise code scope, simplify it for clarity and maintainability, and preserve its observable behavior.",
+    "developerName": "Rokk Club",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/letsrokk/agent-plugins",
+    "defaultPrompt": [
+      "Simplify the requested code scope without changing behavior."
+    ],
+    "brandColor": "#2563EB",
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/icon.png",
+    "screenshots": []
+  }
+}

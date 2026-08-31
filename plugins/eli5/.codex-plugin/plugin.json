@@ -1,0 +1,36 @@
+{
+  "name": "eli5",
+  "version": "1.0.0",
+  "description": "Explain any topic like I'm 5: a dead-simple visual explainer with big pictures and few words.",
+  "author": {
+    "name": "Thariq Shihipar"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "explain",
+    "eli5",
+    "learning",
+    "explainer",
+    "html"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "ELI5",
+    "shortDescription": "Explain topics with big pictures and few words",
+    "longDescription": "Turn an unfamiliar topic into a dead-simple visual explainer for someone who knows nothing about it.",
+    "developerName": "Thariq Shihipar",
+    "category": "Education",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Explain this topic like I'm five with big pictures and few words."
+    ],
+    "brandColor": "#0EA5E9",
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/icon.png",
+    "screenshots": []
+  }
+}
