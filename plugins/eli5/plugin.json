@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "description": "Explain any topic like I'm 5: a dead-simple visual explainer with big pictures and few words. Use $eli5 <topic>.",
   "author": {
-    "name": "Thariq Shihipar"
+    "name": "Rokk Club",
+    "url": "https://github.com/letsrokk"
   },
   "license": "Apache-2.0",
   "keywords": ["explain", "eli5", "learning", "explainer", "html"]
