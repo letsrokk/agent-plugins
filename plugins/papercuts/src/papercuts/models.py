@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import re
 import stat
@@ -26,6 +27,30 @@ _GITHUB_SECRET = re.compile(
     r"\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})\b"
 )
 _OPENAI_SECRET = re.compile(r"\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b")
+_URL = re.compile(r"(?i)\b(?:https?|ssh|git|ftp|file)://[^\s\"']+")
+_SCP_REMOTE = re.compile(
+    r"(?i)(?<![A-Za-z0-9_.-])(?:[A-Za-z0-9_.-]+@)?"
+    r"[A-Za-z0-9.-]+\.[A-Za-z]{2,}:[^\s\"']+"
+)
+_WINDOWS_ABSOLUTE_PATH = re.compile(
+    r"(?i)(?<![A-Za-z0-9])(?:[A-Za-z]:[\\/]|\\\\)[^\s\"']+"
+)
+_POSIX_ABSOLUTE_PATH = re.compile(r"(?<![A-Za-z0-9:/])/(?!/)[^\s\"']*")
+_ENVIRONMENT_LINE = re.compile(r"^(?:export\s+)?[A-Za-z_][A-Za-z0-9_]*=.*$")
+_ENVIRONMENT_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_ENVIRONMENT_OBJECT = re.compile(
+    r"(?is)^(?:os\.)?(?:env|environ|environment)\s*(?:\(|=|:)\s*\{"
+)
+_COMMON_ENVIRONMENT_NAMES = {
+    "home",
+    "path",
+    "pwd",
+    "shell",
+    "temp",
+    "tmp",
+    "user",
+    "userprofile",
+}
 
 
 @dataclass(frozen=True)
@@ -105,6 +130,7 @@ def sanitize_context(
         value = context[key]
         if not isinstance(value, str):
             raise _invalid_evidence(f"{key} must be a string")
+        _reject_environment_dump(value)
         redacted = _redact(value)
         limit = 1024 if key == "command" else 2048
         if len(redacted) > limit:
@@ -126,6 +152,7 @@ def sanitize_context(
     elif "stderr_file" in context:
         stderr = _read_evidence_file(context["stderr_file"])
     if stderr is not None:
+        _reject_environment_dump(stderr)
         redacted_stderr = _redact(stderr)
         if len(redacted_stderr.encode("utf-8")) > 4096:
             raise _invalid_evidence("stderr exceeds 4096 UTF-8 bytes")
@@ -181,7 +208,38 @@ def _redact(value: str) -> str:
     redacted = _BEARER_SECRET.sub("Bearer [REDACTED]", redacted)
     redacted = _URL_CREDENTIALS.sub(r"\1[REDACTED]@", redacted)
     redacted = _GITHUB_SECRET.sub("[REDACTED]", redacted)
-    return _OPENAI_SECRET.sub("[REDACTED]", redacted)
+    redacted = _OPENAI_SECRET.sub("[REDACTED]", redacted)
+    redacted = _URL.sub("[REDACTED_URL]", redacted)
+    redacted = _SCP_REMOTE.sub("[REDACTED_URL]", redacted)
+    redacted = _WINDOWS_ABSOLUTE_PATH.sub("[REDACTED_PATH]", redacted)
+    return _POSIX_ABSOLUTE_PATH.sub("[REDACTED_PATH]", redacted)
+
+
+def _reject_environment_dump(value: str) -> None:
+    lines = [line.strip() for line in value.splitlines() if line.strip()]
+    if len(lines) >= 2 and all(_ENVIRONMENT_LINE.fullmatch(line) for line in lines):
+        raise _invalid_evidence("raw environment evidence is not allowed")
+
+    if _ENVIRONMENT_OBJECT.match(value.lstrip()):
+        raise _invalid_evidence("raw environment evidence is not allowed")
+
+    try:
+        parsed = json.loads(value)
+    except (TypeError, ValueError):
+        return
+    if not isinstance(parsed, dict) or len(parsed) < 2:
+        return
+    keys = [key for key in parsed if isinstance(key, str)]
+    if len(keys) != len(parsed) or not all(
+        _ENVIRONMENT_NAME.fullmatch(key) for key in keys
+    ):
+        return
+    common_names = sum(
+        key.casefold() in _COMMON_ENVIRONMENT_NAMES for key in keys
+    )
+    uppercase_names = sum(key.upper() == key for key in keys)
+    if common_names >= 2 or uppercase_names >= 3:
+        raise _invalid_evidence("raw environment evidence is not allowed")
 
 
 def _invalid_evidence(message: str) -> PapercutsError:

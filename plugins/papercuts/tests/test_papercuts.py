@@ -71,11 +71,15 @@ class PapercutsPluginTests(unittest.TestCase):
                 context={
                     "command": (
                         "curl -H 'Authorization: Bearer bearer-secret-value' "
-                        "https://user:password@example.invalid && API_TOKEN=token-value"
+                        "https://user:password@example.invalid && API_TOKEN=token-value "
+                        f"--worktree {root}"
                     ),
                     "exit_status": 1,
                     "stderr": "ghp_abcdefghijklmnopqrstuvwxyz123456 sk-proj-abcdefghijklmnopqrstuvwxyz123456",
-                    "note": "DATABASE_PASSWORD=not-for-the-journal",
+                    "note": (
+                        "DATABASE_PASSWORD=not-for-the-journal "
+                        "remote=https://github.com/acme/private.git"
+                    ),
                 },
             )
             complaint_id = lodged["record"]["id"]
@@ -89,6 +93,29 @@ class PapercutsPluginTests(unittest.TestCase):
             self.assertNotIn("ghp_", json.dumps(sanitized_context))
             self.assertNotIn("sk-proj-", json.dumps(sanitized_context))
             self.assertNotIn("not-for-the-journal", json.dumps(sanitized_context))
+            self.assertNotIn(str(root), json.dumps(sanitized_context))
+            self.assertNotIn(
+                "https://github.com/acme/private.git",
+                json.dumps(sanitized_context),
+            )
+
+            journal_before_environment = storage.journal_path.read_bytes()
+            with self.assertRaises(PapercutsError) as rejected_environment:
+                service.lodge(
+                    "Raw environments must not enter evidence",
+                    context={
+                        "stderr": (
+                            "HOME=/Users/example\n"
+                            "PATH=/usr/local/bin:/usr/bin\n"
+                            "SHELL=/bin/zsh"
+                        )
+                    },
+                )
+            self.assertEqual(rejected_environment.exception.code, "invalid_input")
+            self.assertEqual(rejected_environment.exception.exit_status, 65)
+            self.assertEqual(
+                storage.journal_path.read_bytes(), journal_before_environment
+            )
 
             duplicate = service.lodge(
                 "  Validator hides the invalid manifest path  ",
