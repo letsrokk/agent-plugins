@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterator, Sequence
 
-from papercuts.models import PapercutsError
+from papercuts.models import PapercutsError, filesystem_error as _io_error
 
 _KINDS = {"complaint", "encounter", "resolved", "reopened"}
 _LOCK_TIMEOUT_SECONDS = 5.0
@@ -60,10 +60,10 @@ class JournalStore:
             return
         records = _serialize_events(events, self.path)
         try:
-            descriptor = os.open(
+            descriptor = _open_regular_file(
                 self.path,
-                os.O_WRONLY | os.O_CREAT | os.O_APPEND,
-                0o600,
+                os.O_WRONLY | os.O_APPEND,
+                create=True,
             )
             with os.fdopen(descriptor, "ab") as journal:
                 journal.write(records)
@@ -87,6 +87,7 @@ class JournalStore:
         if not repair_tail:
             data = self._read_bytes()
             events, incomplete_tail = self._parse_events(data)
+            _fold_events(events, self.path)
             return _health(
                 data=data,
                 events=events,
@@ -103,13 +104,14 @@ class JournalStore:
         try:
             data = self._read_bytes()
             events, incomplete_tail = self._parse_events(data)
+            _fold_events(events, self.path)
             repaired = False
             if incomplete_tail:
                 complete_length = data.rfind(b"\n") + 1
                 try:
-                    descriptor = os.open(
+                    descriptor = _open_regular_file(
                         self.path,
-                        os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0),
+                        os.O_WRONLY,
                     )
                     try:
                         os.ftruncate(descriptor, complete_length)
@@ -156,13 +158,11 @@ class JournalStore:
         suffix = timestamp.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
         backup_path = backup_dir / f"papercuts-{suffix}.jsonl"
         try:
-            descriptor = os.open(
+            descriptor = _open_regular_file(
                 backup_path,
-                os.O_WRONLY
-                | os.O_CREAT
-                | os.O_EXCL
-                | getattr(os, "O_NOFOLLOW", 0),
-                0o600,
+                os.O_WRONLY,
+                create=True,
+                exclusive=True,
             )
             with os.fdopen(descriptor, "wb") as backup:
                 backup.write(original)
@@ -200,9 +200,19 @@ class JournalStore:
 
     def _read_bytes(self) -> bytes:
         try:
-            return self.path.read_bytes()
+            descriptor = _open_regular_file(
+                self.path,
+                os.O_RDONLY,
+                missing_ok=True,
+            )
+            if descriptor is None:
+                return b""
+            with os.fdopen(descriptor, "rb") as journal:
+                return journal.read()
         except FileNotFoundError:
             return b""
+        except PapercutsError:
+            raise
         except OSError as error:
             raise _io_error("read journal", self.path, error) from error
 
@@ -428,26 +438,98 @@ def _serialize_events(events: Sequence[dict[str, Any]], path: Path) -> bytes:
     return b"".join(serialized)
 
 
+def _open_regular_file(
+    path: Path,
+    flags: int,
+    *,
+    create: bool = False,
+    exclusive: bool = False,
+    missing_ok: bool = False,
+) -> int | None:
+    """Open one regular file without following its final path component."""
+    for attempt in range(3):
+        _reject_path_symlinks(path)
+        try:
+            expected = os.stat(path, follow_symlinks=False)
+        except FileNotFoundError:
+            expected = None
+        if expected is not None and not stat.S_ISREG(expected.st_mode):
+            raise _unsafe_storage_path(path)
+        if expected is None and not create:
+            if missing_ok:
+                return None
+            raise FileNotFoundError(path)
+
+        open_flags = flags | getattr(os, "O_NOFOLLOW", 0)
+        if create and (exclusive or expected is None):
+            open_flags |= os.O_CREAT | os.O_EXCL
+        try:
+            descriptor = os.open(path, open_flags, 0o600)
+        except FileExistsError:
+            if create and not exclusive and expected is None and attempt < 2:
+                continue
+            raise
+        except FileNotFoundError:
+            if create and expected is not None and attempt < 2:
+                continue
+            if missing_ok:
+                return None
+            raise
+        except OSError:
+            _reject_path_symlinks(path)
+            raise
+
+        try:
+            opened = os.fstat(descriptor)
+            current = os.stat(path, follow_symlinks=False)
+            expected_matches = expected is None or (
+                expected.st_dev,
+                expected.st_ino,
+            ) == (opened.st_dev, opened.st_ino)
+            if (
+                not stat.S_ISREG(opened.st_mode)
+                or not expected_matches
+                or (current.st_dev, current.st_ino)
+                != (opened.st_dev, opened.st_ino)
+            ):
+                raise _unsafe_storage_path(path)
+        except BaseException:
+            os.close(descriptor)
+            raise
+        return descriptor
+    raise _unsafe_storage_path(path)
+
+
 def _reject_path_symlinks(path: Path) -> None:
     target = path.absolute()
-    candidates = [target]
-    if target.parent != target:
-        candidates.append(target.parent)
-    while not os.path.lexists(candidates[-1]):
-        parent = candidates[-1].parent
-        if parent == candidates[-1]:
-            break
-        candidates.append(parent)
-    for current in reversed(candidates):
+    parts = target.parts
+    if not parts:
+        return
+    current = Path(parts[0])
+    for index, component in enumerate(parts[1:], start=1):
+        current /= component
         try:
-            if current.is_symlink():
-                raise PapercutsError(
-                    "invalid_input",
-                    f"Storage path traverses a symbolic link: {current}",
-                    exit_status=64,
-                )
+            metadata = os.stat(current, follow_symlinks=False)
+        except FileNotFoundError:
+            break
         except OSError as error:
             raise _io_error("inspect storage path", current, error) from error
+        if not stat.S_ISLNK(metadata.st_mode):
+            continue
+        # macOS exposes immutable root-owned aliases such as /var and /tmp.
+        # Canonicalize only that filesystem anchor, then reject every descendant link.
+        if index == 1 and getattr(metadata, "st_uid", -1) == 0:
+            current = Path(os.path.realpath(current))
+            continue
+        raise _unsafe_storage_path(current)
+
+
+def _unsafe_storage_path(path: Path) -> PapercutsError:
+    return PapercutsError(
+        "invalid_input",
+        f"Storage path traverses a symbolic link or non-regular file: {path}",
+        exit_status=64,
+    )
 
 
 def _fsync_directory(path: Path) -> None:
@@ -460,14 +542,21 @@ def _fsync_directory(path: Path) -> None:
 
 
 def fold_events(events: Sequence[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    return _fold_events(events, Path("<events>"))
+
+
+def _fold_events(
+    events: Sequence[dict[str, Any]],
+    path: Path,
+) -> dict[str, dict[str, Any]]:
     records: dict[str, dict[str, Any]] = {}
     for index, event in enumerate(events, start=1):
-        _validate_event(event, Path("<events>"), index)
+        _validate_event(event, path, index)
         kind = event["kind"]
         if kind == "complaint":
             complaint_id = event["id"]
             if complaint_id in records:
-                raise _malformed(Path("<events>"), index, "duplicate complaint ID")
+                raise _malformed(path, index, "duplicate complaint ID")
             records[complaint_id] = {
                 **event,
                 "status": "open",
@@ -483,9 +572,9 @@ def fold_events(events: Sequence[dict[str, Any]]) -> dict[str, dict[str, Any]]:
         complaint_id = event["complaint_id"]
         record = records.get(complaint_id)
         if record is None:
-            raise _malformed(Path("<events>"), index, "orphan event")
+            raise _malformed(path, index, "orphan event")
         if event["project"]["id"] != record["project"]["id"]:
-            raise _malformed(Path("<events>"), index, "mismatched project ID")
+            raise _malformed(path, index, "mismatched project ID")
 
         if kind == "encounter":
             record["encounter_count"] += 1
@@ -577,15 +666,6 @@ def _malformed(path: Path, line_number: int, detail: str | None = None) -> Paper
         "malformed_journal",
         f"Malformed journal event at {path}:{line_number}{suffix}",
         exit_status=65,
-    )
-
-
-def _io_error(action: str, path: Path, error: BaseException) -> PapercutsError:
-    return PapercutsError(
-        "io_failure",
-        f"Could not {action} at {path}: {error}",
-        exit_status=74,
-        retryable=True,
     )
 
 

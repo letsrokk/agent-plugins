@@ -13,7 +13,9 @@ from papercuts.models import (
     Severity,
     Status,
     StorageContext,
+    filesystem_error,
     sanitize_context,
+    sanitize_user_string,
 )
 from papercuts.store import JournalStore, fold_events
 
@@ -250,11 +252,10 @@ class PapercutsService:
             try:
                 before_bytes = self.storage.journal_path.stat().st_size
             except OSError as error:
-                raise PapercutsError(
-                    "io_failure",
-                    f"Could not inspect journal at {self.storage.journal_path}: {error}",
-                    exit_status=74,
-                    retryable=True,
+                raise filesystem_error(
+                    "inspect journal",
+                    self.storage.journal_path,
+                    error,
                 ) from error
             backup_path = self.store.replace_locked(
                 surviving_events,
@@ -264,11 +265,10 @@ class PapercutsService:
             try:
                 after_bytes = self.storage.journal_path.stat().st_size
             except OSError as error:
-                raise PapercutsError(
-                    "io_failure",
-                    f"Could not inspect journal at {self.storage.journal_path}: {error}",
-                    exit_status=74,
-                    retryable=True,
+                raise filesystem_error(
+                    "inspect journal",
+                    self.storage.journal_path,
+                    error,
                 ) from error
             return {
                 "changed": True,
@@ -282,25 +282,14 @@ class PapercutsService:
 
     def inspect_storage(self) -> dict[str, Any]:
         """Return scope, path, project, byte count, event count, and health."""
-        events = self.store.read_events()
-        try:
-            journal_bytes = self.storage.journal_path.read_bytes()
-        except FileNotFoundError:
-            journal_bytes = b""
-        except OSError as error:
-            raise PapercutsError(
-                "io_failure",
-                f"Could not inspect journal at {self.storage.journal_path}: {error}",
-                exit_status=74,
-                retryable=True,
-            ) from error
+        health = self.store.doctor()
         return {
             "scope": self.storage.scope,
             "path": str(self.storage.journal_path),
             "project": self.storage.project.to_dict(),
-            "byte_count": len(journal_bytes),
-            "event_count": len(events),
-            "healthy": not journal_bytes or journal_bytes.endswith(b"\n"),
+            "byte_count": health["byte_count"],
+            "event_count": health["event_count"],
+            "healthy": health["healthy"],
         }
 
     def _prune_preview(
@@ -439,10 +428,12 @@ class PapercutsService:
 
 
 def _normalize_text(text: str | None) -> str:
-    normalized = re.sub(r"\s+", " ", text or "").strip()
+    if not isinstance(text, str):
+        raise _invalid("complaint text must be a string")
+    normalized = re.sub(r"\s+", " ", text).strip()
     if not normalized:
         raise _invalid("complaint text must not be empty")
-    return normalized
+    return sanitize_user_string(normalized, field="complaint text")
 
 
 def _sanitize_note(note: str | None) -> str | None:
@@ -452,7 +443,14 @@ def _sanitize_note(note: str | None) -> str | None:
 
 
 def _normalize_tags(tags: Sequence[str]) -> list[str]:
-    normalized = sorted({tag.strip().lower() for tag in tags if tag.strip()})
+    if isinstance(tags, (str, bytes)):
+        raise _invalid("tags must be a sequence of strings")
+    normalized_tags: set[str] = set()
+    for tag in tags:
+        sanitized = sanitize_user_string(tag, field="tag").strip().lower()
+        if sanitized:
+            normalized_tags.add(sanitized)
+    normalized = sorted(normalized_tags)
     if len(normalized) > 10:
         raise _invalid("at most ten tags are allowed")
     return normalized

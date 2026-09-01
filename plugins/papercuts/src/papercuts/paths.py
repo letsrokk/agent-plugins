@@ -10,7 +10,13 @@ from pathlib import Path
 from typing import Literal, Mapping
 from urllib.parse import urlsplit
 
-from papercuts.models import PapercutsError, ProjectRef, Scope, StorageContext
+from papercuts.models import (
+    PapercutsError,
+    ProjectRef,
+    Scope,
+    StorageContext,
+    filesystem_error,
+)
 
 _CONFIG_NAME = "papercuts.config.json"
 _JOURNAL_NAME = "papercuts.jsonl"
@@ -19,22 +25,32 @@ _SCOPE_VALUES = {"project", "user"}
 
 def discover_project(cwd: Path) -> tuple[Path, str | None]:
     """Return the Git worktree root and sanitized remote input, or cwd and None."""
-    root_result = subprocess.run(
-        ["git", "-C", str(cwd), "rev-parse", "--show-toplevel"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        root_result = subprocess.run(
+            ["git", "-C", str(cwd), "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        return cwd, None
+    except OSError as error:
+        raise filesystem_error("discover Git project", cwd, error) from error
     if root_result.returncode != 0:
         return cwd, None
 
     root = Path(root_result.stdout.strip())
-    remote_result = subprocess.run(
-        ["git", "-C", str(root), "config", "--get", "remote.origin.url"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        remote_result = subprocess.run(
+            ["git", "-C", str(root), "config", "--get", "remote.origin.url"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        return root, None
+    except OSError as error:
+        raise filesystem_error("discover Git remote", root, error) from error
     remote_url = remote_result.stdout.strip() if remote_result.returncode == 0 else None
     return root, remote_url or None
 
@@ -107,18 +123,33 @@ def set_scope(
 
     root, _ = discover_project(cwd)
     config_path = _config_path(root if level == "project" else home or Path.home())
-    config_path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        mode="w",
-        encoding="utf-8",
-        dir=config_path.parent,
-        prefix=f".{config_path.name}.",
-        delete=False,
-    ) as temporary_file:
-        json.dump({"scope": scope}, temporary_file)
-        temporary_file.write("\n")
-        temporary_path = Path(temporary_file.name)
-    os.replace(temporary_path, config_path)
+    temporary_path: Path | None = None
+    try:
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=config_path.parent,
+            prefix=f".{config_path.name}.",
+            delete=False,
+        ) as temporary_file:
+            temporary_path = Path(temporary_file.name)
+            json.dump({"scope": scope}, temporary_file)
+            temporary_file.write("\n")
+        os.replace(temporary_path, config_path)
+        temporary_path = None
+    except OSError as error:
+        raise filesystem_error(
+            "write Papercuts configuration",
+            config_path,
+            error,
+        ) from error
+    finally:
+        if temporary_path is not None:
+            try:
+                temporary_path.unlink()
+            except OSError:
+                pass
     return config_path
 
 
@@ -148,16 +179,22 @@ def _config_path(base: Path) -> Path:
 
 
 def _read_scope(path: Path) -> Scope | None:
-    if not path.exists():
-        return None
     try:
         with path.open(encoding="utf-8") as config_file:
             config = json.load(config_file)
-    except (OSError, json.JSONDecodeError) as error:
+    except FileNotFoundError:
+        return None
+    except json.JSONDecodeError as error:
         raise PapercutsError(
             "invalid_config",
             f"Invalid Papercuts configuration: {path}",
             exit_status=78,
+        ) from error
+    except OSError as error:
+        raise filesystem_error(
+            "read Papercuts configuration",
+            path,
+            error,
         ) from error
 
     scope = config.get("scope") if isinstance(config, dict) else None

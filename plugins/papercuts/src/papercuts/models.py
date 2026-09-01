@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import errno
 import json
 import os
 import re
@@ -16,7 +17,8 @@ _CONTEXT_KEYS = {"command", "exit_status", "stderr", "stderr_file", "note"}
 _EVIDENCE_FILE_LIMIT = 1024 * 1024
 _ASSIGNMENT_SECRET = re.compile(
     r"(?i)((?<![A-Za-z0-9_.-])[\"']?(?=[A-Za-z_])[A-Za-z0-9_.-]*"
-    r"(?:TOKEN|SECRET|PASSWORD|API_KEY)[A-Za-z0-9_.-]*[\"']?\s*[:=]\s*)"
+    r"(?:TOKEN|SECRET|PASSWORD|API_KEY|ACCESS_KEY(?:_ID)?|JWT)"
+    r"[A-Za-z0-9_.-]*[\"']?\s*[:=]\s*)"
     r"(?:\"[^\"\r\n]*\"|'[^'\r\n]*'|[^\s,;]+)"
 )
 _BEARER_SECRET = re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+")
@@ -36,7 +38,10 @@ _WINDOWS_ABSOLUTE_PATH = re.compile(
     r"(?i)(?<![A-Za-z0-9])(?:[A-Za-z]:[\\/]|\\\\)[^\s\"']+"
 )
 _POSIX_ABSOLUTE_PATH = re.compile(r"(?<![A-Za-z0-9:/])/(?!/)[^\s\"']*")
-_ENVIRONMENT_LINE = re.compile(r"^(?:export\s+)?[A-Za-z_][A-Za-z0-9_]*=.*$")
+_ENVIRONMENT_LINE = re.compile(
+    r"^(?:(?:export|declare\s+-x|typeset\s+-x)\s+)?"
+    r"[A-Za-z_][A-Za-z0-9_]*=.*$"
+)
 _ENVIRONMENT_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _ENVIRONMENT_OBJECT = re.compile(
     r"(?is)^(?:os\.)?(?:env|environ|environment)\s*(?:\(|=|:)\s*\{"
@@ -100,6 +105,35 @@ class PapercutsError(Exception):
         self.suggested_fix = suggested_fix
 
 
+def sanitize_user_string(value: str, *, field: str) -> str:
+    """Reject raw environments and redact sensitive string material."""
+    if not isinstance(value, str):
+        raise _invalid_evidence(f"{field} must be a string")
+    _reject_environment_dump(value)
+    return _redact(value)
+
+
+def filesystem_error(
+    action: str,
+    path: Path,
+    error: OSError,
+) -> PapercutsError:
+    """Normalize filesystem failures into the stable public error contract."""
+    permission_errnos = {errno.EACCES, errno.EPERM, errno.EROFS}
+    if isinstance(error, PermissionError) or error.errno in permission_errnos:
+        return PapercutsError(
+            "permission_denied",
+            f"Permission denied while trying to {action} at {path}: {error}",
+            exit_status=77,
+        )
+    return PapercutsError(
+        "io_failure",
+        f"Could not {action} at {path}: {error}",
+        exit_status=74,
+        retryable=True,
+    )
+
+
 def sanitize_context(
     context: Mapping[str, Any] | None,
 ) -> dict[str, Any]:
@@ -128,10 +162,7 @@ def sanitize_context(
         if key not in context:
             continue
         value = context[key]
-        if not isinstance(value, str):
-            raise _invalid_evidence(f"{key} must be a string")
-        _reject_environment_dump(value)
-        redacted = _redact(value)
+        redacted = sanitize_user_string(value, field=key)
         limit = 1024 if key == "command" else 2048
         if len(redacted) > limit:
             raise _invalid_evidence(f"{key} exceeds {limit} characters")
@@ -152,8 +183,7 @@ def sanitize_context(
     elif "stderr_file" in context:
         stderr = _read_evidence_file(context["stderr_file"])
     if stderr is not None:
-        _reject_environment_dump(stderr)
-        redacted_stderr = _redact(stderr)
+        redacted_stderr = sanitize_user_string(stderr, field="stderr")
         if len(redacted_stderr.encode("utf-8")) > 4096:
             raise _invalid_evidence("stderr exceeds 4096 UTF-8 bytes")
         sanitized["stderr"] = redacted_stderr
@@ -216,7 +246,11 @@ def _redact(value: str) -> str:
 
 
 def _reject_environment_dump(value: str) -> None:
-    lines = [line.strip() for line in value.splitlines() if line.strip()]
+    lines = [
+        line.strip()
+        for line in value.replace("\0", "\n").splitlines()
+        if line.strip()
+    ]
     assignment_lines = sum(
         bool(_ENVIRONMENT_LINE.fullmatch(line)) for line in lines
     )
@@ -241,7 +275,7 @@ def _reject_environment_dump(value: str) -> None:
         key.casefold() in _COMMON_ENVIRONMENT_NAMES for key in keys
     )
     uppercase_names = sum(key.upper() == key for key in keys)
-    if common_names >= 2 or uppercase_names >= 3:
+    if common_names >= 2 or uppercase_names >= 2:
         raise _invalid_evidence("raw environment evidence is not allowed")
 
 
