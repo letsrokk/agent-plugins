@@ -1,0 +1,14 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "papercuts",
+  "version": "0.1.0",
+  "description": "Give Codex a durable complaint journal for workflow friction.",
+  "author": {
+    "name": "Rokk Club",
+    "url": "https://github.com/letsrokk"
+  },
+  "homepage": "https://github.com/letsrokk/agent-plugins",
+  "repository": "https://github.com/letsrokk/agent-plugins",
+  "license": "MIT",
+  "keywords": ["codex", "friction", "feedback", "developer-tools"]
+}

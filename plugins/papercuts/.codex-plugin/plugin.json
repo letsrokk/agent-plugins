@@ -1,0 +1,42 @@
+{
+  "name": "papercuts",
+  "version": "0.1.0",
+  "description": "Give Codex a durable complaint journal for workflow friction.",
+  "author": {
+    "name": "Rokk Club",
+    "url": "https://github.com/letsrokk"
+  },
+  "homepage": "https://github.com/letsrokk/agent-plugins",
+  "repository": "https://github.com/letsrokk/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "friction",
+    "feedback",
+    "developer-tools"
+  ],
+  "skills": "./skills/",
+  "mcpServers": {
+    "papercuts": {
+      "command": "./scripts/launch-mcp",
+      "cwd": "."
+    }
+  },
+  "interface": {
+    "displayName": "Papercuts",
+    "shortDescription": "Track and resolve workflow friction",
+    "longDescription": "Record material engineering friction in a durable local journal, then review, resolve, reopen, and explicitly prune it.",
+    "developerName": "Rokk Club",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/letsrokk/agent-plugins",
+    "defaultPrompt": [
+      "Review the open papercuts for this project.",
+      "Preview stale papercuts that may be pruned."
+    ]
+  }
+}

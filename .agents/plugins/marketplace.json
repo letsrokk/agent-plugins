@@ -27,6 +27,18 @@
         "authentication": "ON_INSTALL"
       },
       "category": "Education"
+    },
+    {
+      "name": "papercuts",
+      "source": {
+        "source": "local",
+        "path": "./plugins/papercuts"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
     }
   ]
 }
