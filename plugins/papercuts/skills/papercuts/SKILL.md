@@ -1,6 +1,6 @@
 ---
 name: papercuts
-description: Use during any engineering task when Codex encounters material friction in tools, documentation, configuration, repository instructions, or repeated recovery work. Search and record the friction without interrupting the active task. Also use when the user asks to review, vote on, resolve, reopen, inspect, or prune papercuts.
+description: Use during any engineering task when the agent encounters material friction in tools, documentation, configuration, repository instructions, or repeated recovery work. Also use when the user asks to review, vote on, resolve, reopen, inspect, or prune papercuts.
 ---
 
 Record material workflow friction in the active project's Papercuts journal. For every MCP call, pass the active workspace's absolute root as `project_root`; never use the plugin installation directory, an inferred working directory, or an arbitrary journal path.

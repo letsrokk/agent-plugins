@@ -6,8 +6,14 @@ import sys
 from pathlib import Path
 from typing import Any, Mapping, Sequence, TextIO
 
-from papercuts.models import PapercutsError, PrunePolicy, error_envelope, success_envelope
-from papercuts.paths import resolve_storage, set_scope
+from papercuts.models import (
+    Client,
+    PapercutsError,
+    PrunePolicy,
+    error_envelope,
+    success_envelope,
+)
+from papercuts.paths import resolve_client, resolve_storage, set_scope
 from papercuts.service import PapercutsService
 
 
@@ -19,6 +25,7 @@ class _Parser(argparse.ArgumentParser):
 def _parser() -> _Parser:
     parser = _Parser(prog="papercuts")
     parser.add_argument("--file")
+    parser.add_argument("--client", choices=("codex", "claude"))
     commands = parser.add_subparsers(dest="command", required=True)
 
     lodge = commands.add_parser("lodge")
@@ -101,13 +108,15 @@ def main(
     current_directory = cwd or Path.cwd()
     try:
         arguments = _parser().parse_args(argv)
+        client = resolve_client(arguments.client, environ)
         storage = resolve_storage(
             current_directory,
+            client=client,
             explicit_file=Path(arguments.file) if arguments.file else None,
             environ=environ,
         )
         service = PapercutsService(storage)
-        data = _dispatch(arguments, service, current_directory)
+        data = _dispatch(arguments, service, current_directory, client)
         if arguments.command == "list" and arguments.format == "md":
             output.write(data + "\n")
         else:
@@ -122,6 +131,7 @@ def _dispatch(
     arguments: argparse.Namespace,
     service: PapercutsService,
     cwd: Path,
+    client: Client,
 ) -> Any:
     if arguments.command == "lodge":
         return service.lodge(
@@ -168,7 +178,7 @@ def _dispatch(
         return service.apply_prune(policy, arguments.plan_id)
     if arguments.config_command == "show":
         return service.inspect_storage()
-    path = set_scope(cwd, arguments.scope, arguments.level)
+    path = set_scope(cwd, arguments.scope, arguments.level, client=client)
     return {"scope": arguments.scope, "level": arguments.level, "path": str(path)}
 
 

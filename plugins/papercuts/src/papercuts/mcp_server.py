@@ -3,12 +3,16 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable, Literal, Mapping
 
-from papercuts.models import PapercutsError, PrunePolicy
-from papercuts.paths import discover_project, resolve_storage
+from papercuts.models import Client, PapercutsError, PrunePolicy
+from papercuts.paths import discover_project, resolve_client, resolve_storage
 from papercuts.service import PapercutsService
 
 
-def service_for_project(project_root: str) -> PapercutsService:
+def service_for_project(
+    project_root: str,
+    *,
+    client: Client = "codex",
+) -> PapercutsService:
     root = Path(project_root)
     if not root.is_absolute() or not root.is_dir():
         raise PapercutsError(
@@ -20,6 +24,7 @@ def service_for_project(project_root: str) -> PapercutsService:
     return PapercutsService(
         resolve_storage(
             discovered_root,
+            client=client,
             project_root=discovered_root,
             remote_url=remote_url,
         )
@@ -62,9 +67,15 @@ def _invoke_project_tool(
     project_root: str,
     name: str,
     arguments: Mapping[str, Any],
+    *,
+    client: Client = "codex",
 ) -> dict[str, Any]:
     try:
-        return invoke_tool(service_for_project(project_root), name, arguments)
+        return invoke_tool(
+            service_for_project(project_root, client=client),
+            name,
+            arguments,
+        )
     except PapercutsError as error:
         return _error_result(error)
 
@@ -196,7 +207,7 @@ def _prune_policy(arguments: Mapping[str, Any]) -> PrunePolicy:
     )
 
 
-def create_server():
+def create_server(*, client: Client = "codex"):
     from mcp.server import MCPServer
     from mcp.types import ToolAnnotations
 
@@ -240,6 +251,7 @@ def create_server():
                 "stderr": stderr,
                 "evidence": evidence,
             },
+            client=client,
         )
 
     @server.tool(annotations=read_only)
@@ -268,6 +280,7 @@ def create_server():
                 "all_projects": all_projects,
                 "limit": limit,
             },
+            client=client,
         )
 
     @server.tool(annotations=read_only)
@@ -281,6 +294,7 @@ def create_server():
             project_root,
             "get_complaint",
             {"complaint_id": complaint_id, "all_projects": all_projects},
+            client=client,
         )
 
     @server.tool(annotations=mutation)
@@ -303,6 +317,7 @@ def create_server():
                 "exit_status": exit_status,
                 "stderr": stderr,
             },
+            client=client,
         )
 
     @server.tool(annotations=mutation)
@@ -316,6 +331,7 @@ def create_server():
             project_root,
             "resolve_complaint",
             {"complaint_id": complaint_id, "note": note},
+            client=client,
         )
 
     @server.tool(annotations=mutation)
@@ -329,6 +345,7 @@ def create_server():
             project_root,
             "reopen_complaint",
             {"complaint_id": complaint_id, "note": note},
+            client=client,
         )
 
     @server.tool(annotations=read_only)
@@ -338,6 +355,7 @@ def create_server():
             project_root,
             "inspect_storage",
             {},
+            client=client,
         )
 
     @server.tool(annotations=read_only)
@@ -358,6 +376,7 @@ def create_server():
                 "open_inactive_for_days": open_inactive_for_days,
                 "all_projects": all_projects,
             },
+            client=client,
         )
 
     @server.tool(
@@ -387,13 +406,14 @@ def create_server():
                 "open_inactive_for_days": open_inactive_for_days,
                 "all_projects": all_projects,
             },
+            client=client,
         )
 
     return server
 
 
 def main() -> None:
-    create_server().run()
+    create_server(client=resolve_client(None)).run()
 
 
 if __name__ == "__main__":

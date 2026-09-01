@@ -13,7 +13,6 @@ from papercuts.models import (
     Severity,
     Status,
     StorageContext,
-    filesystem_error,
     sanitize_context,
     sanitize_user_string,
 )
@@ -28,12 +27,12 @@ class PapercutsService:
         self,
         storage: StorageContext,
         *,
-        agent: str = "codex",
+        agent: str | None = None,
         now: Callable[[], datetime] | None = None,
     ) -> None:
         self.storage = storage
         self.store = JournalStore(storage.journal_path)
-        self.agent = agent
+        self.agent = storage.client if agent is None else agent
         self.now = now or (lambda: datetime.now(timezone.utc))
 
     def lodge(
@@ -249,27 +248,11 @@ class PapercutsService:
                 for event in events
                 if _event_complaint_id(event) not in candidate_ids
             ]
-            try:
-                before_bytes = self.storage.journal_path.stat().st_size
-            except OSError as error:
-                raise filesystem_error(
-                    "inspect journal",
-                    self.storage.journal_path,
-                    error,
-                ) from error
-            backup_path = self.store.replace_locked(
+            backup_path, before_bytes, after_bytes = self.store.replace_locked(
                 surviving_events,
                 backup_dir=self._backup_dir(),
                 timestamp=moment,
             )
-            try:
-                after_bytes = self.storage.journal_path.stat().st_size
-            except OSError as error:
-                raise filesystem_error(
-                    "inspect journal",
-                    self.storage.journal_path,
-                    error,
-                ) from error
             return {
                 "changed": True,
                 "plan_id": plan_id,
@@ -346,7 +329,11 @@ class PapercutsService:
 
     def _backup_dir(self) -> Path:
         if self.storage.scope == "project":
-            return self.storage.project_root / ".codex/papercuts.backups"
+            return (
+                self.storage.project_root
+                / f".{self.storage.client}"
+                / "papercuts.backups"
+            )
         return self.storage.journal_path.parent / "papercuts.backups"
 
     def _change_status(

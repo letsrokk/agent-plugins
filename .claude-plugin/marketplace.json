@@ -4,5 +4,10 @@
   "owner": {
     "name": "Rokk Club"
   },
-  "plugins": []
+  "plugins": [
+    {
+      "name": "papercuts",
+      "source": "./plugins/papercuts"
+    }
+  ]
 }

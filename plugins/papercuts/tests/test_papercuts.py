@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import io
+import inspect
 import json
+import os
 import socket
 import sys
 import tempfile
+import types
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,8 +16,9 @@ from unittest.mock import patch
 PLUGIN_SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(PLUGIN_SRC))
 
-from papercuts.models import PapercutsError, PrunePolicy, sanitize_context
 from papercuts.cli import main as cli_main
+import papercuts.paths as papercuts_paths
+from papercuts.models import PapercutsError, PrunePolicy, sanitize_context
 from papercuts.paths import discover_project, project_ref, resolve_storage, set_scope
 from papercuts.service import PapercutsService
 from papercuts.store import JournalStore
@@ -49,6 +53,22 @@ class PapercutsPluginTests(unittest.TestCase):
             )
             self.assertEqual(storage.scope, "project")
             self.assertEqual(storage.journal_path, root / ".codex/papercuts.jsonl")
+            self.assertTrue(hasattr(storage, "client"))
+            self.assertEqual(storage.client, "codex")
+
+            claude_storage = resolve_storage(
+                root,
+                client="claude",
+                home=home,
+                project_root=root,
+                remote_url="git@github.com:letsrokk/agent-plugins.git",
+            )
+            self.assertEqual(claude_storage.scope, "project")
+            self.assertEqual(
+                claude_storage.journal_path,
+                root / ".claude/papercuts.jsonl",
+            )
+            self.assertEqual(claude_storage.client, "claude")
 
             config_path = set_scope(root, "user", "project", home=home)
             self.assertEqual(config_path, root / ".codex/papercuts.config.json")
@@ -61,11 +81,73 @@ class PapercutsPluginTests(unittest.TestCase):
             self.assertEqual(storage.scope, "user")
             self.assertEqual(storage.journal_path, home / ".codex/papercuts.jsonl")
 
+            claude_after_codex_config = resolve_storage(
+                root,
+                client="claude",
+                home=home,
+                project_root=root,
+                remote_url="git@github.com:letsrokk/agent-plugins.git",
+            )
+            self.assertEqual(claude_after_codex_config.scope, "project")
+            self.assertEqual(
+                claude_after_codex_config.journal_path,
+                root / ".claude/papercuts.jsonl",
+            )
+
+            claude_config_path = set_scope(
+                root,
+                "user",
+                "project",
+                client="claude",
+                home=home,
+            )
+            self.assertEqual(
+                claude_config_path,
+                root / ".claude/papercuts.config.json",
+            )
+            claude_storage = resolve_storage(
+                root,
+                client="claude",
+                home=home,
+                project_root=root,
+                remote_url="git@github.com:letsrokk/agent-plugins.git",
+            )
+            self.assertEqual(claude_storage.scope, "user")
+            self.assertEqual(
+                claude_storage.journal_path,
+                home / ".claude/papercuts.jsonl",
+            )
+            self.assertTrue(hasattr(papercuts_paths, "resolve_client"))
+            resolve_client = papercuts_paths.resolve_client
+            self.assertEqual(resolve_client(None, {}), "codex")
+            self.assertEqual(
+                resolve_client(None, {"PAPERCUTS_CLIENT": "claude"}),
+                "claude",
+            )
+
             times = iter(
                 datetime(2026, 8, 31, hour, tzinfo=timezone.utc)
                 for hour in range(10, 20)
             )
             service = PapercutsService(storage, now=lambda: next(times))
+
+            claude_service = PapercutsService(
+                claude_storage,
+                now=lambda: datetime(2026, 8, 31, 9, tzinfo=timezone.utc),
+            )
+            claude_lodged = claude_service.lodge(
+                "Validator hides the invalid manifest path",
+                severity="major",
+                tags=["tooling", "validator"],
+            )
+            self.assertFalse(storage.journal_path.exists())
+            self.assertTrue(claude_storage.journal_path.exists())
+            claude_event = json.loads(
+                claude_storage.journal_path.read_text(encoding="utf-8").splitlines()[0]
+            )
+            self.assertEqual(claude_event["contract"], 1)
+            self.assertEqual(claude_event["kind"], "complaint")
+            self.assertEqual(claude_event["agent"], "claude")
 
             lodged = service.lodge(
                 "Validator hides the invalid manifest path",
@@ -87,6 +169,8 @@ class PapercutsPluginTests(unittest.TestCase):
                 },
             )
             complaint_id = lodged["record"]["id"]
+            self.assertEqual(complaint_id, claude_lodged["record"]["id"])
+            self.assertNotEqual(storage.journal_path, claude_storage.journal_path)
             self.assertTrue(lodged["changed"])
             self.assertEqual(lodged["record"]["encounter_count"], 1)
             sanitized_context = lodged["record"]["context"]
@@ -255,6 +339,114 @@ class PapercutsPluginTests(unittest.TestCase):
             error_payload = json.loads(error_err.getvalue())
             self.assertFalse(error_payload["ok"])
             self.assertEqual(error_payload["error"]["code"], "not_found")
+
+            client_out = io.StringIO()
+            client_err = io.StringIO()
+            client_status = cli_main(
+                ["--client", "claude", "config", "show"],
+                cwd=root,
+                environ={"PAPERCUTS_CLIENT": "codex"},
+                stdout=client_out,
+                stderr=client_err,
+            )
+            self.assertEqual(client_status, 0)
+            self.assertEqual(client_err.getvalue(), "")
+            self.assertEqual(
+                json.loads(client_out.getvalue())["data"]["path"],
+                str(Path.home() / ".claude/papercuts.jsonl"),
+            )
+
+            environment_out = io.StringIO()
+            environment_err = io.StringIO()
+            environment_status = cli_main(
+                ["config", "show"],
+                cwd=root,
+                environ={"PAPERCUTS_CLIENT": "claude"},
+                stdout=environment_out,
+                stderr=environment_err,
+            )
+            self.assertEqual(environment_status, 0)
+            self.assertEqual(environment_err.getvalue(), "")
+            self.assertEqual(
+                json.loads(environment_out.getvalue())["data"]["path"],
+                str(Path.home() / ".claude/papercuts.jsonl"),
+            )
+
+            invalid_flag_status = cli_main(
+                ["--client", "other", "config", "show"],
+                cwd=root,
+                environ={},
+                stdout=io.StringIO(),
+                stderr=io.StringIO(),
+            )
+            self.assertEqual(invalid_flag_status, 2)
+
+            invalid_environment_out = io.StringIO()
+            invalid_environment_err = io.StringIO()
+            invalid_environment_status = cli_main(
+                ["config", "show"],
+                cwd=root,
+                environ={"PAPERCUTS_CLIENT": "other"},
+                stdout=invalid_environment_out,
+                stderr=invalid_environment_err,
+            )
+            self.assertEqual(invalid_environment_status, 78)
+            self.assertEqual(invalid_environment_out.getvalue(), "")
+            self.assertEqual(
+                json.loads(invalid_environment_err.getvalue())["error"]["code"],
+                "invalid_config",
+            )
+
+            class FakeAnnotations:
+                def __init__(self, **values):
+                    self.values = values
+
+            class FakeServer:
+                def __init__(self, name, *, instructions):
+                    self.name = name
+                    self.instructions = instructions
+                    self.schemas = {}
+                    self.functions = {}
+
+                def tool(self, *, annotations):
+                    def register(function):
+                        self.schemas[function.__name__] = inspect.signature(function)
+                        self.functions[function.__name__] = function
+                        return function
+
+                    return register
+
+            fake_server_module = types.ModuleType("mcp.server")
+            fake_server_module.MCPServer = FakeServer
+            fake_types_module = types.ModuleType("mcp.types")
+            fake_types_module.ToolAnnotations = FakeAnnotations
+            with patch.dict(
+                sys.modules,
+                {"mcp.server": fake_server_module, "mcp.types": fake_types_module},
+            ):
+                from papercuts.mcp_server import create_server
+
+                codex_server = create_server(client="codex")
+                claude_server = create_server(client="claude")
+            self.assertEqual(len(codex_server.schemas), 9)
+            self.assertEqual(codex_server.schemas, claude_server.schemas)
+            for signature in codex_server.schemas.values():
+                project_root_parameter = signature.parameters["project_root"]
+                self.assertIs(
+                    project_root_parameter.default,
+                    inspect.Parameter.empty,
+                )
+            with patch(
+                "papercuts.mcp_server._invoke_project_tool",
+                return_value={"ok": True},
+            ) as invoke_project_tool:
+                claude_server.functions["inspect_storage"](str(root))
+            invoke_project_tool.assert_called_once_with(
+                str(root),
+                "inspect_storage",
+                {},
+                client="claude",
+            )
 
             health = service.doctor()
             self.assertTrue(health["healthy"])
@@ -607,45 +799,91 @@ class PapercutsPluginTests(unittest.TestCase):
                 now=lambda: datetime(2026, 9, 1, tzinfo=timezone.utc),
             )
             fresh_preview = fresh_service.preview_prune(PrunePolicy())
-            before_permission_failure = storage.journal_path.read_bytes()
+            before_fresh_apply = storage.journal_path.read_bytes()
             original_stat = Path.stat
+            journal_stat_calls = 0
 
-            def deny_journal_metadata(path: Path, *args, **kwargs):
+            def deny_post_commit_metadata(path: Path, *args, **kwargs):
+                nonlocal journal_stat_calls
                 if path == storage.journal_path:
-                    raise PermissionError("journal metadata denied")
+                    journal_stat_calls += 1
+                    if journal_stat_calls == 2:
+                        raise PermissionError("post-commit metadata denied")
                 return original_stat(path, *args, **kwargs)
 
             with patch(
                 "papercuts.service.Path.stat",
                 autospec=True,
-                side_effect=deny_journal_metadata,
+                side_effect=deny_post_commit_metadata,
             ):
-                with self.assertRaises(PapercutsError) as rejected_prune_stat:
-                    fresh_service.apply_prune(
+                try:
+                    applied = fresh_service.apply_prune(
                         PrunePolicy(),
                         fresh_preview["plan_id"],
                     )
-            self.assertEqual(
-                rejected_prune_stat.exception.code,
-                "permission_denied",
-            )
-            self.assertEqual(
-                storage.journal_path.read_bytes(),
-                before_permission_failure,
-            )
-            self.assertFalse(backup_dir.exists())
-
-            before_fresh_apply = storage.journal_path.read_bytes()
-            applied = fresh_service.apply_prune(
-                PrunePolicy(),
-                fresh_preview["plan_id"],
-            )
+                except PapercutsError as error:
+                    self.fail(f"committed prune reported an error: {error.code}")
             backup_path = Path(applied["backup"])
             self.assertTrue(applied["changed"])
             self.assertEqual(applied["removed_complaints"], 1)
             self.assertEqual(backup_path.read_bytes(), before_fresh_apply)
+            self.assertEqual(
+                applied["reclaimed_bytes"],
+                len(before_fresh_apply) - len(storage.journal_path.read_bytes()),
+            )
             self.assertNotIn(old, storage.journal_path.read_text(encoding="utf-8"))
             self.assertIn(
                 "New complaint after preview",
                 storage.journal_path.read_text(encoding="utf-8"),
             )
+
+            race_root = root / "race-root"
+            original_parent = race_root / "intermediate"
+            redirected_parent = race_root / "redirected"
+            detached_parent = race_root / "detached"
+            (original_parent / "nested").mkdir(parents=True)
+            (redirected_parent / "nested").mkdir(parents=True)
+            original_journal = original_parent / "nested/papercuts.jsonl"
+            redirected_journal = redirected_parent / "nested/papercuts.jsonl"
+            race_store = JournalStore(original_journal)
+            race_event = json.loads(
+                storage.journal_path.read_text(encoding="utf-8").splitlines()[0]
+            )
+            original_open = os.open
+            swapped = False
+
+            def replace_intermediate_during_open(path, flags, mode=0o777, *, dir_fd=None):
+                nonlocal swapped
+                if not swapped and dir_fd is not None and path == "intermediate":
+                    descriptor = original_open(path, flags, mode, dir_fd=dir_fd)
+                    original_parent.rename(detached_parent)
+                    original_parent.symlink_to(redirected_parent, target_is_directory=True)
+                    swapped = True
+                    return descriptor
+                if not swapped and Path(path) == original_journal:
+                    original_parent.rename(detached_parent)
+                    original_parent.symlink_to(redirected_parent, target_is_directory=True)
+                    swapped = True
+                if dir_fd is None:
+                    return original_open(path, flags, mode)
+                return original_open(path, flags, mode, dir_fd=dir_fd)
+
+            with patch(
+                "papercuts.store.os.open",
+                side_effect=replace_intermediate_during_open,
+            ):
+                race_store.append_events_locked([race_event])
+            self.assertTrue(swapped)
+            self.assertFalse(redirected_journal.exists())
+            self.assertTrue((detached_parent / "nested/papercuts.jsonl").exists())
+
+            release_store = JournalStore(root / "release-failure.jsonl")
+            with patch.object(
+                release_store,
+                "_release_lock",
+                side_effect=RuntimeError("release failed"),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "release failed"):
+                    with release_store.mutation():
+                        pass
+            self.assertEqual(release_store.read_events(), [])

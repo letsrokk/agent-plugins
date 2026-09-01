@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Literal, Mapping
 
 Scope = Literal["project", "user"]
+Client = Literal["codex", "claude"]
 Severity = Literal["minor", "major", "blocker"]
 Status = Literal["open", "resolved"]
 
@@ -74,6 +75,7 @@ class StorageContext:
     journal_path: Path
     scope: Scope
     config_source: Path | None
+    client: Client
 
 
 @dataclass(frozen=True)

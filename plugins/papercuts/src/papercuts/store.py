@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+import errno
 import hashlib
 import json
 import os
 import random
 import socket
 import stat
-import tempfile
 import time
 import uuid
 from contextlib import contextmanager
@@ -25,6 +25,7 @@ class JournalStore:
     def __init__(self, path: Path) -> None:
         self.path = path
         self.lock_path = Path(f"{path}.lock")
+        self._parent_descriptor: int | None = None
 
     def read_events(self) -> list[dict[str, Any]]:
         """Parse complete UTF-8 JSON object lines and reject malformed interiors."""
@@ -34,25 +35,33 @@ class JournalStore:
     @contextmanager
     def mutation(self) -> Iterator[list[dict[str, Any]]]:
         """Acquire the adjacent lock directory, read current events, and release safely."""
-        self._reject_symlinks()
         try:
-            self.path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+            with _open_parent_directory(self.path, create=True) as parent_descriptor:
+                self._parent_descriptor = parent_descriptor
+                token: str | None = None
+                try:
+                    token = self._acquire_lock()
+                    events, incomplete_tail = self._read_events_and_tail()
+                    if incomplete_tail:
+                        raise PapercutsError(
+                            "malformed_journal",
+                            f"Journal has an incomplete final record: {self.path}",
+                            exit_status=65,
+                            suggested_fix=(
+                                "Run doctor --repair-tail before mutating the journal."
+                            ),
+                        )
+                    yield events
+                finally:
+                    try:
+                        if token is not None:
+                            self._release_lock(token)
+                    finally:
+                        self._parent_descriptor = None
+        except PapercutsError:
+            raise
         except OSError as error:
             raise _io_error("create journal directory", self.path.parent, error) from error
-
-        token = self._acquire_lock()
-        try:
-            events, incomplete_tail = self._read_events_and_tail()
-            if incomplete_tail:
-                raise PapercutsError(
-                    "malformed_journal",
-                    f"Journal has an incomplete final record: {self.path}",
-                    exit_status=65,
-                    suggested_fix="Run doctor --repair-tail before mutating the journal.",
-                )
-            yield events
-        finally:
-            self._release_lock(token)
 
     def append_events_locked(self, events: Sequence[dict[str, Any]]) -> None:
         """Append complete compact JSON records, flush, and fsync before return."""
@@ -60,15 +69,17 @@ class JournalStore:
             return
         records = _serialize_events(events, self.path)
         try:
-            descriptor = _open_regular_file(
-                self.path,
-                os.O_WRONLY | os.O_APPEND,
-                create=True,
-            )
-            with os.fdopen(descriptor, "ab") as journal:
-                journal.write(records)
-                journal.flush()
-                os.fsync(journal.fileno())
+            with self._parent(create=True) as parent_descriptor:
+                descriptor = _open_regular_file_at(
+                    parent_descriptor,
+                    self.path,
+                    os.O_WRONLY | os.O_APPEND,
+                    create=True,
+                )
+                with os.fdopen(descriptor, "ab") as journal:
+                    journal.write(records)
+                    journal.flush()
+                    os.fsync(journal.fileno())
         except OSError as error:
             raise _io_error("append journal", self.path, error) from error
 
@@ -95,41 +106,46 @@ class JournalStore:
                 repaired=False,
             )
 
-        self._reject_symlinks()
         try:
-            self.path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-        except OSError as error:
-            raise _io_error("create journal directory", self.path.parent, error) from error
-        token = self._acquire_lock()
-        try:
-            data = self._read_bytes()
-            events, incomplete_tail = self._parse_events(data)
-            _fold_events(events, self.path)
-            repaired = False
-            if incomplete_tail:
-                complete_length = data.rfind(b"\n") + 1
+            with _open_parent_directory(self.path, create=True) as parent_descriptor:
+                self._parent_descriptor = parent_descriptor
+                token: str | None = None
                 try:
-                    descriptor = _open_regular_file(
-                        self.path,
-                        os.O_WRONLY,
+                    token = self._acquire_lock()
+                    data = self._read_bytes()
+                    events, incomplete_tail = self._parse_events(data)
+                    _fold_events(events, self.path)
+                    repaired = False
+                    if incomplete_tail:
+                        complete_length = data.rfind(b"\n") + 1
+                        descriptor = _open_regular_file_at(
+                            parent_descriptor,
+                            self.path,
+                            os.O_WRONLY,
+                        )
+                        try:
+                            os.ftruncate(descriptor, complete_length)
+                            os.fsync(descriptor)
+                        finally:
+                            os.close(descriptor)
+                        data = data[:complete_length]
+                        repaired = True
+                    return _health(
+                        data=data,
+                        events=events,
+                        incomplete_tail=False,
+                        repaired=repaired,
                     )
+                finally:
                     try:
-                        os.ftruncate(descriptor, complete_length)
-                        os.fsync(descriptor)
+                        if token is not None:
+                            self._release_lock(token)
                     finally:
-                        os.close(descriptor)
-                except OSError as error:
-                    raise _io_error("repair journal tail", self.path, error) from error
-                data = data[:complete_length]
-                repaired = True
-            return _health(
-                data=data,
-                events=events,
-                incomplete_tail=False,
-                repaired=repaired,
-            )
-        finally:
-            self._release_lock(token)
+                        self._parent_descriptor = None
+        except PapercutsError:
+            raise
+        except OSError as error:
+            raise _io_error("repair journal tail", self.path, error) from error
 
     def replace_locked(
         self,
@@ -137,7 +153,7 @@ class JournalStore:
         *,
         backup_dir: Path,
         timestamp: datetime,
-    ) -> Path:
+    ) -> tuple[Path, int, int]:
         """Write backup and fsynced temporary journal, then atomically replace it."""
         if timestamp.tzinfo is None:
             raise PapercutsError(
@@ -145,70 +161,80 @@ class JournalStore:
                 "backup timestamp must be timezone-aware",
                 exit_status=65,
             )
-        self._reject_symlinks()
-        _reject_path_symlinks(backup_dir)
         replacement = _serialize_events(surviving_events, self.path)
         original = self._read_bytes()
-        try:
-            backup_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
-        except OSError as error:
-            raise _io_error("create backup directory", backup_dir, error) from error
-        _reject_path_symlinks(backup_dir)
 
         suffix = timestamp.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
         backup_path = backup_dir / f"papercuts-{suffix}.jsonl"
         try:
-            descriptor = _open_regular_file(
-                backup_path,
-                os.O_WRONLY,
-                create=True,
-                exclusive=True,
-            )
-            with os.fdopen(descriptor, "wb") as backup:
-                backup.write(original)
-                backup.flush()
-                os.fsync(backup.fileno())
-            _fsync_directory(backup_dir)
+            with _open_parent_directory(backup_path, create=True) as backup_parent:
+                descriptor = _open_regular_file_at(
+                    backup_parent,
+                    backup_path,
+                    os.O_WRONLY,
+                    create=True,
+                    exclusive=True,
+                )
+                with os.fdopen(descriptor, "wb") as backup:
+                    backup.write(original)
+                    backup.flush()
+                    os.fsync(backup.fileno())
+                os.fsync(backup_parent)
         except OSError as error:
             raise _io_error("write journal backup", backup_path, error) from error
 
-        temporary_path: Path | None = None
+        temporary_name: str | None = None
         try:
-            descriptor, temporary_name = tempfile.mkstemp(
-                prefix=".papercuts-", suffix=".tmp", dir=self.path.parent
-            )
-            temporary_path = Path(temporary_name)
-            with os.fdopen(descriptor, "wb") as temporary:
-                temporary.write(replacement)
-                temporary.flush()
-                os.fsync(temporary.fileno())
-            os.replace(temporary_path, self.path)
-            temporary_path = None
-            _fsync_directory(self.path.parent)
+            with self._parent(create=True) as parent_descriptor:
+                try:
+                    temporary_name = f".papercuts-{uuid.uuid4().hex}.tmp"
+                    descriptor = os.open(
+                        temporary_name,
+                        os.O_WRONLY
+                        | os.O_CREAT
+                        | os.O_EXCL
+                        | getattr(os, "O_NOFOLLOW", 0),
+                        0o600,
+                        dir_fd=parent_descriptor,
+                    )
+                    with os.fdopen(descriptor, "wb") as temporary:
+                        temporary.write(replacement)
+                        temporary.flush()
+                        os.fsync(temporary.fileno())
+                    os.replace(
+                        temporary_name,
+                        self.path.name,
+                        src_dir_fd=parent_descriptor,
+                        dst_dir_fd=parent_descriptor,
+                    )
+                    temporary_name = None
+                    os.fsync(parent_descriptor)
+                finally:
+                    if temporary_name is not None:
+                        try:
+                            os.unlink(temporary_name, dir_fd=parent_descriptor)
+                        except OSError:
+                            pass
         except OSError as error:
             raise _io_error("replace journal", self.path, error) from error
-        finally:
-            if temporary_path is not None:
-                try:
-                    temporary_path.unlink()
-                except OSError:
-                    pass
-        return backup_path
+        return backup_path, len(original), len(replacement)
 
     def _read_events_and_tail(self) -> tuple[list[dict[str, Any]], bool]:
         return self._parse_events(self._read_bytes())
 
     def _read_bytes(self) -> bytes:
         try:
-            descriptor = _open_regular_file(
-                self.path,
-                os.O_RDONLY,
-                missing_ok=True,
-            )
-            if descriptor is None:
-                return b""
-            with os.fdopen(descriptor, "rb") as journal:
-                return journal.read()
+            with self._parent(create=False) as parent_descriptor:
+                descriptor = _open_regular_file_at(
+                    parent_descriptor,
+                    self.path,
+                    os.O_RDONLY,
+                    missing_ok=True,
+                )
+                if descriptor is None:
+                    return b""
+                with os.fdopen(descriptor, "rb") as journal:
+                    return journal.read()
         except FileNotFoundError:
             return b""
         except PapercutsError:
@@ -238,7 +264,11 @@ class JournalStore:
         deadline = time.monotonic() + _LOCK_TIMEOUT_SECONDS
         while True:
             try:
-                self.lock_path.mkdir()
+                os.mkdir(
+                    self.lock_path.name,
+                    mode=0o700,
+                    dir_fd=self._required_parent_descriptor(),
+                )
             except FileExistsError:
                 self._recover_stale_lock()
                 remaining = deadline - time.monotonic()
@@ -350,8 +380,13 @@ class JournalStore:
         return metadata if isinstance(metadata, dict) else None
 
     def _open_lock_directory(self) -> int | None:
+        parent_descriptor = self._required_parent_descriptor()
         try:
-            expected = os.stat(self.lock_path, follow_symlinks=False)
+            expected = os.stat(
+                self.lock_path.name,
+                dir_fd=parent_descriptor,
+                follow_symlinks=False,
+            )
         except FileNotFoundError:
             return None
         except OSError as error:
@@ -362,12 +397,20 @@ class JournalStore:
         flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
         flags |= getattr(os, "O_NOFOLLOW", 0)
         try:
-            descriptor = os.open(self.lock_path, flags)
+            descriptor = os.open(
+                self.lock_path.name,
+                flags,
+                dir_fd=parent_descriptor,
+            )
         except FileNotFoundError:
             return None
         except OSError as error:
             try:
-                current = os.stat(self.lock_path, follow_symlinks=False)
+                current = os.stat(
+                    self.lock_path.name,
+                    dir_fd=parent_descriptor,
+                    follow_symlinks=False,
+                )
             except FileNotFoundError:
                 return None
             except OSError as stat_error:
@@ -387,7 +430,11 @@ class JournalStore:
     def _remove_lock_directory(self, lock_descriptor: int) -> None:
         opened = os.fstat(lock_descriptor)
         try:
-            current = os.stat(self.lock_path, follow_symlinks=False)
+            current = os.stat(
+                self.lock_path.name,
+                dir_fd=self._required_parent_descriptor(),
+                follow_symlinks=False,
+            )
         except OSError:
             return
         if (
@@ -396,12 +443,25 @@ class JournalStore:
         ):
             return
         try:
-            self.lock_path.rmdir()
+            os.rmdir(
+                self.lock_path.name,
+                dir_fd=self._required_parent_descriptor(),
+            )
         except OSError:
             return
 
-    def _reject_symlinks(self) -> None:
-        _reject_path_symlinks(self.path)
+    @contextmanager
+    def _parent(self, *, create: bool) -> Iterator[int]:
+        if self._parent_descriptor is not None:
+            yield self._parent_descriptor
+            return
+        with _open_parent_directory(self.path, create=create) as descriptor:
+            yield descriptor
+
+    def _required_parent_descriptor(self) -> int:
+        if self._parent_descriptor is None:
+            raise RuntimeError("journal parent descriptor is not active")
+        return self._parent_descriptor
 
 
 def _health(
@@ -438,7 +498,54 @@ def _serialize_events(events: Sequence[dict[str, Any]], path: Path) -> bytes:
     return b"".join(serialized)
 
 
-def _open_regular_file(
+@contextmanager
+def _open_parent_directory(path: Path, *, create: bool) -> Iterator[int]:
+    """Walk to a file's parent using no-follow directory descriptors."""
+    target = _canonicalize_root_alias(path.absolute())
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    flags |= getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(target.anchor, flags)
+    try:
+        for component in target.parent.parts[1:]:
+            try:
+                child = os.open(component, flags, dir_fd=descriptor)
+            except FileNotFoundError:
+                if not create:
+                    raise
+                try:
+                    os.mkdir(component, mode=0o700, dir_fd=descriptor)
+                except FileExistsError:
+                    pass
+                child = os.open(component, flags, dir_fd=descriptor)
+            except OSError as error:
+                if error.errno in {errno.ELOOP, errno.ENOTDIR}:
+                    raise _unsafe_storage_path(target.parent) from error
+                raise
+            os.close(descriptor)
+            descriptor = child
+        yield descriptor
+    finally:
+        os.close(descriptor)
+
+
+def _canonicalize_root_alias(path: Path) -> Path:
+    parts = path.parts
+    if len(parts) < 2:
+        return path
+    first = Path(parts[0]) / parts[1]
+    try:
+        metadata = os.stat(first, follow_symlinks=False)
+    except FileNotFoundError:
+        return path
+    if not stat.S_ISLNK(metadata.st_mode):
+        return path
+    if getattr(metadata, "st_uid", -1) != 0:
+        raise _unsafe_storage_path(first)
+    return Path(os.path.realpath(first), *parts[2:])
+
+
+def _open_regular_file_at(
+    parent_descriptor: int,
     path: Path,
     flags: int,
     *,
@@ -446,82 +553,30 @@ def _open_regular_file(
     exclusive: bool = False,
     missing_ok: bool = False,
 ) -> int | None:
-    """Open one regular file without following its final path component."""
-    for attempt in range(3):
-        _reject_path_symlinks(path)
-        try:
-            expected = os.stat(path, follow_symlinks=False)
-        except FileNotFoundError:
-            expected = None
-        if expected is not None and not stat.S_ISREG(expected.st_mode):
-            raise _unsafe_storage_path(path)
-        if expected is None and not create:
-            if missing_ok:
-                return None
-            raise FileNotFoundError(path)
-
-        open_flags = flags | getattr(os, "O_NOFOLLOW", 0)
-        if create and (exclusive or expected is None):
-            open_flags |= os.O_CREAT | os.O_EXCL
-        try:
-            descriptor = os.open(path, open_flags, 0o600)
-        except FileExistsError:
-            if create and not exclusive and expected is None and attempt < 2:
-                continue
-            raise
-        except FileNotFoundError:
-            if create and expected is not None and attempt < 2:
-                continue
-            if missing_ok:
-                return None
-            raise
-        except OSError:
-            _reject_path_symlinks(path)
-            raise
-
-        try:
-            opened = os.fstat(descriptor)
-            current = os.stat(path, follow_symlinks=False)
-            expected_matches = expected is None or (
-                expected.st_dev,
-                expected.st_ino,
-            ) == (opened.st_dev, opened.st_ino)
-            if (
-                not stat.S_ISREG(opened.st_mode)
-                or not expected_matches
-                or (current.st_dev, current.st_ino)
-                != (opened.st_dev, opened.st_ino)
-            ):
-                raise _unsafe_storage_path(path)
-        except BaseException:
-            os.close(descriptor)
-            raise
-        return descriptor
-    raise _unsafe_storage_path(path)
-
-
-def _reject_path_symlinks(path: Path) -> None:
-    target = path.absolute()
-    parts = target.parts
-    if not parts:
-        return
-    current = Path(parts[0])
-    for index, component in enumerate(parts[1:], start=1):
-        current /= component
-        try:
-            metadata = os.stat(current, follow_symlinks=False)
-        except FileNotFoundError:
-            break
-        except OSError as error:
-            raise _io_error("inspect storage path", current, error) from error
-        if not stat.S_ISLNK(metadata.st_mode):
-            continue
-        # macOS exposes immutable root-owned aliases such as /var and /tmp.
-        # Canonicalize only that filesystem anchor, then reject every descendant link.
-        if index == 1 and getattr(metadata, "st_uid", -1) == 0:
-            current = Path(os.path.realpath(current))
-            continue
-        raise _unsafe_storage_path(current)
+    open_flags = flags | getattr(os, "O_NOFOLLOW", 0)
+    if create:
+        open_flags |= os.O_CREAT
+    if exclusive:
+        open_flags |= os.O_EXCL
+    try:
+        descriptor = os.open(
+            path.name,
+            open_flags,
+            0o600,
+            dir_fd=parent_descriptor,
+        )
+    except FileNotFoundError:
+        if missing_ok:
+            return None
+        raise
+    except OSError as error:
+        if error.errno in {errno.ELOOP, errno.ENOTDIR}:
+            raise _unsafe_storage_path(path) from error
+        raise
+    if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+        os.close(descriptor)
+        raise _unsafe_storage_path(path)
+    return descriptor
 
 
 def _unsafe_storage_path(path: Path) -> PapercutsError:
@@ -530,15 +585,6 @@ def _unsafe_storage_path(path: Path) -> PapercutsError:
         f"Storage path traverses a symbolic link or non-regular file: {path}",
         exit_status=64,
     )
-
-
-def _fsync_directory(path: Path) -> None:
-    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
-    descriptor = os.open(path, flags)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
 
 
 def fold_events(events: Sequence[dict[str, Any]]) -> dict[str, dict[str, Any]]:

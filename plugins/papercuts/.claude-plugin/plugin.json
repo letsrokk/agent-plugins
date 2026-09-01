@@ -1,0 +1,27 @@
+{
+  "name": "papercuts",
+  "version": "0.2.0",
+  "description": "Give Claude Code a durable complaint journal for workflow friction.",
+  "author": {
+    "name": "Rokk Club",
+    "url": "https://github.com/letsrokk"
+  },
+  "homepage": "https://github.com/letsrokk/agent-plugins",
+  "repository": "https://github.com/letsrokk/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "friction",
+    "feedback",
+    "developer-tools"
+  ],
+  "mcpServers": {
+    "papercuts": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/launch-mcp",
+      "cwd": "${CLAUDE_PLUGIN_ROOT}",
+      "env": {
+        "PAPERCUTS_CLIENT": "claude"
+      }
+    }
+  }
+}
