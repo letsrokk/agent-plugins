@@ -228,17 +228,22 @@ def _validate_code_simplifier(root: Path, errors: list[str]) -> None:
         )
 
 
-def _validate_portable_manifest(root: Path, name: str, catalog: Path, errors: list[str]) -> None:
+def _validate_portable_manifest(
+    root: Path, name: str, catalog: Path, errors: list[str]
+) -> dict[str, Any] | None:
     relative_path = Path("plugins") / name / "plugin.json"
     manifest = _load_json(root, relative_path, errors)
     if manifest is None:
         if not (root / relative_path).exists():
             errors[-1] = f"{catalog}: plugin '{name}' is missing portable manifest {relative_path}"
-        return
+        return None
     if manifest.get("$schema") != AGENT_PLUGIN_SCHEMA:
         errors.append(f"{relative_path}: $schema must be {AGENT_PLUGIN_SCHEMA}")
     if manifest.get("name") != name:
         errors.append(f"{relative_path}: name must match catalog entry '{name}'")
+    version = manifest.get("version")
+    if not isinstance(version, str) or not version:
+        errors.append(f"{relative_path}: version must be a non-empty string")
     _validate_manifest_metadata(relative_path, manifest, errors)
     _validate_plugin_components(root, name, errors)
 
@@ -250,6 +255,40 @@ def _validate_portable_manifest(root: Path, name: str, catalog: Path, errors: li
             )
     if name == "code-simplifier":
         _validate_code_simplifier(root, errors)
+    return manifest
+
+
+def _validate_codex_manifest(
+    root: Path, name: str, portable_manifest: dict[str, Any], errors: list[str]
+) -> None:
+    relative_path = Path("plugins") / name / ".codex-plugin/plugin.json"
+    manifest = _load_json(root, relative_path, errors)
+    if manifest is None:
+        if not (root / relative_path).exists():
+            errors[-1] = (
+                f"{CODEX_CATALOG}: plugin '{name}' is missing Codex compatibility manifest "
+                f"{relative_path}"
+            )
+        return
+
+    if manifest.get("name") != name:
+        errors.append(f"{relative_path}: name must match catalog entry '{name}'")
+    portable_version = portable_manifest.get("version")
+    if isinstance(portable_version, str) and portable_version:
+        if manifest.get("version") != portable_version:
+            errors.append(
+                f"{relative_path}: version must match portable manifest '{portable_version}'"
+            )
+
+    skills_directory = root / "plugins" / name / "skills"
+    has_discoverable_skill = skills_directory.is_dir() and any(
+        child.is_dir() and (child / "SKILL.md").is_file() for child in skills_directory.iterdir()
+    )
+    if has_discoverable_skill:
+        if manifest.get("skills") != "./skills/":
+            errors.append(f"{relative_path}: skills must be './skills/'")
+    elif "skills" in manifest:
+        errors.append(f"{relative_path}: skills must be omitted when no skills are present")
 
 
 def _validate_claude_manifest(root: Path, name: str, errors: list[str]) -> None:
@@ -273,6 +312,7 @@ def _validate_plugins(
     source_path: Callable[[dict[str, Any]], object],
     errors: list[str],
     *,
+    require_codex_manifest: bool = False,
     require_claude_manifest: bool = False,
     validate_entry: Callable[[str, dict[str, Any], list[str]], None] | None = None,
 ) -> None:
@@ -308,7 +348,9 @@ def _validate_plugins(
         if not plugin_directory.is_dir():
             errors.append(f"{catalog_path}: plugin '{name}' directory is missing")
             continue
-        _validate_portable_manifest(root, name, catalog_path, errors)
+        portable_manifest = _validate_portable_manifest(root, name, catalog_path, errors)
+        if require_codex_manifest and portable_manifest is not None:
+            _validate_codex_manifest(root, name, portable_manifest, errors)
         if require_claude_manifest:
             _validate_claude_manifest(root, name, errors)
 
@@ -349,6 +391,7 @@ def _validate_codex_catalog(root: Path, errors: list[str]) -> None:
         catalog.get("plugins"),
         _codex_source,
         errors,
+        require_codex_manifest=True,
         validate_entry=_validate_codex_entry,
     )
 

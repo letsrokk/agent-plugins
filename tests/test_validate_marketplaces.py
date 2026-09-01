@@ -63,14 +63,27 @@ class MarketplaceValidationTests(unittest.TestCase):
     def _claude_entry(name: str, path: str | None = None) -> dict[str, object]:
         return {"name": name, "source": path or f"./plugins/{name}"}
 
-    def _write_portable_manifest(self, name: str) -> None:
+    def _write_portable_manifest(self, name: str, *, version: str = "0.1.0") -> None:
         self._write_json(
             f"plugins/{name}/plugin.json",
             {
                 "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
                 "name": name,
+                "version": version,
             },
         )
+
+    def _write_codex_manifest(
+        self,
+        name: str,
+        *,
+        version: str = "0.1.0",
+        skills: bool = True,
+    ) -> None:
+        payload: dict[str, object] = {"name": name, "version": version}
+        if skills:
+            payload["skills"] = "./skills/"
+        self._write_json(f"plugins/{name}/.codex-plugin/plugin.json", payload)
 
     def _write_skill(self, plugin: str, skill: str, *, frontmatter_name: str | None = None) -> None:
         path = self.root / f"plugins/{plugin}/skills/{skill}/SKILL.md"
@@ -97,6 +110,7 @@ class MarketplaceValidationTests(unittest.TestCase):
                 "keywords": ["codex", "code-quality"],
             },
         )
+        self._write_codex_manifest("code-simplifier")
         skill_root = self.root / "plugins/code-simplifier/skills/code-simplifier"
         (skill_root / "agents").mkdir(parents=True, exist_ok=True)
         (skill_root / "SKILL.md").write_text(
@@ -194,6 +208,29 @@ class MarketplaceValidationTests(unittest.TestCase):
         self._write_code_simplifier_package()
 
         self.assertEqual(validate_repository(self.root), [])
+
+    def test_accepts_codex_package_with_matching_compatibility_manifest(self) -> None:
+        self._write_catalogs(codex_plugins=[self._codex_entry("complete")])
+        self._write_portable_manifest("complete")
+        self._write_codex_manifest("complete")
+        self._write_skill("complete", "complete")
+
+        self.assertEqual(validate_repository(self.root), [])
+
+    def test_rejects_inconsistent_codex_compatibility_manifest(self) -> None:
+        self._write_catalogs(codex_plugins=[self._codex_entry("inconsistent")])
+        self._write_portable_manifest("inconsistent", version="1.2.3")
+        self._write_json(
+            "plugins/inconsistent/.codex-plugin/plugin.json",
+            {"name": "other", "version": "1.2.2"},
+        )
+        self._write_skill("inconsistent", "inconsistent")
+
+        errors = validate_repository(self.root)
+
+        self.assertTrue(any("name must match catalog entry 'inconsistent'" in error for error in errors))
+        self.assertTrue(any("version must match portable manifest '1.2.3'" in error for error in errors))
+        self.assertTrue(any("skills must be './skills/'" in error for error in errors))
 
     def test_rejects_unknown_portable_manifest_field(self) -> None:
         self._write_catalogs(codex_plugins=[self._codex_entry("unknown-field")])
