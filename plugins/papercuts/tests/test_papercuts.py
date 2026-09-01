@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import socket
 import sys
 import tempfile
 import unittest
@@ -10,8 +11,10 @@ from pathlib import Path
 PLUGIN_SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(PLUGIN_SRC))
 
+from papercuts.models import PapercutsError
 from papercuts.paths import project_ref, resolve_storage, set_scope
 from papercuts.service import PapercutsService
+from papercuts.store import JournalStore
 
 
 class PapercutsPluginTests(unittest.TestCase):
@@ -97,3 +100,38 @@ class PapercutsPluginTests(unittest.TestCase):
             listed = service.list(query="manifest", tags=["tooling"])
             self.assertEqual([item["id"] for item in listed], [complaint_id])
             self.assertEqual(service.get(complaint_id[:8])["id"], complaint_id)
+
+            journal_before_invalid_event = storage.journal_path.read_bytes()
+            invalid_service = PapercutsService(
+                storage,
+                agent="",
+                now=lambda: datetime(2026, 8, 31, 19, tzinfo=timezone.utc),
+            )
+            with self.assertRaises(PapercutsError):
+                invalid_service.lodge("An invalid agent must not poison the journal")
+            self.assertEqual(
+                storage.journal_path.read_bytes(), journal_before_invalid_event
+            )
+
+            foreign_lock = root / "foreign-lock"
+            foreign_lock.mkdir()
+            foreign_owner = foreign_lock / "owner.json"
+            foreign_owner.write_text(
+                json.dumps(
+                    {
+                        "token": "foreign",
+                        "pid": 2_147_483_647,
+                        "host": socket.gethostname(),
+                        "created_at": "2020-01-01T00:00:00Z",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            unsafe_store = JournalStore(root / "unsafe.jsonl")
+            unsafe_store.lock_path.symlink_to(foreign_lock, target_is_directory=True)
+            with self.assertRaises(PapercutsError) as rejected_lock:
+                with unsafe_store.mutation():
+                    self.fail("symlinked lock was accepted")
+            self.assertEqual(rejected_lock.exception.code, "invalid_input")
+            self.assertTrue(foreign_owner.exists())

@@ -5,6 +5,7 @@ import json
 import os
 import random
 import socket
+import stat
 import time
 import uuid
 from contextlib import contextmanager
@@ -56,18 +57,23 @@ class JournalStore:
         """Append complete compact JSON records, flush, and fsync before return."""
         if not events:
             return
-        records = b"".join(
-            (
-                json.dumps(
+        serialized: list[bytes] = []
+        for index, event in enumerate(events, start=1):
+            _validate_event(event, self.path, index)
+            try:
+                record = json.dumps(
                     event,
+                    allow_nan=False,
                     ensure_ascii=False,
                     separators=(",", ":"),
                     sort_keys=True,
                 )
-                + "\n"
-            ).encode("utf-8")
-            for event in events
-        )
+            except (TypeError, ValueError) as error:
+                raise _malformed(
+                    self.path, index, "event is not JSON serializable"
+                ) from error
+            serialized.append((record + "\n").encode("utf-8"))
+        records = b"".join(serialized)
         try:
             descriptor = os.open(
                 self.path,
@@ -78,7 +84,7 @@ class JournalStore:
                 journal.write(records)
                 journal.flush()
                 os.fsync(journal.fileno())
-        except (OSError, TypeError, ValueError) as error:
+        except OSError as error:
             raise _io_error("append journal", self.path, error) from error
 
     def digest(self) -> str:
@@ -140,11 +146,18 @@ class JournalStore:
                 "host": socket.gethostname(),
                 "created_at": _utc_now(),
             }
+            lock_descriptor = self._open_lock_directory()
+            if lock_descriptor is None:
+                continue
             try:
                 descriptor = os.open(
-                    self._metadata_path(),
-                    os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                    "owner.json",
+                    os.O_WRONLY
+                    | os.O_CREAT
+                    | os.O_EXCL
+                    | getattr(os, "O_NOFOLLOW", 0),
                     0o600,
+                    dir_fd=lock_descriptor,
                 )
                 with os.fdopen(descriptor, "w", encoding="utf-8") as metadata_file:
                     metadata_file.write(
@@ -152,54 +165,126 @@ class JournalStore:
                         + "\n"
                     )
             except OSError as error:
-                try:
-                    self.lock_path.rmdir()
-                except OSError:
-                    pass
+                self._remove_lock_directory(lock_descriptor)
                 raise _io_error("write journal lock", self.lock_path, error) from error
+            finally:
+                os.close(lock_descriptor)
             return token
 
     def _recover_stale_lock(self) -> None:
-        metadata = self._read_lock_metadata()
-        if metadata is None or metadata.get("host") != socket.gethostname():
+        lock_descriptor = self._open_lock_directory()
+        if lock_descriptor is None:
             return
         try:
-            created_at = datetime.fromisoformat(
-                str(metadata["created_at"]).replace("Z", "+00:00")
-            )
-            age = datetime.now(timezone.utc) - created_at.astimezone(timezone.utc)
-            pid = int(metadata["pid"])
-            token = str(metadata["token"])
-        except (KeyError, TypeError, ValueError):
-            return
-        if age.total_seconds() <= _STALE_LOCK_SECONDS or not _process_absent(pid):
-            return
-        self._remove_lock_if_owned(token)
+            metadata = self._read_lock_metadata(lock_descriptor)
+            if metadata is None or metadata.get("host") != socket.gethostname():
+                return
+            try:
+                created_at = datetime.fromisoformat(
+                    str(metadata["created_at"]).replace("Z", "+00:00")
+                )
+                age = datetime.now(timezone.utc) - created_at.astimezone(timezone.utc)
+                pid = int(metadata["pid"])
+                token = str(metadata["token"])
+            except (KeyError, TypeError, ValueError):
+                return
+            if age.total_seconds() <= _STALE_LOCK_SECONDS or not _process_absent(pid):
+                return
+            self._remove_lock_if_owned(token, lock_descriptor)
+        finally:
+            os.close(lock_descriptor)
 
     def _release_lock(self, token: str) -> None:
         self._remove_lock_if_owned(token)
 
-    def _remove_lock_if_owned(self, token: str) -> None:
-        metadata = self._read_lock_metadata()
-        if metadata is None or metadata.get("token") != token:
+    def _remove_lock_if_owned(
+        self, token: str, lock_descriptor: int | None = None
+    ) -> None:
+        opened_here = lock_descriptor is None
+        if lock_descriptor is None:
+            lock_descriptor = self._open_lock_directory()
+        if lock_descriptor is None:
             return
         try:
-            self._metadata_path().unlink()
-            self.lock_path.rmdir()
-        except FileNotFoundError:
-            return
-        except OSError:
-            return
+            metadata = self._read_lock_metadata(lock_descriptor)
+            if metadata is None or metadata.get("token") != token:
+                return
+            try:
+                os.unlink("owner.json", dir_fd=lock_descriptor)
+            except FileNotFoundError:
+                return
+            except OSError:
+                return
+            self._remove_lock_directory(lock_descriptor)
+        finally:
+            if opened_here:
+                os.close(lock_descriptor)
 
-    def _read_lock_metadata(self) -> dict[str, Any] | None:
+    def _read_lock_metadata(self, lock_descriptor: int) -> dict[str, Any] | None:
         try:
-            metadata = json.loads(self._metadata_path().read_text(encoding="utf-8"))
+            descriptor = os.open(
+                "owner.json",
+                os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0),
+                dir_fd=lock_descriptor,
+            )
+            with os.fdopen(descriptor, encoding="utf-8") as metadata_file:
+                if not stat.S_ISREG(os.fstat(metadata_file.fileno()).st_mode):
+                    return None
+                metadata = json.load(metadata_file)
         except (OSError, UnicodeDecodeError, json.JSONDecodeError):
             return None
         return metadata if isinstance(metadata, dict) else None
 
-    def _metadata_path(self) -> Path:
-        return self.lock_path / "owner.json"
+    def _open_lock_directory(self) -> int | None:
+        try:
+            expected = os.stat(self.lock_path, follow_symlinks=False)
+        except FileNotFoundError:
+            return None
+        except OSError as error:
+            raise _io_error("inspect journal lock", self.lock_path, error) from error
+        if not stat.S_ISDIR(expected.st_mode):
+            raise _unsafe_lock(self.lock_path)
+
+        flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+        flags |= getattr(os, "O_NOFOLLOW", 0)
+        try:
+            descriptor = os.open(self.lock_path, flags)
+        except FileNotFoundError:
+            return None
+        except OSError as error:
+            try:
+                current = os.stat(self.lock_path, follow_symlinks=False)
+            except FileNotFoundError:
+                return None
+            except OSError as stat_error:
+                raise _io_error(
+                    "inspect journal lock", self.lock_path, stat_error
+                ) from stat_error
+            if not stat.S_ISDIR(current.st_mode):
+                raise _unsafe_lock(self.lock_path) from error
+            raise _io_error("open journal lock", self.lock_path, error) from error
+
+        opened = os.fstat(descriptor)
+        if (opened.st_dev, opened.st_ino) != (expected.st_dev, expected.st_ino):
+            os.close(descriptor)
+            return None
+        return descriptor
+
+    def _remove_lock_directory(self, lock_descriptor: int) -> None:
+        opened = os.fstat(lock_descriptor)
+        try:
+            current = os.stat(self.lock_path, follow_symlinks=False)
+        except OSError:
+            return
+        if (
+            not stat.S_ISDIR(current.st_mode)
+            or (current.st_dev, current.st_ino) != (opened.st_dev, opened.st_ino)
+        ):
+            return
+        try:
+            self.lock_path.rmdir()
+        except OSError:
+            return
 
     def _reject_symlinks(self) -> None:
         target = self.path.absolute()
@@ -272,34 +357,49 @@ def _validate_event(event: Any, path: Path, line_number: int) -> None:
         raise _malformed(path, line_number)
     project = event.get("project")
     if (
-        event.get("contract") != 1
+        type(event.get("contract")) is not int
+        or event["contract"] != 1
         or event.get("kind") not in _KINDS
-        or not isinstance(event.get("ts"), str)
-        or not event["ts"]
-        or not isinstance(event.get("agent"), str)
-        or not event["agent"]
+        or not _non_empty_string(event.get("ts"))
+        or not _non_empty_string(event.get("agent"))
         or not isinstance(project, dict)
-        or not isinstance(project.get("id"), str)
-        or not project["id"]
-        or not isinstance(project.get("name"), str)
-        or not project["name"]
+        or not _non_empty_string(project.get("id"))
+        or not _non_empty_string(project.get("name"))
     ):
         raise _malformed(path, line_number)
 
     kind = event["kind"]
     if kind == "complaint":
         valid = (
-            isinstance(event.get("id"), str)
-            and isinstance(event.get("text"), str)
+            _non_empty_string(event.get("id"))
+            and _non_empty_string(event.get("text"))
             and event.get("severity") in {"minor", "major", "blocker"}
             and isinstance(event.get("tags"), list)
-            and all(isinstance(tag, str) for tag in event["tags"])
+            and len(event["tags"]) <= 10
+            and all(_non_empty_string(tag) for tag in event["tags"])
             and isinstance(event.get("context"), dict)
         )
+    elif kind == "encounter":
+        valid = (
+            _non_empty_string(event.get("complaint_id"))
+            and isinstance(event.get("context"), dict)
+            and _optional_note_is_valid(event)
+        )
     else:
-        valid = isinstance(event.get("complaint_id"), str)
+        valid = _non_empty_string(
+            event.get("complaint_id")
+        ) and _optional_note_is_valid(event)
     if not valid:
         raise _malformed(path, line_number)
+
+
+def _non_empty_string(value: Any) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _optional_note_is_valid(event: dict[str, Any]) -> bool:
+    note = event.get("note")
+    return note is None or _non_empty_string(note)
 
 
 def _process_absent(pid: int) -> bool:
@@ -333,4 +433,12 @@ def _io_error(action: str, path: Path, error: BaseException) -> PapercutsError:
         f"Could not {action} at {path}: {error}",
         exit_status=74,
         retryable=True,
+    )
+
+
+def _unsafe_lock(path: Path) -> PapercutsError:
+    return PapercutsError(
+        "invalid_input",
+        f"Journal lock is not a real directory: {path}",
+        exit_status=64,
     )
