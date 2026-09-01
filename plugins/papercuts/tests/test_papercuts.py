@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import json
 import socket
 import sys
@@ -12,6 +13,7 @@ PLUGIN_SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(PLUGIN_SRC))
 
 from papercuts.models import PapercutsError, PrunePolicy
+from papercuts.cli import main as cli_main
 from papercuts.paths import project_ref, resolve_storage, set_scope
 from papercuts.service import PapercutsService
 from papercuts.store import JournalStore
@@ -170,6 +172,29 @@ class PapercutsPluginTests(unittest.TestCase):
             listed = service.list(query="manifest", tags=["tooling"])
             self.assertEqual([item["id"] for item in listed], [complaint_id])
             self.assertEqual(service.get(complaint_id[:8])["id"], complaint_id)
+
+            cli_out = io.StringIO()
+            cli_err = io.StringIO()
+            exit_status = cli_main(
+                [
+                    "--file",
+                    str(storage.journal_path),
+                    "list",
+                    "--status",
+                    "all",
+                    "--all-projects",
+                ],
+                cwd=root,
+                environ={},
+                stdout=cli_out,
+                stderr=cli_err,
+            )
+            self.assertEqual(exit_status, 0)
+            self.assertEqual(cli_err.getvalue(), "")
+            cli_payload = json.loads(cli_out.getvalue())
+            self.assertTrue(cli_payload["ok"])
+            self.assertEqual(cli_payload["meta"]["contract"], 1)
+            self.assertEqual(cli_payload["data"][0]["id"], complaint_id)
 
             health = service.doctor()
             self.assertTrue(health["healthy"])
