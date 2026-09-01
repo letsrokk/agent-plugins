@@ -173,6 +173,16 @@ class PapercutsPluginTests(unittest.TestCase):
             self.assertEqual([item["id"] for item in listed], [complaint_id])
             self.assertEqual(service.get(complaint_id[:8])["id"], complaint_id)
 
+            from papercuts.mcp_server import invoke_tool
+
+            mcp_result = invoke_tool(
+                service,
+                "list_complaints",
+                {"status": "all", "query": "manifest", "limit": 10},
+            )
+            self.assertEqual(mcp_result["complaints"][0]["id"], complaint_id)
+            self.assertEqual(mcp_result["count"], 1)
+
             cli_out = io.StringIO()
             cli_err = io.StringIO()
             exit_status = cli_main(
