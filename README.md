@@ -22,11 +22,13 @@ Both catalogs reference the same package directories. Portable components stay s
 
 ## Add a plugin
 
+Follow the full [plugin development workflow](docs/plugin-development.md).
+
 1. Create `plugins/<plugin-name>/plugin.json` using the Agent Plugins v1 schema.
 2. Add the plugin components in their standard locations.
-3. If the plugin supports Claude Code, add `.claude-plugin/plugin.json` inside the plugin directory.
+3. Add the compatibility manifest for each target catalog.
 4. Add a matching entry to one or both marketplace catalogs.
-5. Run the repository validation commands documented in [`AGENTS.md`](AGENTS.md).
+5. Run the repository validation commands before committing.
 
 ## License
 
