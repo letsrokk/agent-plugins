@@ -78,7 +78,8 @@ class PapercutsPluginTests(unittest.TestCase):
                     "stderr": "ghp_abcdefghijklmnopqrstuvwxyz123456 sk-proj-abcdefghijklmnopqrstuvwxyz123456",
                     "note": (
                         "DATABASE_PASSWORD=not-for-the-journal "
-                        "remote=https://github.com/acme/private.git"
+                        "remote=https://github.com/acme/private.git "
+                        "alias=git@github:acme/private.git"
                     ),
                 },
             )
@@ -98,6 +99,10 @@ class PapercutsPluginTests(unittest.TestCase):
                 "https://github.com/acme/private.git",
                 json.dumps(sanitized_context),
             )
+            self.assertNotIn(
+                "git@github:acme/private.git",
+                json.dumps(sanitized_context),
+            )
 
             journal_before_environment = storage.journal_path.read_bytes()
             with self.assertRaises(PapercutsError) as rejected_environment:
@@ -115,6 +120,27 @@ class PapercutsPluginTests(unittest.TestCase):
             self.assertEqual(rejected_environment.exception.exit_status, 65)
             self.assertEqual(
                 storage.journal_path.read_bytes(), journal_before_environment
+            )
+
+            journal_before_headed_environment = storage.journal_path.read_bytes()
+            with self.assertRaises(PapercutsError) as rejected_headed_environment:
+                service.lodge(
+                    "Headed environments must not enter evidence",
+                    context={
+                        "stderr": (
+                            "Environment:\n"
+                            "AWS_ACCESS_KEY_ID=example-access-key\n"
+                            "CI_JOB_JWT=example.jwt.value"
+                        )
+                    },
+                )
+            self.assertEqual(
+                rejected_headed_environment.exception.code, "invalid_input"
+            )
+            self.assertEqual(rejected_headed_environment.exception.exit_status, 65)
+            self.assertEqual(
+                storage.journal_path.read_bytes(),
+                journal_before_headed_environment,
             )
 
             duplicate = service.lodge(

@@ -29,8 +29,8 @@ _GITHUB_SECRET = re.compile(
 _OPENAI_SECRET = re.compile(r"\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b")
 _URL = re.compile(r"(?i)\b(?:https?|ssh|git|ftp|file)://[^\s\"']+")
 _SCP_REMOTE = re.compile(
-    r"(?i)(?<![A-Za-z0-9_.-])(?:[A-Za-z0-9_.-]+@)?"
-    r"[A-Za-z0-9.-]+\.[A-Za-z]{2,}:[^\s\"']+"
+    r"(?i)(?<![A-Za-z0-9_.-])(?:[A-Za-z0-9_.-]+@[A-Za-z0-9.-]+|"
+    r"[A-Za-z0-9.-]+\.[A-Za-z]{2,}):[^\s\"']+"
 )
 _WINDOWS_ABSOLUTE_PATH = re.compile(
     r"(?i)(?<![A-Za-z0-9])(?:[A-Za-z]:[\\/]|\\\\)[^\s\"']+"
@@ -217,7 +217,10 @@ def _redact(value: str) -> str:
 
 def _reject_environment_dump(value: str) -> None:
     lines = [line.strip() for line in value.splitlines() if line.strip()]
-    if len(lines) >= 2 and all(_ENVIRONMENT_LINE.fullmatch(line) for line in lines):
+    assignment_lines = sum(
+        bool(_ENVIRONMENT_LINE.fullmatch(line)) for line in lines
+    )
+    if assignment_lines >= 2:
         raise _invalid_evidence("raw environment evidence is not allowed")
 
     if _ENVIRONMENT_OBJECT.match(value.lstrip()):
