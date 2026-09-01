@@ -135,3 +135,19 @@ class PapercutsPluginTests(unittest.TestCase):
                     self.fail("symlinked lock was accepted")
             self.assertEqual(rejected_lock.exception.code, "invalid_input")
             self.assertTrue(foreign_owner.exists())
+
+            valid_event = json.loads(storage.journal_path.read_text().splitlines()[0])
+            malformed_events = (
+                {**valid_event, "kind": []},
+                {**valid_event, "severity": []},
+            )
+            for index, malformed_event in enumerate(malformed_events):
+                malformed_path = root / f"malformed-{index}.jsonl"
+                malformed_path.write_text(
+                    json.dumps(malformed_event) + "\n", encoding="utf-8"
+                )
+                with self.assertRaises(PapercutsError) as rejected_event:
+                    JournalStore(malformed_path).read_events()
+                self.assertEqual(
+                    rejected_event.exception.code, "malformed_journal"
+                )

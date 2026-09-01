@@ -359,7 +359,8 @@ def _validate_event(event: Any, path: Path, line_number: int) -> None:
     if (
         type(event.get("contract")) is not int
         or event["contract"] != 1
-        or event.get("kind") not in _KINDS
+        or not isinstance(event.get("kind"), str)
+        or event["kind"] not in _KINDS
         or not _non_empty_string(event.get("ts"))
         or not _non_empty_string(event.get("agent"))
         or not isinstance(project, dict)
@@ -373,7 +374,8 @@ def _validate_event(event: Any, path: Path, line_number: int) -> None:
         valid = (
             _non_empty_string(event.get("id"))
             and _non_empty_string(event.get("text"))
-            and event.get("severity") in {"minor", "major", "blocker"}
+            and isinstance(event.get("severity"), str)
+            and event["severity"] in {"minor", "major", "blocker"}
             and isinstance(event.get("tags"), list)
             and len(event["tags"]) <= 10
             and all(_non_empty_string(tag) for tag in event["tags"])
