@@ -4,12 +4,14 @@ import json
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
 PLUGIN_SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(PLUGIN_SRC))
 
 from papercuts.paths import project_ref, resolve_storage, set_scope
+from papercuts.service import PapercutsService
 
 
 class PapercutsPluginTests(unittest.TestCase):
@@ -52,3 +54,46 @@ class PapercutsPluginTests(unittest.TestCase):
             )
             self.assertEqual(storage.scope, "user")
             self.assertEqual(storage.journal_path, home / ".codex/papercuts.jsonl")
+
+            times = iter(
+                datetime(2026, 8, 31, hour, tzinfo=timezone.utc)
+                for hour in range(10, 20)
+            )
+            service = PapercutsService(storage, now=lambda: next(times))
+
+            lodged = service.lodge(
+                "Validator hides the invalid manifest path",
+                severity="major",
+                tags=["tooling", "validator"],
+            )
+            complaint_id = lodged["record"]["id"]
+            self.assertTrue(lodged["changed"])
+            self.assertEqual(lodged["record"]["encounter_count"], 1)
+
+            duplicate = service.lodge(
+                "  Validator hides the invalid manifest path  ",
+                severity="minor",
+                tags=["validator", "tooling"],
+            )
+            self.assertEqual(duplicate["record"]["id"], complaint_id)
+            self.assertEqual(duplicate["record"]["vote_count"], 1)
+
+            voted = service.vote(
+                complaint_id[:8], note="Repeated during catalog validation"
+            )
+            self.assertEqual(voted["record"]["encounter_count"], 3)
+
+            resolved = service.resolve(
+                complaint_id, note="Validator now reports the path"
+            )
+            self.assertEqual(resolved["record"]["status"], "resolved")
+
+            recurred = service.vote(
+                complaint_id, note="Regression in a new validation run"
+            )
+            self.assertEqual(recurred["record"]["status"], "open")
+            self.assertEqual(recurred["record"]["vote_count"], 3)
+
+            listed = service.list(query="manifest", tags=["tooling"])
+            self.assertEqual([item["id"] for item in listed], [complaint_id])
+            self.assertEqual(service.get(complaint_id[:8])["id"], complaint_id)
