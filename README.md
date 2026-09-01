@@ -20,6 +20,44 @@ Claude Code reads `.claude-plugin/marketplace.json`.
 
 Both catalogs reference the same package directories. Portable components stay shared; client-specific manifests and components live beside them only when required.
 
+## Plugins
+
+### [code-simplifier](plugins/code-simplifier/)
+
+![Codex](assets/agent-badges/codex.svg)
+
+Simplify a precise code scope without changing observable behavior.
+
+```sh
+codex plugin add code-simplifier@rokk-club-codex-plugins
+```
+
+### [eli5](plugins/eli5/README.md)
+
+![Codex](assets/agent-badges/codex.svg)
+
+Explain any topic with a dead-simple visual explainer that uses big pictures and few words.
+
+```sh
+codex plugin add eli5@rokk-club-codex-plugins
+```
+
+### [papercuts](plugins/papercuts/README.md)
+
+![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
+
+Give coding agents a durable local journal for material workflow friction.
+
+```sh
+# Codex CLI
+codex plugin add papercuts@rokk-club-codex-plugins
+```
+
+```text
+# Claude Code interactive command
+/plugin install papercuts@rokk-club-claude-plugins
+```
+
 ## Add a plugin
 
 1. Create `plugins/<plugin-name>/plugin.json` using the Agent Plugins v1 schema.
