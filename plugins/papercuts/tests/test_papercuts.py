@@ -196,6 +196,44 @@ class PapercutsPluginTests(unittest.TestCase):
             self.assertEqual(cli_payload["meta"]["contract"], 1)
             self.assertEqual(cli_payload["data"][0]["id"], complaint_id)
 
+            markdown_out = io.StringIO()
+            markdown_err = io.StringIO()
+            markdown_status = cli_main(
+                [
+                    "--file",
+                    str(storage.journal_path),
+                    "list",
+                    "--status",
+                    "all",
+                    "--all-projects",
+                    "--format",
+                    "md",
+                ],
+                cwd=root,
+                environ={},
+                stdout=markdown_out,
+                stderr=markdown_err,
+            )
+            self.assertEqual(markdown_status, 0)
+            self.assertEqual(markdown_err.getvalue(), "")
+            self.assertTrue(markdown_out.getvalue().startswith("# Papercuts\n"))
+            self.assertIn(complaint_id, markdown_out.getvalue())
+
+            error_out = io.StringIO()
+            error_err = io.StringIO()
+            error_status = cli_main(
+                ["--file", str(storage.journal_path), "get", "missing"],
+                cwd=root,
+                environ={},
+                stdout=error_out,
+                stderr=error_err,
+            )
+            self.assertEqual(error_status, 66)
+            self.assertEqual(error_out.getvalue(), "")
+            error_payload = json.loads(error_err.getvalue())
+            self.assertFalse(error_payload["ok"])
+            self.assertEqual(error_payload["error"]["code"], "not_found")
+
             health = service.doctor()
             self.assertTrue(health["healthy"])
             self.assertGreaterEqual(health["event_count"], 6)

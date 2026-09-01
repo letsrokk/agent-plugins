@@ -95,9 +95,9 @@ def main(
     stdout: TextIO | None = None,
     stderr: TextIO | None = None,
 ) -> int:
-    """Parse one command, call the service, and write exactly one result envelope."""
-    del stderr
+    """Parse one command, call the service, and write its public result."""
     output = stdout or sys.stdout
+    errors = stderr or sys.stderr
     current_directory = cwd or Path.cwd()
     try:
         arguments = _parser().parse_args(argv)
@@ -108,10 +108,13 @@ def main(
         )
         service = PapercutsService(storage)
         data = _dispatch(arguments, service, current_directory)
-        _write(output, success_envelope(data, journal_path=storage.journal_path))
+        if arguments.command == "list" and arguments.format == "md":
+            output.write(data + "\n")
+        else:
+            _write(output, success_envelope(data, journal_path=storage.journal_path))
         return 0
     except PapercutsError as error:
-        _write(output, error_envelope(error))
+        _write(errors, error_envelope(error))
         return _exit_status(error)
 
 
