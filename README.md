@@ -22,9 +22,7 @@ Both catalogs reference the same package directories. Portable components stay s
 
 ## Plugins
 
-### [code-simplifier](plugins/code-simplifier/)
-
-![Codex](assets/agent-badges/codex.svg)
+### code-simplifier ![Codex](assets/agent-badges/codex.svg)
 
 Simplify a precise code scope without changing observable behavior.
 
@@ -32,9 +30,7 @@ Simplify a precise code scope without changing observable behavior.
 codex plugin add code-simplifier@rokk-club-codex-plugins
 ```
 
-### [eli5](plugins/eli5/README.md)
-
-![Codex](assets/agent-badges/codex.svg)
+### eli5 ![Codex](assets/agent-badges/codex.svg)
 
 Explain any topic with a dead-simple visual explainer that uses big pictures and few words.
 
@@ -42,9 +38,7 @@ Explain any topic with a dead-simple visual explainer that uses big pictures and
 codex plugin add eli5@rokk-club-codex-plugins
 ```
 
-### [papercuts](plugins/papercuts/README.md)
-
-![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
+### papercuts ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
 
 Give coding agents a durable local journal for material workflow friction.
 
