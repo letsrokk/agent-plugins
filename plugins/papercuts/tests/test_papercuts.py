@@ -51,8 +51,8 @@ class PapercutsPluginTests(unittest.TestCase):
                 project_root=root,
                 remote_url="git@github.com:letsrokk/agent-plugins.git",
             )
-            self.assertEqual(storage.scope, "project")
-            self.assertEqual(storage.journal_path, root / ".codex/papercuts.jsonl")
+            self.assertEqual(storage.scope, "user")
+            self.assertEqual(storage.journal_path, home / ".codex/papercuts.jsonl")
             self.assertTrue(hasattr(storage, "client"))
             self.assertEqual(storage.client, "codex")
 
@@ -63,10 +63,10 @@ class PapercutsPluginTests(unittest.TestCase):
                 project_root=root,
                 remote_url="git@github.com:letsrokk/agent-plugins.git",
             )
-            self.assertEqual(claude_storage.scope, "project")
+            self.assertEqual(claude_storage.scope, "user")
             self.assertEqual(
                 claude_storage.journal_path,
-                root / ".claude/papercuts.jsonl",
+                home / ".claude/papercuts.jsonl",
             )
             self.assertEqual(claude_storage.client, "claude")
 
@@ -88,10 +88,10 @@ class PapercutsPluginTests(unittest.TestCase):
                 project_root=root,
                 remote_url="git@github.com:letsrokk/agent-plugins.git",
             )
-            self.assertEqual(claude_after_codex_config.scope, "project")
+            self.assertEqual(claude_after_codex_config.scope, "user")
             self.assertEqual(
                 claude_after_codex_config.journal_path,
-                root / ".claude/papercuts.jsonl",
+                home / ".claude/papercuts.jsonl",
             )
 
             claude_config_path = set_scope(

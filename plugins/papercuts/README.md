@@ -30,7 +30,8 @@ codex plugin add papercuts@rokk-club-codex-plugins
 
 ## Storage and scope
 
-Papercuts keeps client storage isolated by default:
+Papercuts uses a client-specific user journal by default while keeping Codex and
+Claude Code storage isolated:
 
 | Client | Project journal | User journal |
 | --- | --- | --- |
@@ -41,11 +42,11 @@ User-scope lists stay scoped to the current project unless `--all-projects` is s
 
 Codex scope configuration files are `<project>/.codex/papercuts.config.json` and `~/.codex/papercuts.config.json`. Claude Code uses the matching paths under `.claude`. Within the selected client, project configuration takes precedence over user configuration. No configuration, journal, or backup automatically falls back to or migrates from the other client.
 
-The CLI selects the client in this order: `--client`, `PAPERCUTS_CLIENT`, then `codex`. It selects storage in this order: `--file`, `PAPERCUTS_FILE`, project configuration, user configuration, then project scope. Supplying the same explicit file for both clients intentionally shares one journal; this is the only cross-client sharing mechanism.
+The CLI selects the client in this order: `--client`, `PAPERCUTS_CLIENT`, then `codex`. It selects storage in this order: `--file`, `PAPERCUTS_FILE`, project configuration, user configuration, then user scope. Supplying the same explicit file for both clients intentionally shares one journal; this is the only cross-client sharing mechanism.
 
 ```sh
-# Make this project use the user journal.
-plugins/papercuts/scripts/papercuts config set-scope user --level project
+# Make this project use a project journal instead of the default user journal.
+plugins/papercuts/scripts/papercuts config set-scope project --level project
 
 # Set the default scope in your user configuration.
 plugins/papercuts/scripts/papercuts config set-scope user --level user

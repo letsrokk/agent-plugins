@@ -133,7 +133,7 @@ def resolve_storage(
             project, root, resolved_home, user_scope, user_config, client
         )
 
-    return _storage_context(project, root, resolved_home, "project", None, client)
+    return _storage_context(project, root, resolved_home, "user", None, client)
 
 
 def set_scope(
