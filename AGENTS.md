@@ -13,6 +13,8 @@ Every plugin listed in the Codex catalog must include `.codex-plugin/plugin.json
 
 [`docs/plugin-development.md`](docs/plugin-development.md) is the authoritative contributor workflow for manifest roles, local development, and release preparation.
 
+Existing plugins changed without a version update receive an automatic patch bump after validation on `main`. An explicit release version must be a strictly higher stable `MAJOR.MINOR.PATCH` value, synchronized across all existing manifests and package `__version__` declarations. New and deleted plugins do not receive automatic bumps.
+
 Keep catalog entries ordered intentionally. Codex entries must include `policy.installation`, `policy.authentication`, and `category`. Use `AVAILABLE` and `ON_INSTALL` unless a plugin has a documented reason to differ.
 
 Repository validation requires Python 3.11 or later. Before committing, run:

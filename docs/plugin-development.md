@@ -17,10 +17,28 @@ See one current plugin package, such as [`plugins/papercuts/`](../plugins/paperc
 1. Create `plugins/<name>/plugin.json` with a release version.
 2. Add at least one discoverable component.
 3. Add the compatibility manifest for each target catalog.
-4. Keep the portable and Codex `name` and `version` equal.
+4. Keep every manifest version and any package `__version__` equal.
 5. Add catalog entries with exact `./plugins/<name>` sources.
 6. Run both repository validation commands.
 7. Remove any `+codex.local-*` suffix before a release commit.
+
+Release versions on `main` use stable `MAJOR.MINOR.PATCH` SemVer. A pull request that
+changes an existing plugin can leave its version unchanged; after validation succeeds on
+`main`, GitHub Actions increments the patch version and synchronizes the portable, Codex,
+Claude, and Python version declarations that exist for that plugin. New and deleted plugins
+are excluded from automatic bumps.
+
+Set a strictly higher version in the pull request when the change needs an intentional major,
+minor, or patch release. Update every existing version declaration together. Pull request
+validation rejects malformed, inconsistent, or decreased versions, and the merge automation
+preserves a valid higher version without adding another patch bump.
+
+The automation commits generated bumps to `main` as `chore: bump plugin versions`. It retries
+against the latest `main` when another merge wins the push race, and a newer version can cover
+several changes that merged before the generated commit. The repository `GITHUB_TOKEN` does
+not start another workflow run for its own commit, which prevents recursion. The automation
+does not create tags, GitHub Releases, or changelogs. Branch protection must allow this
+workflow's narrowly scoped `contents: write` job to update `main`.
 
 ## Local development and stable reinstall
 
