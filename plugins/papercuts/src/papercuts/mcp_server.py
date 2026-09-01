@@ -55,15 +55,30 @@ def invoke_tool(
             )
         return handler(service, arguments)
     except PapercutsError as error:
-        return {
-            "ok": False,
-            "error": {
-                "code": error.code,
-                "message": error.message,
-                "retryable": error.retryable,
-                "suggested_fix": error.suggested_fix,
-            },
-        }
+        return _error_result(error)
+
+
+def _invoke_project_tool(
+    project_root: str,
+    name: str,
+    arguments: Mapping[str, Any],
+) -> dict[str, Any]:
+    try:
+        return invoke_tool(service_for_project(project_root), name, arguments)
+    except PapercutsError as error:
+        return _error_result(error)
+
+
+def _error_result(error: PapercutsError) -> dict[str, Any]:
+    return {
+        "ok": False,
+        "error": {
+            "code": error.code,
+            "message": error.message,
+            "retryable": error.retryable,
+            "suggested_fix": error.suggested_fix,
+        },
+    }
 
 
 def _lodge_complaint(
@@ -213,8 +228,8 @@ def create_server():
         evidence: str | None = None,
     ) -> dict[str, Any]:
         """Lodge concise workflow friction when no existing open complaint matches."""
-        return invoke_tool(
-            service_for_project(project_root),
+        return _invoke_project_tool(
+            project_root,
             "lodge_complaint",
             {
                 "text": text,
@@ -240,8 +255,8 @@ def create_server():
         limit: int = 50,
     ) -> dict[str, Any]:
         """Search complaints before lodging new friction or reviewing existing work."""
-        return invoke_tool(
-            service_for_project(project_root),
+        return _invoke_project_tool(
+            project_root,
             "list_complaints",
             {
                 "status": status,
@@ -262,8 +277,8 @@ def create_server():
         all_projects: bool = False,
     ) -> dict[str, Any]:
         """Inspect one complaint by full ID or unique prefix before acting on it."""
-        return invoke_tool(
-            service_for_project(project_root),
+        return _invoke_project_tool(
+            project_root,
             "get_complaint",
             {"complaint_id": complaint_id, "all_projects": all_projects},
         )
@@ -278,8 +293,8 @@ def create_server():
         stderr: str | None = None,
     ) -> dict[str, Any]:
         """Record another encounter when existing workflow friction clearly matches."""
-        return invoke_tool(
-            service_for_project(project_root),
+        return _invoke_project_tool(
+            project_root,
             "vote_for_complaint",
             {
                 "complaint_id": complaint_id,
@@ -297,8 +312,8 @@ def create_server():
         note: str | None = None,
     ) -> dict[str, Any]:
         """Resolve a complaint when the workflow friction no longer occurs."""
-        return invoke_tool(
-            service_for_project(project_root),
+        return _invoke_project_tool(
+            project_root,
             "resolve_complaint",
             {"complaint_id": complaint_id, "note": note},
         )
@@ -310,8 +325,8 @@ def create_server():
         note: str | None = None,
     ) -> dict[str, Any]:
         """Reopen a resolved complaint when the workflow friction returns."""
-        return invoke_tool(
-            service_for_project(project_root),
+        return _invoke_project_tool(
+            project_root,
             "reopen_complaint",
             {"complaint_id": complaint_id, "note": note},
         )
@@ -319,8 +334,8 @@ def create_server():
     @server.tool(annotations=read_only)
     def inspect_storage(project_root: str) -> dict[str, Any]:
         """Inspect the active Papercuts journal location and health without changing it."""
-        return invoke_tool(
-            service_for_project(project_root),
+        return _invoke_project_tool(
+            project_root,
             "inspect_storage",
             {},
         )
@@ -334,8 +349,8 @@ def create_server():
         all_projects: bool = False,
     ) -> dict[str, Any]:
         """Preview the exact complaints a pruning policy would remove without applying it."""
-        return invoke_tool(
-            service_for_project(project_root),
+        return _invoke_project_tool(
+            project_root,
             "preview_prune",
             {
                 "resolved_older_than_days": resolved_older_than_days,
@@ -362,8 +377,8 @@ def create_server():
         all_projects: bool = False,
     ) -> dict[str, Any]:
         """Apply the exact preview plan only after explicit user authorization."""
-        return invoke_tool(
-            service_for_project(project_root),
+        return _invoke_project_tool(
+            project_root,
             "apply_prune",
             {
                 "plan_id": plan_id,
