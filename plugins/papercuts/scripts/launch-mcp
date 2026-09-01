@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+
+plugin_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+if ! command -v uv >/dev/null 2>&1; then
+    echo "papercuts MCP requires uv: https://docs.astral.sh/uv/" >&2
+    exit 78
+fi
+export PYTHONPATH="$plugin_root/src${PYTHONPATH:+:$PYTHONPATH}"
+exec uv run --quiet --with mcp==2.1.1 -- python -m papercuts.mcp_server
