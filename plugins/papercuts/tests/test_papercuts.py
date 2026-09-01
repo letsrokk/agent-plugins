@@ -11,7 +11,7 @@ from pathlib import Path
 PLUGIN_SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(PLUGIN_SRC))
 
-from papercuts.models import PapercutsError
+from papercuts.models import PapercutsError, PrunePolicy
 from papercuts.paths import project_ref, resolve_storage, set_scope
 from papercuts.service import PapercutsService
 from papercuts.store import JournalStore
@@ -68,10 +68,27 @@ class PapercutsPluginTests(unittest.TestCase):
                 "Validator hides the invalid manifest path",
                 severity="major",
                 tags=["tooling", "validator"],
+                context={
+                    "command": (
+                        "curl -H 'Authorization: Bearer bearer-secret-value' "
+                        "https://user:password@example.invalid && API_TOKEN=token-value"
+                    ),
+                    "exit_status": 1,
+                    "stderr": "ghp_abcdefghijklmnopqrstuvwxyz123456 sk-proj-abcdefghijklmnopqrstuvwxyz123456",
+                    "note": "DATABASE_PASSWORD=not-for-the-journal",
+                },
             )
             complaint_id = lodged["record"]["id"]
             self.assertTrue(lodged["changed"])
             self.assertEqual(lodged["record"]["encounter_count"], 1)
+            sanitized_context = lodged["record"]["context"]
+            self.assertEqual(sanitized_context["exit_status"], 1)
+            self.assertNotIn("bearer-secret-value", json.dumps(sanitized_context))
+            self.assertNotIn("password@example", json.dumps(sanitized_context))
+            self.assertNotIn("token-value", json.dumps(sanitized_context))
+            self.assertNotIn("ghp_", json.dumps(sanitized_context))
+            self.assertNotIn("sk-proj-", json.dumps(sanitized_context))
+            self.assertNotIn("not-for-the-journal", json.dumps(sanitized_context))
 
             duplicate = service.lodge(
                 "  Validator hides the invalid manifest path  ",
@@ -100,6 +117,10 @@ class PapercutsPluginTests(unittest.TestCase):
             listed = service.list(query="manifest", tags=["tooling"])
             self.assertEqual([item["id"] for item in listed], [complaint_id])
             self.assertEqual(service.get(complaint_id[:8])["id"], complaint_id)
+
+            health = service.doctor()
+            self.assertTrue(health["healthy"])
+            self.assertGreaterEqual(health["event_count"], 6)
 
             journal_before_invalid_event = storage.journal_path.read_bytes()
             invalid_service = PapercutsService(
@@ -151,3 +172,34 @@ class PapercutsPluginTests(unittest.TestCase):
                 self.assertEqual(
                     rejected_event.exception.code, "malformed_journal"
                 )
+
+    def test_stale_prune_plan_cannot_replace_changed_journal(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "project"
+            home = Path(directory) / "home"
+            root.mkdir()
+            home.mkdir()
+            storage = resolve_storage(root, home=home, project_root=root, remote_url=None)
+            moments = iter(
+                [
+                    datetime(2025, 1, 1, tzinfo=timezone.utc),
+                    datetime(2026, 8, 31, tzinfo=timezone.utc),
+                    datetime(2026, 8, 31, 1, tzinfo=timezone.utc),
+                    datetime(2026, 8, 31, 2, tzinfo=timezone.utc),
+                ]
+            )
+            service = PapercutsService(storage, now=lambda: next(moments))
+            old = service.lodge("One-off obsolete friction")["record"]["id"]
+            preview = service.preview_prune(PrunePolicy())
+            self.assertEqual([item["id"] for item in preview["candidates"]], [old])
+
+            service.lodge("New complaint after preview", tags=["new"])
+            before = storage.journal_path.read_bytes()
+
+            with self.assertRaises(PapercutsError) as raised:
+                service.apply_prune(PrunePolicy(), preview["plan_id"])
+
+            self.assertEqual(raised.exception.code, "stale_prune_plan")
+            self.assertEqual(storage.journal_path.read_bytes(), before)
+            backup_dir = root / ".codex/papercuts.backups"
+            self.assertFalse(backup_dir.exists())

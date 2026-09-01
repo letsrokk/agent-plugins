@@ -6,6 +6,7 @@ import os
 import random
 import socket
 import stat
+import tempfile
 import time
 import uuid
 from contextlib import contextmanager
@@ -57,23 +58,7 @@ class JournalStore:
         """Append complete compact JSON records, flush, and fsync before return."""
         if not events:
             return
-        serialized: list[bytes] = []
-        for index, event in enumerate(events, start=1):
-            _validate_event(event, self.path, index)
-            try:
-                record = json.dumps(
-                    event,
-                    allow_nan=False,
-                    ensure_ascii=False,
-                    separators=(",", ":"),
-                    sort_keys=True,
-                )
-            except (TypeError, ValueError) as error:
-                raise _malformed(
-                    self.path, index, "event is not JSON serializable"
-                ) from error
-            serialized.append((record + "\n").encode("utf-8"))
-        records = b"".join(serialized)
+        records = _serialize_events(events, self.path)
         try:
             descriptor = os.open(
                 self.path,
@@ -89,20 +74,139 @@ class JournalStore:
 
     def digest(self) -> str:
         """Return SHA-256 of current journal bytes, with empty bytes for a missing file."""
+        return hashlib.sha256(self._read_bytes()).hexdigest()
+
+    def snapshot(self) -> tuple[list[dict[str, Any]], str]:
+        """Read events and their journal digest from one byte snapshot."""
+        data = self._read_bytes()
+        events, _ = self._parse_events(data)
+        return events, hashlib.sha256(data).hexdigest()
+
+    def doctor(self, *, repair_tail: bool = False) -> dict[str, Any]:
+        """Report health and optionally truncate only an incomplete final record."""
+        if not repair_tail:
+            data = self._read_bytes()
+            events, incomplete_tail = self._parse_events(data)
+            return _health(
+                data=data,
+                events=events,
+                incomplete_tail=incomplete_tail,
+                repaired=False,
+            )
+
+        self._reject_symlinks()
         try:
-            data = self.path.read_bytes() if self.path.exists() else b""
+            self.path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         except OSError as error:
-            raise _io_error("read journal", self.path, error) from error
-        return hashlib.sha256(data).hexdigest()
+            raise _io_error("create journal directory", self.path.parent, error) from error
+        token = self._acquire_lock()
+        try:
+            data = self._read_bytes()
+            events, incomplete_tail = self._parse_events(data)
+            repaired = False
+            if incomplete_tail:
+                complete_length = data.rfind(b"\n") + 1
+                try:
+                    descriptor = os.open(
+                        self.path,
+                        os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0),
+                    )
+                    try:
+                        os.ftruncate(descriptor, complete_length)
+                        os.fsync(descriptor)
+                    finally:
+                        os.close(descriptor)
+                except OSError as error:
+                    raise _io_error("repair journal tail", self.path, error) from error
+                data = data[:complete_length]
+                repaired = True
+            return _health(
+                data=data,
+                events=events,
+                incomplete_tail=False,
+                repaired=repaired,
+            )
+        finally:
+            self._release_lock(token)
+
+    def replace_locked(
+        self,
+        surviving_events: Sequence[dict[str, Any]],
+        *,
+        backup_dir: Path,
+        timestamp: datetime,
+    ) -> Path:
+        """Write backup and fsynced temporary journal, then atomically replace it."""
+        if timestamp.tzinfo is None:
+            raise PapercutsError(
+                "invalid_input",
+                "backup timestamp must be timezone-aware",
+                exit_status=65,
+            )
+        self._reject_symlinks()
+        _reject_path_symlinks(backup_dir)
+        replacement = _serialize_events(surviving_events, self.path)
+        original = self._read_bytes()
+        try:
+            backup_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+        except OSError as error:
+            raise _io_error("create backup directory", backup_dir, error) from error
+        _reject_path_symlinks(backup_dir)
+
+        suffix = timestamp.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
+        backup_path = backup_dir / f"papercuts-{suffix}.jsonl"
+        try:
+            descriptor = os.open(
+                backup_path,
+                os.O_WRONLY
+                | os.O_CREAT
+                | os.O_EXCL
+                | getattr(os, "O_NOFOLLOW", 0),
+                0o600,
+            )
+            with os.fdopen(descriptor, "wb") as backup:
+                backup.write(original)
+                backup.flush()
+                os.fsync(backup.fileno())
+            _fsync_directory(backup_dir)
+        except OSError as error:
+            raise _io_error("write journal backup", backup_path, error) from error
+
+        temporary_path: Path | None = None
+        try:
+            descriptor, temporary_name = tempfile.mkstemp(
+                prefix=".papercuts-", suffix=".tmp", dir=self.path.parent
+            )
+            temporary_path = Path(temporary_name)
+            with os.fdopen(descriptor, "wb") as temporary:
+                temporary.write(replacement)
+                temporary.flush()
+                os.fsync(temporary.fileno())
+            os.replace(temporary_path, self.path)
+            temporary_path = None
+            _fsync_directory(self.path.parent)
+        except OSError as error:
+            raise _io_error("replace journal", self.path, error) from error
+        finally:
+            if temporary_path is not None:
+                try:
+                    temporary_path.unlink()
+                except OSError:
+                    pass
+        return backup_path
 
     def _read_events_and_tail(self) -> tuple[list[dict[str, Any]], bool]:
+        return self._parse_events(self._read_bytes())
+
+    def _read_bytes(self) -> bytes:
         try:
-            data = self.path.read_bytes()
+            return self.path.read_bytes()
         except FileNotFoundError:
-            return [], False
+            return b""
         except OSError as error:
             raise _io_error("read journal", self.path, error) from error
 
+    def _parse_events(self, data: bytes) -> tuple[list[dict[str, Any]], bool]:
         lines = data.splitlines(keepends=True)
         incomplete_tail = bool(lines and not lines[-1].endswith(b"\n"))
         complete_lines = lines[:-1] if incomplete_tail else lines
@@ -287,25 +391,72 @@ class JournalStore:
             return
 
     def _reject_symlinks(self) -> None:
-        target = self.path.absolute()
-        candidates = [target]
-        if target.parent != target:
-            candidates.append(target.parent)
-        while not os.path.lexists(candidates[-1]):
-            parent = candidates[-1].parent
-            if parent == candidates[-1]:
-                break
-            candidates.append(parent)
-        for current in reversed(candidates):
-            try:
-                if current.is_symlink():
-                    raise PapercutsError(
-                        "invalid_input",
-                        f"Journal path traverses a symbolic link: {current}",
-                        exit_status=64,
-                    )
-            except OSError as error:
-                raise _io_error("inspect journal path", current, error) from error
+        _reject_path_symlinks(self.path)
+
+
+def _health(
+    *,
+    data: bytes,
+    events: Sequence[dict[str, Any]],
+    incomplete_tail: bool,
+    repaired: bool,
+) -> dict[str, Any]:
+    return {
+        "healthy": not incomplete_tail,
+        "repaired": repaired,
+        "incomplete_tail": incomplete_tail,
+        "byte_count": len(data),
+        "event_count": len(events),
+    }
+
+
+def _serialize_events(events: Sequence[dict[str, Any]], path: Path) -> bytes:
+    serialized: list[bytes] = []
+    for index, event in enumerate(events, start=1):
+        _validate_event(event, path, index)
+        try:
+            record = json.dumps(
+                event,
+                allow_nan=False,
+                ensure_ascii=False,
+                separators=(",", ":"),
+                sort_keys=True,
+            )
+        except (TypeError, ValueError) as error:
+            raise _malformed(path, index, "event is not JSON serializable") from error
+        serialized.append((record + "\n").encode("utf-8"))
+    return b"".join(serialized)
+
+
+def _reject_path_symlinks(path: Path) -> None:
+    target = path.absolute()
+    candidates = [target]
+    if target.parent != target:
+        candidates.append(target.parent)
+    while not os.path.lexists(candidates[-1]):
+        parent = candidates[-1].parent
+        if parent == candidates[-1]:
+            break
+        candidates.append(parent)
+    for current in reversed(candidates):
+        try:
+            if current.is_symlink():
+                raise PapercutsError(
+                    "invalid_input",
+                    f"Storage path traverses a symbolic link: {current}",
+                    exit_status=64,
+                )
+        except OSError as error:
+            raise _io_error("inspect storage path", current, error) from error
+
+
+def _fsync_directory(path: Path) -> None:
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    descriptor = os.open(path, flags)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
 
 
 def fold_events(events: Sequence[dict[str, Any]]) -> dict[str, dict[str, Any]]:
