@@ -1,11 +1,11 @@
 ---
 name: make-it-make-sense
-description: Use whenever an agent drafts or revises human-facing communication, including session responses, progress updates, questions, plans, implementation summaries, commit messages, pull or merge requests, reviews, issue trackers, wikis, knowledge bases, READMEs, runbooks, code comments, chat messages, or thread replies.
+description: Use for every human-facing agent reply or written artifact about software or technical work, regardless of the underlying task, including status updates, questions, plans, summaries, version-control text, issues, documentation, code comments, and chat. Do not use for source code, logs, schemas, or machine-consumed structured output unless a human explanation is requested.
 ---
 
 # Make It Make Sense
 
-Shape communication for the human and channel in front of you. Preserve the accuracy of every fact you use, along with its identifiers, quoted text, uncertainty, and authorization boundaries. Relevance decides which source facts belong in the artifact. Direct user instructions about content or format take precedence.
+Shape communication for the human and channel in front of you. Preserve the accuracy of every fact you use, along with its identifiers, quoted text, uncertainty, and authorization boundaries. Relevance decides which source facts belong in the artifact. Direct user instructions about content or format take precedence within those boundaries.
 
 Apply every rule in this file. Then read the one relevant channel guide before drafting:
 
@@ -19,7 +19,7 @@ If one response contains artifacts for several channels, read each relevant guid
 
 ## Human-facing communication style
 
-Unless asked otherwise, write for an experienced engineer who does not know this codebase, library, or domain: plain technical English, active voice, present tense for current behavior, and simple vocabulary. Put useful information first. Skip the basics, not the specifics. Write dense but readable prose, never telegraphic prose. Write as a senior colleague explaining it at their desk: direct, unceremonious, and assuming competence.
+Write at the intended reader's technical level when the audience is known from the request, destination, or context. Otherwise, write for an experienced engineer who does not know this codebase, library, or domain. Use plain technical English, active voice, present tense for current behavior, and simple vocabulary. Put useful information first. Skip the basics, not the specifics. Write dense but readable prose, never telegraphic prose. Write as a capable colleague explaining it at their desk: direct, unceremonious, and assuming competence.
 
 These rules apply selected Simplified Technical English principles to reduce ambiguity. This is not strict ASD-STE100 compliance; normal software terminology and natural technical prose are correct here.
 
@@ -43,12 +43,12 @@ Where a rule here would drain the voice from a sentence a person has to read, th
 
 ### Accounts of work
 
-When describing work or a follow-up, build the account from completed work, actions taken, resulting behavior, evidence, and material limitations. A skipped verification is a material limitation when it affects confidence and must still be reported. Include an action that was not taken or an approach that was rejected only when it directly changed the outcome or explains a constraint the reader could otherwise hit. An unused option that had no effect is not part of the account, even when the source notes it.
+When describing work or a follow-up, build the account from completed work, consequential actions, resulting behavior, evidence, and material limitations. A consequential action changes the delivered or operational state, such as deploying, migrating, reverting, or resolving a discussion. Routine mechanics such as reading files, editing code, or running expected commands are activity narration, not part of the account. A skipped verification is a material limitation when it affects confidence and must still be reported. Include an action that was not taken or an approach that was rejected only when it directly changed the outcome or explains a constraint the reader could otherwise hit. An unused option that had no effect is not part of the account, even when the source notes it.
 
 ### Rules
 
 - Answer first. Add context only when it changes what the reader would do.
-- Do not repeat what the code, diff, or an earlier message already shows.
+- Do not restate code or a diff line by line. Summarize delivered behavior and the details the reader needs to understand, decide, act, review, or maintain the work. Do not repeat an earlier message unless the current artifact must stand alone.
 - Document where the work landed, not the route to it. Do not include earlier attempts, alternatives weighed, or an account of why you changed approach. Name a rejected option only when a reader would otherwise try it and hit the same constraint, such as "locking here deadlocks with the writer." Open choices are different because the options are the subject.
 - Gloss an unfamiliar term inline in a few words, not in a follow-up sentence.
 - Put one main idea in each sentence, one action in each instruction, and one topic in each paragraph with its point first. Split a sentence that becomes hard to follow. There is no sentence-length limit.
@@ -77,7 +77,7 @@ Reply in the thread that raised the point when you answer feedback, follow up on
 
 ### Per artifact
 
-Everything above applies to every text a person reads. Commit subjects and pull or merge request titles are exempt from the rules above; they keep their conventional form, including a ticket-number prefix when repository or branch rules require one.
+Accuracy, relevance, exact identifiers, honest uncertainty, and authorization boundaries apply to every artifact. Commit subjects and pull or merge request titles are exempt only from prose and sentence-form conventions; they keep their conventional form, including a ticket-number prefix when repository or branch rules require one.
 
 | Artifact | Specific contract |
 | --- | --- |
@@ -85,8 +85,8 @@ Everything above applies to every text a person reads. Commit subjects and pull 
 | Plan | Use high-level, outcome-oriented steps. Skip obvious mechanics and raise only real trade-offs. |
 | Implementation summary | State what changed, verification, and material limitations. Include architectural and behavioral changes, not mechanical edits or superseded attempts. |
 | Commit message | Use a conventional single-line subject. Add a body only for information a future maintainer needs. |
-| Pull or merge request description | State what changed, why, verification, and the risks or areas reviewers should inspect. Describe completed work and actions taken, not unperformed work, commit history, or dropped approaches. |
-| Issue, wiki, or review comment | State completed work, actions taken, decisions, evidence, blockers, and outcomes. In review, state the change you want and why, or give a plain approval. Say whether the finding blocks. Do not wrap the point in praise. |
+| Pull or merge request description | State what changed, why, verification, and the risks or areas reviewers should inspect. Describe completed work and consequential actions, not unperformed work, commit history, or dropped approaches. |
+| Issue, wiki, or review comment | State completed work, consequential actions, decisions, evidence, blockers, and outcomes. In review, state the change you want and why, or give a plain approval. Say whether the finding blocks. Do not wrap the point in praise. |
 | README and documentation | Optimize for completing and maintaining the task. Give practical, copy-ready examples. |
 | Code comment | Explain why something non-obvious exists. Never restate the code or record the versions it went through. |
 
