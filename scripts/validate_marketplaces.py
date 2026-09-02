@@ -12,6 +12,11 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+if __package__:
+    from .plugin_ci import is_scripted_plugin
+else:
+    from plugin_ci import is_scripted_plugin
+
 try:
     import tomllib
 except ModuleNotFoundError:  # Python 3.10 and earlier
@@ -183,7 +188,6 @@ def _validate_plugin_components(root: Path, name: str, errors: list[str]) -> Non
     has_mcp = mcp.is_file()
     if discovered_skills == 0 and not has_mcp:
         errors.append(f"plugins/{name}: must provide at least one skill or mcp.json")
-
 
 def _validate_code_simplifier(root: Path, errors: list[str]) -> None:
     plugin = root / "plugins/code-simplifier"
@@ -425,6 +429,18 @@ def _validate_agent_instructions(root: Path, errors: list[str]) -> None:
         errors.append("CLAUDE.md must be a symlink to AGENTS.md")
 
 
+def _validate_scripted_plugins(root: Path, errors: list[str]) -> None:
+    plugins = root / "plugins"
+    if not plugins.is_dir():
+        return
+    for plugin in sorted(path for path in plugins.iterdir() if path.is_dir()):
+        if not is_scripted_plugin(plugin):
+            continue
+        for entrypoint in ("test.py", "validate.py"):
+            if not (plugin / "scripts" / entrypoint).is_file():
+                errors.append(f"plugins/{plugin.name}/scripts/{entrypoint} is missing")
+
+
 def validate_repository(root: Path) -> list[str]:
     """Return all marketplace validation errors for *root*."""
     root = root.resolve()
@@ -432,6 +448,7 @@ def validate_repository(root: Path) -> list[str]:
     _validate_codex_catalog(root, errors)
     _validate_claude_catalog(root, errors)
     _validate_agent_instructions(root, errors)
+    _validate_scripted_plugins(root, errors)
     return errors
 
 

@@ -11,6 +11,8 @@ Add plugins one at a time under `plugins/<plugin-name>/`. Every plugin must use 
 
 Every plugin listed in the Codex catalog must include `.codex-plugin/plugin.json`. Its `name` and non-empty `version` must match the portable root manifest. A discoverable skill on disk requires the Codex compatibility manifest to set `skills` to `"./skills/"`.
 
+A plugin with root `scripts/`, root `src/`, or `skills/*/scripts/` is scripted. It must provide Python 3.11-compatible `scripts/test.py` and `scripts/validate.py` entrypoints that take no arguments, run from the plugin root, and return nonzero on failure. GitHub Actions runs both entrypoints for each changed scripted plugin.
+
 [`docs/plugin-development.md`](docs/plugin-development.md) is the authoritative contributor workflow for manifest roles, local development, and release preparation.
 
 Existing plugins changed without a version update receive an automatic patch bump after validation on `main`. An explicit release version must be a strictly higher stable `MAJOR.MINOR.PATCH` value, synchronized across all existing manifests and package `__version__` declarations. New and deleted plugins do not receive automatic bumps.
