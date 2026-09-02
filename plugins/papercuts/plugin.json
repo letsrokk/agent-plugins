@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "papercuts",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Give coding agents a durable complaint journal for workflow friction.",
   "author": {
     "name": "Rokk Club",
