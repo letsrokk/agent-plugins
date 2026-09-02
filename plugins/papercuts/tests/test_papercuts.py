@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ctypes
 import io
 import inspect
 import json
@@ -11,7 +12,7 @@ import types
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 PLUGIN_SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(PLUGIN_SRC))
@@ -21,6 +22,7 @@ import papercuts.paths as papercuts_paths
 from papercuts.models import PapercutsError, PrunePolicy, sanitize_context
 from papercuts.paths import discover_project, project_ref, resolve_storage, set_scope
 from papercuts.service import PapercutsService
+import papercuts.store as papercuts_store
 from papercuts.store import JournalStore
 
 
@@ -887,3 +889,107 @@ class PapercutsPluginTests(unittest.TestCase):
                     with release_store.mutation():
                         pass
             self.assertEqual(release_store.read_events(), [])
+
+    def test_path_based_store_supports_the_mutation_lifecycle(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "project"
+            home = Path(directory) / "home"
+            root.mkdir()
+            home.mkdir()
+            storage = resolve_storage(
+                root,
+                home=home,
+                project_root=root,
+                remote_url=None,
+            )
+            original_open = os.open
+
+            def windows_open(path, flags, mode=0o777, *, dir_fd=None):
+                if dir_fd is not None:
+                    raise NotImplementedError("dir_fd unavailable on this platform")
+                if Path(path).is_dir():
+                    raise FileNotFoundError(2, "No such file or directory", path)
+                return original_open(path, flags, mode)
+
+            with patch.object(os, "supports_dir_fd", set()), patch(
+                "papercuts.store.os.open",
+                side_effect=windows_open,
+            ):
+                service = PapercutsService(
+                    storage,
+                    now=lambda: datetime(2025, 1, 1, tzinfo=timezone.utc),
+                )
+                try:
+                    lodged = service.lodge("Windows storage fallback")
+                except PapercutsError as error:
+                    self.fail(f"path-based storage failed: {error.message}")
+                complaint_id = lodged["record"]["id"]
+                self.assertEqual(
+                    service.get(complaint_id)["text"],
+                    "Windows storage fallback",
+                )
+
+                pruning_service = PapercutsService(
+                    storage,
+                    now=lambda: datetime(2026, 9, 2, tzinfo=timezone.utc),
+                )
+                policy = PrunePolicy()
+                preview = pruning_service.preview_prune(policy)
+                applied = pruning_service.apply_prune(policy, preview["plan_id"])
+
+            backup_path = Path(applied["backup"])
+            self.assertTrue(applied["changed"])
+            self.assertIn(complaint_id, backup_path.read_text(encoding="utf-8"))
+            self.assertEqual(storage.journal_path.read_bytes(), b"")
+            self.assertFalse(Path(f"{storage.journal_path}.lock").exists())
+
+    def test_windows_stale_lock_check_is_safe(self) -> None:
+        open_process = Mock(side_effect=[1, 0])
+        close_handle = Mock(return_value=True)
+        kernel32 = types.SimpleNamespace(
+            OpenProcess=open_process,
+            CloseHandle=close_handle,
+        )
+
+        with patch("papercuts.store.os.name", "nt"), patch(
+            "papercuts.store.os.kill"
+        ) as kill_process, patch.object(
+            ctypes,
+            "WinDLL",
+            return_value=kernel32,
+            create=True,
+        ), patch.object(
+            ctypes,
+            "get_last_error",
+            return_value=87,
+            create=True,
+        ):
+            self.assertFalse(papercuts_store._process_absent(42))
+            self.assertTrue(papercuts_store._process_absent(43))
+
+        kill_process.assert_not_called()
+        close_handle.assert_called_once_with(1)
+
+        with tempfile.TemporaryDirectory() as directory:
+            journal_path = Path(directory) / "papercuts.jsonl"
+            lock_path = Path(f"{journal_path}.lock")
+            lock_path.mkdir()
+            (lock_path / "owner.json").write_text(
+                json.dumps(
+                    {
+                        "token": "dead-owner",
+                        "pid": 43,
+                        "host": socket.gethostname(),
+                        "created_at": "2020-01-01T00:00:00Z",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            with patch.object(os, "supports_dir_fd", set()), patch(
+                "papercuts.store._process_absent",
+                return_value=True,
+            ):
+                with JournalStore(journal_path).mutation():
+                    pass
+            self.assertFalse(lock_path.exists())
