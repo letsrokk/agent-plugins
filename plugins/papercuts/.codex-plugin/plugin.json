@@ -18,7 +18,8 @@
   "skills": "./skills/",
   "mcpServers": {
     "papercuts": {
-      "command": "./scripts/launch-mcp",
+      "command": "python3",
+      "args": ["./scripts/launch_mcp.py"],
       "cwd": "."
     }
   },

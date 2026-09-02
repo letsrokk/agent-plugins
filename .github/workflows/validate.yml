@@ -10,6 +10,25 @@ permissions:
   contents: read
 
 jobs:
+  papercuts-launcher:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run Papercuts launcher tests
+        run: python3 -m unittest discover -s plugins/papercuts/tests -p test_launcher.py -v
+
   validate:
     runs-on: ubuntu-latest
     steps:
@@ -40,7 +59,9 @@ jobs:
 
   version:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: validate
+    needs:
+      - papercuts-launcher
+      - validate
     runs-on: ubuntu-latest
     permissions:
       contents: write
