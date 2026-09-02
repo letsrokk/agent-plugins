@@ -33,12 +33,24 @@ _OPENAI_SECRET = re.compile(r"\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b")
 _URL = re.compile(r"(?i)\b(?:https?|ssh|git|ftp|file)://[^\s\"']+")
 _SCP_REMOTE = re.compile(
     r"(?i)(?<![A-Za-z0-9_.-])(?:[A-Za-z0-9_.-]+@[A-Za-z0-9.-]+|"
-    r"[A-Za-z0-9.-]+\.[A-Za-z]{2,}):[^\s\"']+"
+    r"[A-Za-z0-9.-]+\.[A-Za-z]{2,}):(?=[^\s\"']*[\\/])[^\s\"']+"
 )
 _WINDOWS_ABSOLUTE_PATH = re.compile(
     r"(?i)(?<![A-Za-z0-9])(?:[A-Za-z]:[\\/]|\\\\)[^\s\"']+"
 )
-_POSIX_ABSOLUTE_PATH = re.compile(r"(?<![A-Za-z0-9:/])/(?!/)[^\s\"']*")
+_SLASH_DELIMITED_PROGRAM = (
+    r"(?<![A-Za-z0-9_.~])/"
+    r"(?=[^/\r\n]*(?:[\^$*+?()[{|\\]|\.(?:[*+?]|/)))"
+    r"(?:\\.|[^/\\\r\n])+/[adgimpsuvxy]*"
+    r"(?=$|[\s\"'`{(;|&)\]}])"
+)
+_POSIX_LOCATION = re.compile(
+    rf"(?P<program>{_SLASH_DELIMITED_PROGRAM})|"
+    r"(?P<path>(?<![A-Za-z0-9.:/~])/(?!/)[^\s\"']*)"
+)
+_PATH_NOTATION = re.compile(r"(?i)^(?:[A-Z]:[\\/]|/[A-Z]/)\.\.\.$")
+_LOCATION_CLOSING_DELIMITERS = ",;:!?)]}"
+_LOCATION_TRAILING_DELIMITERS = "." + _LOCATION_CLOSING_DELIMITERS
 _ENVIRONMENT_LINE = re.compile(
     r"^(?:(?:export|declare\s+-x|typeset\s+-x)\s+)?"
     r"[A-Za-z_][A-Za-z0-9_]*=.*$"
@@ -241,10 +253,43 @@ def _redact(value: str) -> str:
     redacted = _URL_CREDENTIALS.sub(r"\1[REDACTED]@", redacted)
     redacted = _GITHUB_SECRET.sub("[REDACTED]", redacted)
     redacted = _OPENAI_SECRET.sub("[REDACTED]", redacted)
-    redacted = _URL.sub("[REDACTED_URL]", redacted)
-    redacted = _SCP_REMOTE.sub("[REDACTED_URL]", redacted)
-    redacted = _WINDOWS_ABSOLUTE_PATH.sub("[REDACTED_PATH]", redacted)
-    return _POSIX_ABSOLUTE_PATH.sub("[REDACTED_PATH]", redacted)
+    redacted = _redact_locations(_URL, "[REDACTED_URL]", redacted)
+    redacted = _redact_locations(_SCP_REMOTE, "[REDACTED_URL]", redacted)
+    redacted = _redact_locations(
+        _WINDOWS_ABSOLUTE_PATH,
+        "[REDACTED_PATH]",
+        redacted,
+        preserve_notation=True,
+    )
+    return _redact_locations(
+        _POSIX_LOCATION,
+        "[REDACTED_PATH]",
+        redacted,
+        preserve_notation=True,
+        preserve_group="program",
+    )
+
+
+def _redact_locations(
+    pattern: re.Pattern[str],
+    replacement: str,
+    value: str,
+    *,
+    preserve_notation: bool = False,
+    preserve_group: str | None = None,
+) -> str:
+    def replace(match: re.Match[str]) -> str:
+        location = match.group(0)
+        if preserve_group is not None and match.lastgroup == preserve_group:
+            return location
+        if preserve_notation and _PATH_NOTATION.search(
+            location.rstrip(_LOCATION_CLOSING_DELIMITERS)
+        ):
+            return location
+        core = location.rstrip(_LOCATION_TRAILING_DELIMITERS)
+        return replacement + location[len(core) :]
+
+    return pattern.sub(replace, value)
 
 
 def _reject_environment_dump(value: str) -> None:

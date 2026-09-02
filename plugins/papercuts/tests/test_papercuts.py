@@ -19,7 +19,12 @@ sys.path.insert(0, str(PLUGIN_SRC))
 
 from papercuts.cli import main as cli_main
 import papercuts.paths as papercuts_paths
-from papercuts.models import PapercutsError, PrunePolicy, sanitize_context
+from papercuts.models import (
+    PapercutsError,
+    PrunePolicy,
+    sanitize_context,
+    sanitize_user_string,
+)
 from papercuts.paths import discover_project, project_ref, resolve_storage, set_scope
 from papercuts.service import PapercutsService
 import papercuts.store as papercuts_store
@@ -993,3 +998,55 @@ class PapercutsPluginTests(unittest.TestCase):
                 with JournalStore(journal_path).mutation():
                     pass
             self.assertFalse(lock_path.exists())
+
+    def test_redaction_keeps_actionable_evidence(self) -> None:
+        path_formats = (
+            r"Prevention: native paths (C:\... or C:/...) while shell utilities "
+            r"take /c/... MSYS paths."
+        )
+        command = (
+            r'''awk '/^```markdown$/{f=1;next} f&&/^```$/{exit} f' '''
+            r'''"5 Meta/Agent Instructions/Coding Agent Instructions.md" '''
+            r'''> mirror.md && diff mirror.md ~/.claude/CLAUDE.md'''
+        )
+        citations = (
+            '.claude/skills/vault-task/SKILL.md:235-236 reads "..." — '
+            "CLAUDE.md:149 adds a third source"
+        )
+
+        program_text = (
+            "grep '/^foo$/' file",
+            "grep '/./' file",
+            "grep '/.*foo/' file",
+            "grep '/[ab]/i' file",
+            "sed -n '/^foo$/p' file",
+            "./scripts/repro.sh",
+            "../src/models.py",
+        )
+        for evidence in (path_formats, command, citations, *program_text):
+            with self.subTest(evidence=evidence):
+                self.assertEqual(
+                    sanitize_user_string(evidence, field="test evidence"),
+                    evidence,
+                )
+
+        sensitive_locations = (
+            r"run /Users/alice/private/config then C:\Users\alice\secret.txt, "
+            r"open https://example.com/private). and clone git@github:acme/private.git"
+        )
+        self.assertEqual(
+            sanitize_user_string(sensitive_locations, field="test evidence"),
+            "run [REDACTED_PATH] then [REDACTED_PATH], "
+            "open [REDACTED_URL]). and clone [REDACTED_URL]",
+        )
+        for concrete_path, expected in (
+            ("/^alice/private/key.txt", "[REDACTED_PATH]"),
+            ("/[alice]/private/key.txt", "[REDACTED_PATH]"),
+            ("/Users/alice/...", "[REDACTED_PATH]..."),
+            (r"C:\Users\alice\...", "[REDACTED_PATH]..."),
+        ):
+            with self.subTest(concrete_path=concrete_path):
+                self.assertEqual(
+                    sanitize_user_string(concrete_path, field="test evidence"),
+                    expected,
+                )
