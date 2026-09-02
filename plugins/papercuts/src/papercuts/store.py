@@ -19,13 +19,14 @@ from papercuts.models import PapercutsError, filesystem_error as _io_error
 _KINDS = {"complaint", "encounter", "resolved", "reopened"}
 _LOCK_TIMEOUT_SECONDS = 5.0
 _STALE_LOCK_SECONDS = 300.0
+_DirectoryHandle = int | Path
 
 
 class JournalStore:
     def __init__(self, path: Path) -> None:
         self.path = path
         self.lock_path = Path(f"{path}.lock")
-        self._parent_descriptor: int | None = None
+        self._parent_descriptor: _DirectoryHandle | None = None
 
     def read_events(self) -> list[dict[str, Any]]:
         """Parse complete UTF-8 JSON object lines and reject malformed interiors."""
@@ -179,7 +180,7 @@ class JournalStore:
                     backup.write(original)
                     backup.flush()
                     os.fsync(backup.fileno())
-                os.fsync(backup_parent)
+                _fsync_directory(backup_parent)
         except OSError as error:
             raise _io_error("write journal backup", backup_path, error) from error
 
@@ -188,31 +189,36 @@ class JournalStore:
             with self._parent(create=True) as parent_descriptor:
                 try:
                     temporary_name = f".papercuts-{uuid.uuid4().hex}.tmp"
-                    descriptor = os.open(
-                        temporary_name,
-                        os.O_WRONLY
-                        | os.O_CREAT
-                        | os.O_EXCL
-                        | getattr(os, "O_NOFOLLOW", 0),
-                        0o600,
-                        dir_fd=parent_descriptor,
+                    temporary_path = self.path.with_name(temporary_name)
+                    descriptor = _open_regular_file_at(
+                        parent_descriptor,
+                        temporary_path,
+                        os.O_WRONLY,
+                        create=True,
+                        exclusive=True,
                     )
                     with os.fdopen(descriptor, "wb") as temporary:
                         temporary.write(replacement)
                         temporary.flush()
                         os.fsync(temporary.fileno())
-                    os.replace(
-                        temporary_name,
-                        self.path.name,
-                        src_dir_fd=parent_descriptor,
-                        dst_dir_fd=parent_descriptor,
-                    )
+                    if isinstance(parent_descriptor, int):
+                        os.replace(
+                            temporary_name,
+                            self.path.name,
+                            src_dir_fd=parent_descriptor,
+                            dst_dir_fd=parent_descriptor,
+                        )
+                    else:
+                        os.replace(temporary_path, self.path)
                     temporary_name = None
-                    os.fsync(parent_descriptor)
+                    _fsync_directory(parent_descriptor)
                 finally:
                     if temporary_name is not None:
                         try:
-                            os.unlink(temporary_name, dir_fd=parent_descriptor)
+                            if isinstance(parent_descriptor, int):
+                                os.unlink(temporary_name, dir_fd=parent_descriptor)
+                            else:
+                                os.unlink(parent_descriptor / temporary_name)
                         except OSError:
                             pass
         except OSError as error:
@@ -264,11 +270,11 @@ class JournalStore:
         deadline = time.monotonic() + _LOCK_TIMEOUT_SECONDS
         while True:
             try:
-                os.mkdir(
-                    self.lock_path.name,
-                    mode=0o700,
-                    dir_fd=self._required_parent_descriptor(),
-                )
+                parent = self._required_parent_descriptor()
+                if isinstance(parent, int):
+                    os.mkdir(self.lock_path.name, mode=0o700, dir_fd=parent)
+                else:
+                    os.mkdir(self.lock_path, mode=0o700)
             except FileExistsError:
                 self._recover_stale_lock()
                 remaining = deadline - time.monotonic()
@@ -294,14 +300,12 @@ class JournalStore:
             if lock_descriptor is None:
                 continue
             try:
-                descriptor = os.open(
-                    "owner.json",
-                    os.O_WRONLY
-                    | os.O_CREAT
-                    | os.O_EXCL
-                    | getattr(os, "O_NOFOLLOW", 0),
-                    0o600,
-                    dir_fd=lock_descriptor,
+                descriptor = _open_regular_file_at(
+                    lock_descriptor,
+                    self.lock_path / "owner.json",
+                    os.O_WRONLY,
+                    create=True,
+                    exclusive=True,
                 )
                 with os.fdopen(descriptor, "w", encoding="utf-8") as metadata_file:
                     metadata_file.write(
@@ -312,7 +316,7 @@ class JournalStore:
                 self._remove_lock_directory(lock_descriptor)
                 raise _io_error("write journal lock", self.lock_path, error) from error
             finally:
-                os.close(lock_descriptor)
+                _close_directory(lock_descriptor)
             return token
 
     def _recover_stale_lock(self) -> None:
@@ -336,13 +340,13 @@ class JournalStore:
                 return
             self._remove_lock_if_owned(token, lock_descriptor)
         finally:
-            os.close(lock_descriptor)
+            _close_directory(lock_descriptor)
 
     def _release_lock(self, token: str) -> None:
         self._remove_lock_if_owned(token)
 
     def _remove_lock_if_owned(
-        self, token: str, lock_descriptor: int | None = None
+        self, token: str, lock_descriptor: _DirectoryHandle | None = None
     ) -> None:
         opened_here = lock_descriptor is None
         if lock_descriptor is None:
@@ -354,7 +358,10 @@ class JournalStore:
             if metadata is None or metadata.get("token") != token:
                 return
             try:
-                os.unlink("owner.json", dir_fd=lock_descriptor)
+                if isinstance(lock_descriptor, int):
+                    os.unlink("owner.json", dir_fd=lock_descriptor)
+                else:
+                    os.unlink(lock_descriptor / "owner.json")
             except FileNotFoundError:
                 return
             except OSError:
@@ -362,25 +369,41 @@ class JournalStore:
             self._remove_lock_directory(lock_descriptor)
         finally:
             if opened_here:
-                os.close(lock_descriptor)
+                _close_directory(lock_descriptor)
 
-    def _read_lock_metadata(self, lock_descriptor: int) -> dict[str, Any] | None:
+    def _read_lock_metadata(
+        self, lock_descriptor: _DirectoryHandle
+    ) -> dict[str, Any] | None:
         try:
-            descriptor = os.open(
-                "owner.json",
-                os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0),
-                dir_fd=lock_descriptor,
+            descriptor = _open_regular_file_at(
+                lock_descriptor,
+                self.lock_path / "owner.json",
+                os.O_RDONLY,
+                missing_ok=True,
             )
+            if descriptor is None:
+                return None
             with os.fdopen(descriptor, encoding="utf-8") as metadata_file:
-                if not stat.S_ISREG(os.fstat(metadata_file.fileno()).st_mode):
-                    return None
                 metadata = json.load(metadata_file)
         except (OSError, UnicodeDecodeError, json.JSONDecodeError):
             return None
         return metadata if isinstance(metadata, dict) else None
 
-    def _open_lock_directory(self) -> int | None:
+    def _open_lock_directory(self) -> _DirectoryHandle | None:
         parent_descriptor = self._required_parent_descriptor()
+        if not isinstance(parent_descriptor, int):
+            try:
+                expected = os.stat(self.lock_path, follow_symlinks=False)
+            except FileNotFoundError:
+                return None
+            except OSError as error:
+                raise _io_error(
+                    "inspect journal lock", self.lock_path, error
+                ) from error
+            if not stat.S_ISDIR(expected.st_mode):
+                raise _unsafe_lock(self.lock_path)
+            return self.lock_path
+
         try:
             expected = os.stat(
                 self.lock_path.name,
@@ -427,7 +450,20 @@ class JournalStore:
             return None
         return descriptor
 
-    def _remove_lock_directory(self, lock_descriptor: int) -> None:
+    def _remove_lock_directory(self, lock_descriptor: _DirectoryHandle) -> None:
+        if not isinstance(lock_descriptor, int):
+            try:
+                current = os.stat(lock_descriptor, follow_symlinks=False)
+            except OSError:
+                return
+            if not stat.S_ISDIR(current.st_mode):
+                return
+            try:
+                os.rmdir(lock_descriptor)
+            except OSError:
+                return
+            return
+
         opened = os.fstat(lock_descriptor)
         try:
             current = os.stat(
@@ -451,14 +487,14 @@ class JournalStore:
             return
 
     @contextmanager
-    def _parent(self, *, create: bool) -> Iterator[int]:
+    def _parent(self, *, create: bool) -> Iterator[_DirectoryHandle]:
         if self._parent_descriptor is not None:
             yield self._parent_descriptor
             return
         with _open_parent_directory(self.path, create=create) as descriptor:
             yield descriptor
 
-    def _required_parent_descriptor(self) -> int:
+    def _required_parent_descriptor(self) -> _DirectoryHandle:
         if self._parent_descriptor is None:
             raise RuntimeError("journal parent descriptor is not active")
         return self._parent_descriptor
@@ -499,9 +535,21 @@ def _serialize_events(events: Sequence[dict[str, Any]], path: Path) -> bytes:
 
 
 @contextmanager
-def _open_parent_directory(path: Path, *, create: bool) -> Iterator[int]:
+def _open_parent_directory(
+    path: Path, *, create: bool
+) -> Iterator[_DirectoryHandle]:
     """Walk to a file's parent using no-follow directory descriptors."""
     target = _canonicalize_root_alias(path.absolute())
+    if not _directory_descriptors_supported():
+        if create:
+            target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        elif not target.parent.exists():
+            raise FileNotFoundError(target.parent)
+        if not target.parent.is_dir():
+            raise _unsafe_storage_path(target.parent)
+        yield target.parent
+        return
+
     flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
     flags |= getattr(os, "O_NOFOLLOW", 0)
     descriptor = os.open(target.anchor, flags)
@@ -545,7 +593,7 @@ def _canonicalize_root_alias(path: Path) -> Path:
 
 
 def _open_regular_file_at(
-    parent_descriptor: int,
+    parent_descriptor: _DirectoryHandle,
     path: Path,
     flags: int,
     *,
@@ -559,12 +607,15 @@ def _open_regular_file_at(
     if exclusive:
         open_flags |= os.O_EXCL
     try:
-        descriptor = os.open(
-            path.name,
-            open_flags,
-            0o600,
-            dir_fd=parent_descriptor,
-        )
+        if isinstance(parent_descriptor, int):
+            descriptor = os.open(
+                path.name,
+                open_flags,
+                0o600,
+                dir_fd=parent_descriptor,
+            )
+        else:
+            descriptor = os.open(parent_descriptor / path.name, open_flags, 0o600)
     except FileNotFoundError:
         if missing_ok:
             return None
@@ -577,6 +628,22 @@ def _open_regular_file_at(
         os.close(descriptor)
         raise _unsafe_storage_path(path)
     return descriptor
+
+
+def _directory_descriptors_supported() -> bool:
+    required = {"open", "mkdir", "stat", "unlink", "rmdir"}
+    supported = {function.__name__ for function in os.supports_dir_fd}
+    return hasattr(os, "O_DIRECTORY") and required <= supported
+
+
+def _close_directory(directory: _DirectoryHandle) -> None:
+    if isinstance(directory, int):
+        os.close(directory)
+
+
+def _fsync_directory(directory: _DirectoryHandle) -> None:
+    if isinstance(directory, int):
+        os.fsync(directory)
 
 
 def _unsafe_storage_path(path: Path) -> PapercutsError:
@@ -693,12 +760,37 @@ def _optional_note_is_valid(event: dict[str, Any]) -> bool:
 def _process_absent(pid: int) -> bool:
     if pid <= 0:
         return False
+    if os.name == "nt":
+        return _windows_process_absent(pid)
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
         return True
     except (PermissionError, OSError):
         return False
+    return False
+
+
+def _windows_process_absent(pid: int) -> bool:
+    import ctypes
+    from ctypes import wintypes
+
+    process_query_limited_information = 0x1000
+    error_invalid_parameter = 87
+    try:
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        open_process = kernel32.OpenProcess
+        open_process.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+        open_process.restype = wintypes.HANDLE
+        close_handle = kernel32.CloseHandle
+        close_handle.argtypes = (wintypes.HANDLE,)
+        close_handle.restype = wintypes.BOOL
+        handle = open_process(process_query_limited_information, False, pid)
+    except (AttributeError, OSError):
+        return False
+    if not handle:
+        return ctypes.get_last_error() == error_invalid_parameter
+    close_handle(handle)
     return False
 
 
