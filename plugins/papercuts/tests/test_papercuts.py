@@ -5,7 +5,9 @@ import inspect
 import json
 import os
 import socket
+import subprocess
 import sys
+import sysconfig
 import tempfile
 import types
 import unittest
@@ -650,6 +652,96 @@ class PapercutsPluginTests(unittest.TestCase):
                     side_effect=FileNotFoundError("git is unavailable"),
                 ):
                     self.assertEqual(discover_project(root), (root, None))
+
+            launcher_bin = root / "launcher-bin"
+            launcher_cache = root / "launcher-cache"
+            launcher_log = root / "launcher-python.log"
+            launcher_bin.mkdir(parents=True)
+            fake_python = launcher_bin / "python3"
+            fake_python.write_text(
+                """#!/bin/sh
+set -eu
+printf '%s|%s\n' "$*" "${PYTHONPATH:-}" >> "$PAPERCUTS_TEST_LOG"
+if [ "${1:-}" = "-c" ]; then
+    exec "$PAPERCUTS_TEST_REAL_PYTHON" "$@"
+fi
+[ "${1:-} ${2:-} ${3:-}" != "-m pip install" ] || sleep 0.2
+exit 0
+""",
+                encoding="utf-8",
+            )
+            fake_python.chmod(0o755)
+            launcher = Path(__file__).resolve().parents[1] / "scripts/launch-mcp"
+            launch_arguments = {
+                "cwd": launcher.parent.parent,
+                "env": {
+                    "PATH": f"{launcher_bin}:/usr/bin:/bin",
+                    "XDG_CACHE_HOME": str(launcher_cache),
+                    "PAPERCUTS_TEST_LOG": str(launcher_log),
+                    "PAPERCUTS_TEST_REAL_PYTHON": sys.executable,
+                },
+                "text": True,
+            }
+            processes = [
+                subprocess.Popen(
+                    [str(launcher)],
+                    **launch_arguments,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+                for _ in range(2)
+            ]
+            launch_errors = [process.communicate()[1] for process in processes]
+            reused_launch = subprocess.run(
+                [str(launcher)],
+                **launch_arguments,
+                capture_output=True,
+                check=False,
+            )
+            python_tag = f"{sys.implementation.cache_tag}-{sysconfig.get_platform()}"
+            dependency_target = launcher_cache / f"papercuts/{python_tag}/mcp-2.1.1"
+            self.assertTrue(
+                all(process.returncode == 0 for process in processes),
+                launch_errors,
+            )
+            self.assertEqual(reused_launch.returncode, 0, reused_launch.stderr)
+            self.assertTrue((dependency_target / ".installed").is_file())
+            launch_calls = launcher_log.read_text(encoding="utf-8").splitlines()
+            install_calls = [call for call in launch_calls if call.startswith("-m pip install ")]
+            self.assertEqual(len(install_calls), 2)
+            install_targets = {
+                call.split("--target ", 1)[1].split(" ", 1)[0]
+                for call in install_calls
+            }
+            self.assertEqual(len(install_targets), 2)
+            self.assertTrue(all("mcp==2.1.1" in call for call in install_calls))
+            server_calls = [
+                call for call in launch_calls if call.startswith("-m papercuts.mcp_server|")
+            ]
+            self.assertEqual(len(server_calls), 3)
+            self.assertTrue(
+                all(call.split("|", 1)[1].startswith(f"{dependency_target}:") for call in server_calls)
+            )
+
+            relative_cache_root = root / "launcher-home/.cache"
+            relative_launch = subprocess.run(
+                [str(launcher)],
+                **{
+                    **launch_arguments,
+                    "cwd": root,
+                    "env": {
+                        **launch_arguments["env"],
+                        "XDG_CACHE_HOME": "relative-cache",
+                        "HOME": str(root / "launcher-home"),
+                    },
+                },
+            )
+            relative_target = (
+                relative_cache_root / f"papercuts/{python_tag}/mcp-2.1.1"
+            )
+            self.assertEqual(relative_launch.returncode, 0, relative_launch.stderr)
+            self.assertTrue((relative_target / ".installed").is_file())
+            self.assertFalse((root / "relative-cache").exists())
 
             config_root = root / "config-permission"
             config_root.mkdir()

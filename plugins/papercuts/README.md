@@ -6,9 +6,9 @@ The skill records dead-end tool calls, misleading documentation, missing helpers
 
 ## Requirements and privacy
 
-The CLI requires Python 3.11 or later. The local MCP server also requires [uv](https://docs.astral.sh/uv/); on its first run, `uv` may fetch the pinned `mcp==2.1.1` dependency. The core and CLI have no dependency beyond Python.
+The CLI requires Python 3.11 or later. The local MCP server prefers [uv](https://docs.astral.sh/uv/) when it is available. Without `uv`, it uses `python3 -m pip` and installs the pinned `mcp==2.1.1` dependency into an isolated, interpreter-specific directory under `${XDG_CACHE_HOME:-~/.cache}/papercuts/`. The core and CLI have no dependency beyond Python.
 
-Papercuts stores data locally. It has no telemetry and makes no network requests, except for `uv` fetching that pinned MCP dependency on first run. Credential redaction is best effort, not a guarantee: never submit secrets, credentials, raw environment dumps, arbitrary attachments, or unbounded evidence.
+Papercuts stores data locally. It has no telemetry and makes no network requests, except for `uv` or `pip` fetching that pinned MCP dependency on first run. Credential redaction is best effort, not a guarantee: never submit secrets, credentials, raw environment dumps, arbitrary attachments, or unbounded evidence.
 
 Context supports a command up to 1,024 characters, an integer exit status, sanitized stderr up to 4,096 UTF-8 bytes, and a note up to 2,048 characters. Evidence files must be regular files no larger than 1 MiB. Tags are limited to ten.
 

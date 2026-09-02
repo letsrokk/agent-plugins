@@ -2,9 +2,77 @@
 set -eu
 
 plugin_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-if ! command -v uv >/dev/null 2>&1; then
-    echo "papercuts MCP requires uv: https://docs.astral.sh/uv/" >&2
+
+if command -v uv >/dev/null 2>&1; then
+    export PYTHONPATH="$plugin_root/src${PYTHONPATH:+:$PYTHONPATH}"
+    exec uv run --quiet --with mcp==2.1.1 -- python -m papercuts.mcp_server
+fi
+
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "papercuts MCP requires uv or Python 3.11 or later with pip" >&2
     exit 78
 fi
-export PYTHONPATH="$plugin_root/src${PYTHONPATH:+:$PYTHONPATH}"
-exec uv run --quiet --with mcp==2.1.1 -- python -m papercuts.mcp_server
+
+if ! python_tag=$(python3 -c 'import sys, sysconfig; sys.exit(1) if sys.version_info < (3, 11) else None; print(f"{sys.implementation.cache_tag}-{sysconfig.get_platform()}")'); then
+    echo "papercuts MCP requires uv or Python 3.11 or later with pip" >&2
+    exit 78
+fi
+
+case "$python_tag" in
+    ""|*[!A-Za-z0-9._-]*)
+        echo "papercuts MCP could not determine a safe Python cache tag" >&2
+        exit 78
+        ;;
+esac
+
+case "${XDG_CACHE_HOME:-}" in
+    /*) cache_root=$XDG_CACHE_HOME ;;
+    *)
+        case "${HOME:-}" in
+            /*) cache_root=$HOME/.cache ;;
+            *) cache_root= ;;
+        esac
+        ;;
+esac
+if [ -z "$cache_root" ]; then
+    echo "papercuts MCP requires XDG_CACHE_HOME or HOME for its pip cache" >&2
+    exit 78
+fi
+
+dependency_parent="$cache_root/papercuts/$python_tag"
+dependency_dir="$dependency_parent/mcp-2.1.1"
+installed_marker="$dependency_dir/.installed"
+if [ ! -f "$installed_marker" ]; then
+    if ! python3 -m pip --version >/dev/null 2>&1; then
+        echo "papercuts MCP requires uv or pip for Python 3.11 or later" >&2
+        exit 78
+    fi
+    mkdir -p "$dependency_parent"
+    if ! private_dir=$(python3 -c 'import sys, tempfile; print(tempfile.mkdtemp(prefix=".mcp-2.1.1.", dir=sys.argv[1]))' "$dependency_parent"); then
+        echo "papercuts MCP could not create its dependency cache" >&2
+        exit 78
+    fi
+    cleanup_private_dir() {
+        if [ -n "${private_dir:-}" ]; then
+            python3 -c 'import shutil, sys; shutil.rmtree(sys.argv[1])' "$private_dir"
+        fi
+    }
+    trap cleanup_private_dir 0 1 2 15
+    if ! python3 -m pip install --disable-pip-version-check --quiet --upgrade --target "$private_dir" mcp==2.1.1 1>&2; then
+        echo "papercuts MCP could not install mcp==2.1.1 with pip" >&2
+        exit 78
+    fi
+    : > "$private_dir/.installed"
+    if python3 -c 'import os, sys; os.symlink(sys.argv[1], sys.argv[2])' "$private_dir" "$dependency_dir" 2>/dev/null; then
+        private_dir=
+    elif [ ! -f "$installed_marker" ]; then
+        echo "papercuts MCP could not publish its dependency cache" >&2
+        exit 78
+    fi
+    cleanup_private_dir
+    private_dir=
+    trap - 0 1 2 15
+fi
+
+export PYTHONPATH="$dependency_dir:$plugin_root/src${PYTHONPATH:+:$PYTHONPATH}"
+exec python3 -m papercuts.mcp_server
