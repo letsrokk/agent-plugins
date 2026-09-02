@@ -256,6 +256,23 @@ class MarketplaceValidationTests(unittest.TestCase):
 
         self.assertTrue(any("must provide at least one skill or mcp.json" in error for error in errors))
 
+    def test_scripted_plugin_requires_test_and_validation_entrypoints(self) -> None:
+        source = self.root / "plugins/scripted/src/scripted.py"
+        source.parent.mkdir(parents=True)
+        source.write_text("pass\n", encoding="utf-8")
+
+        errors = validate_repository(self.root)
+
+        self.assertTrue(any("scripts/test.py is missing" in error for error in errors))
+        self.assertTrue(any("scripts/validate.py is missing" in error for error in errors))
+
+        scripts = self.root / "plugins/scripted/scripts"
+        scripts.mkdir()
+        (scripts / "test.py").write_text("pass\n", encoding="utf-8")
+        (scripts / "validate.py").write_text("pass\n", encoding="utf-8")
+
+        self.assertEqual(validate_repository(self.root), [])
+
     def test_rejects_skill_name_that_differs_from_directory(self) -> None:
         self._write_catalogs(codex_plugins=[self._codex_entry("bad-skill")])
         self._write_portable_manifest("bad-skill")

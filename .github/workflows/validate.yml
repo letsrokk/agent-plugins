@@ -10,13 +10,40 @@ permissions:
   contents: read
 
 jobs:
-  papercuts-launcher:
+  plugin-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      plugins: ${{ steps.select.outputs.plugins }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Select changed scripted plugins
+        id: select
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          plugins="$(python3 scripts/plugin_ci.py changed "$BASE_SHA" "$HEAD_SHA")"
+          echo "plugins=$plugins" >> "$GITHUB_OUTPUT"
+
+  plugin-tests:
+    needs: plugin-changes
+    if: needs.plugin-changes.outputs.plugins != '[]'
     strategy:
       matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-    runs-on: ${{ matrix.os }}
+        plugin: ${{ fromJSON(needs.plugin-changes.outputs.plugins) }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugins/${{ matrix.plugin }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -26,8 +53,30 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Run Papercuts launcher tests
-        run: python3 -m unittest discover -s plugins/papercuts/tests -p test_launcher.py -v
+      - name: Run plugin tests
+        run: python3 scripts/test.py
+
+  plugin-validation:
+    needs: plugin-changes
+    if: needs.plugin-changes.outputs.plugins != '[]'
+    strategy:
+      matrix:
+        plugin: ${{ fromJSON(needs.plugin-changes.outputs.plugins) }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugins/${{ matrix.plugin }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate plugin
+        run: python3 scripts/validate.py
 
   validate:
     runs-on: ubuntu-latest
@@ -58,9 +107,18 @@ jobs:
           python3 scripts/version_plugins.py check "$MERGE_BASE" "$HEAD_SHA"
 
   version:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      always() &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.plugin-changes.result == 'success' &&
+      (needs.plugin-tests.result == 'success' || needs.plugin-tests.result == 'skipped') &&
+      (needs.plugin-validation.result == 'success' || needs.plugin-validation.result == 'skipped') &&
+      needs.validate.result == 'success'
     needs:
-      - papercuts-launcher
+      - plugin-changes
+      - plugin-tests
+      - plugin-validation
       - validate
     runs-on: ubuntu-latest
     permissions:
