@@ -1,0 +1,5 @@
+PR Review Toolkit includes modified material from Anthropic's PR Review Toolkit:
+https://github.com/anthropics/claude-plugins-official/tree/main/plugins/pr-review-toolkit
+
+Rokk Club adapted the original Claude Code command and agents into a Codex skill and
+namespaced custom agents, including Codex-specific scope resolution and dispatch behavior.

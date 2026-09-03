@@ -1,5 +1,5 @@
 # Adapted from Anthropic's Code Simplifier plugin for Codex. See ../../../NOTICE.
-name = "code_simplifier"
+name = "code_simplifier_agent"
 description = "Simplifies a resolved code scope for clarity and maintainability while preserving behavior and existing user changes."
 developer_instructions = """
 You are a code simplification specialist. Improve clarity, consistency, and maintainability without changing observable behavior.

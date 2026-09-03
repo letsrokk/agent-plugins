@@ -1,0 +1,40 @@
+{
+  "name": "pr-review-toolkit",
+  "version": "0.1.0",
+  "description": "Review pull requests and local changes with specialized code-quality agents.",
+  "author": {
+    "name": "Rokk Club",
+    "url": "https://github.com/letsrokk"
+  },
+  "homepage": "https://github.com/letsrokk/agent-plugins",
+  "repository": "https://github.com/letsrokk/agent-plugins",
+  "license": "Apache-2.0",
+  "keywords": [
+    "codex",
+    "code-review",
+    "pull-request",
+    "testing",
+    "code-quality"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "PR Review Toolkit",
+    "shortDescription": "Review changes with specialized agents",
+    "longDescription": "Review a pull request or local change set for code quality, tests, comments, error handling, and type design, then simplify code after the review passes.",
+    "developerName": "Rokk Club",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/letsrokk/agent-plugins",
+    "defaultPrompt": [
+      "Review the current pull request with all applicable specialists.",
+      "Review the current changes for tests and silent failures.",
+      "Review and simplify the current pull request."
+    ],
+    "brandColor": "#7C3AED",
+    "screenshots": []
+  }
+}
