@@ -51,6 +51,17 @@ AUTHOR_FIELDS = {"name", "email", "url"}
 UPSTREAM_CODE_SIMPLIFIER = (
     "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-simplifier"
 )
+UPSTREAM_PR_REVIEW_TOOLKIT = (
+    "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/pr-review-toolkit"
+)
+PR_REVIEW_TOOLKIT_AGENTS = (
+    "pr_review_toolkit_code_reviewer",
+    "pr_review_toolkit_code_simplifier",
+    "pr_review_toolkit_comment_analyzer",
+    "pr_review_toolkit_pr_test_analyzer",
+    "pr_review_toolkit_silent_failure_hunter",
+    "pr_review_toolkit_type_design_analyzer",
+)
 
 
 def _load_json(root: Path, relative_path: Path, errors: list[str]) -> dict[str, Any] | None:
@@ -196,7 +207,7 @@ def _validate_code_simplifier(root: Path, errors: list[str]) -> None:
     license_file = plugin / "LICENSE"
     skill_file = skill / "SKILL.md"
     interface = skill / "agents/openai.yaml"
-    agent = skill / "agents/code_simplifier.toml"
+    agent = skill / "agents/code_simplifier_agent.toml"
 
     if not notice.is_file():
         errors.append("plugins/code-simplifier/NOTICE is missing")
@@ -213,7 +224,7 @@ def _validate_code_simplifier(root: Path, errors: list[str]) -> None:
 
     if skill_file.is_file():
         text = skill_file.read_text(encoding="utf-8")
-        if "Anthropic's Code Simplifier" not in text or "code_simplifier" not in text:
+        if "Anthropic's Code Simplifier" not in text or "code_simplifier_agent" not in text:
             errors.append("plugins/code-simplifier/skills/code-simplifier/SKILL.md: adaptation notice is missing")
     interface_text = interface.read_text(encoding="utf-8") if interface.is_file() else ""
     if re.search(r"^\s*display_name:\s*['\"]?Code Simplifier['\"]?\s*$", interface_text, re.M) is None:
@@ -223,13 +234,62 @@ def _validate_code_simplifier(root: Path, errors: list[str]) -> None:
         )
     if not agent.is_file():
         errors.append(
-            "plugins/code-simplifier/skills/code-simplifier/agents/code_simplifier.toml is missing"
+            "plugins/code-simplifier/skills/code-simplifier/agents/code_simplifier_agent.toml is missing"
         )
     elif "Adapted from Anthropic's Code Simplifier" not in agent.read_text(encoding="utf-8"):
         errors.append(
-            "plugins/code-simplifier/skills/code-simplifier/agents/code_simplifier.toml: "
+            "plugins/code-simplifier/skills/code-simplifier/agents/code_simplifier_agent.toml: "
             "adaptation notice is missing"
         )
+
+
+def _validate_pr_review_toolkit(root: Path, errors: list[str]) -> None:
+    plugin = root / "plugins/pr-review-toolkit"
+    skill = plugin / "skills/pr-review-toolkit"
+    notice = plugin / "NOTICE"
+    license_file = plugin / "LICENSE"
+    skill_file = skill / "SKILL.md"
+    interface = skill / "agents/openai.yaml"
+
+    if not notice.is_file():
+        errors.append("plugins/pr-review-toolkit/NOTICE is missing")
+    else:
+        text = notice.read_text(encoding="utf-8")
+        for marker in ("Anthropic", "Rokk Club", "adapt", UPSTREAM_PR_REVIEW_TOOLKIT):
+            if marker not in text:
+                errors.append(
+                    f"plugins/pr-review-toolkit/NOTICE: missing attribution marker '{marker}'"
+                )
+
+    if license_file.is_file():
+        text = license_file.read_text(encoding="utf-8")
+        if "Apache License" not in text or "Version 2.0" not in text:
+            errors.append("plugins/pr-review-toolkit/LICENSE: must contain Apache License 2.0")
+
+    if skill_file.is_file():
+        text = skill_file.read_text(encoding="utf-8")
+        if "Anthropic's PR Review Toolkit" not in text:
+            errors.append(
+                "plugins/pr-review-toolkit/skills/pr-review-toolkit/SKILL.md: "
+                "adaptation notice is missing"
+            )
+
+    interface_text = interface.read_text(encoding="utf-8") if interface.is_file() else ""
+    if re.search(
+        r"^\s*display_name:\s*['\"]?PR Review Toolkit['\"]?\s*$", interface_text, re.M
+    ) is None:
+        errors.append(
+            "plugins/pr-review-toolkit/skills/pr-review-toolkit/agents/openai.yaml: "
+            "PR Review Toolkit interface metadata is missing"
+        )
+
+    for agent_name in PR_REVIEW_TOOLKIT_AGENTS:
+        agent = skill / f"agents/{agent_name}.toml"
+        if not agent.is_file():
+            errors.append(
+                f"plugins/pr-review-toolkit/skills/pr-review-toolkit/agents/{agent_name}.toml "
+                "is missing"
+            )
 
 
 def _validate_portable_manifest(
@@ -259,6 +319,8 @@ def _validate_portable_manifest(
             )
     if name == "code-simplifier":
         _validate_code_simplifier(root, errors)
+    if name == "pr-review-toolkit":
+        _validate_pr_review_toolkit(root, errors)
     return manifest
 
 

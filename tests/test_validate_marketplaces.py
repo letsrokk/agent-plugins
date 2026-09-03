@@ -116,7 +116,7 @@ class MarketplaceValidationTests(unittest.TestCase):
         (skill_root / "SKILL.md").write_text(
             "---\nname: code-simplifier\ndescription: Simplify code.\n---\n\n"
             "# Code Simplifier\n\nAdapted from Anthropic's Code Simplifier.\n"
-            "Dispatch `code_simplifier`.\n",
+            "Dispatch `code_simplifier_agent`.\n",
             encoding="utf-8",
         )
         (skill_root / "agents/openai.yaml").write_text(
@@ -124,9 +124,9 @@ class MarketplaceValidationTests(unittest.TestCase):
             encoding="utf-8",
         )
         if include_agent:
-            (skill_root / "agents/code_simplifier.toml").write_text(
+            (skill_root / "agents/code_simplifier_agent.toml").write_text(
                 "# Adapted from Anthropic's Code Simplifier for Codex.\n"
-                'name = "code_simplifier"\n'
+                'name = "code_simplifier_agent"\n'
                 'description = "Simplifies code."\n'
                 'developer_instructions = "Preserve behavior."\n',
                 encoding="utf-8",
@@ -142,6 +142,62 @@ class MarketplaceValidationTests(unittest.TestCase):
                 "Rokk Club adapted it from a Claude Code agent into a Codex skill and custom agent.\n",
                 encoding="utf-8",
             )
+
+    def _write_pr_review_toolkit_package(self, *, missing_agent: str | None = None) -> None:
+        self._write_json(
+            "plugins/pr-review-toolkit/plugin.json",
+            {
+                "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+                "name": "pr-review-toolkit",
+                "version": "0.1.0",
+                "description": "Review pull requests with specialized agents.",
+                "author": {"name": "Rokk Club"},
+                "homepage": "https://github.com/letsrokk/agent-plugins",
+                "repository": "https://github.com/letsrokk/agent-plugins",
+                "license": "Apache-2.0",
+                "keywords": ["codex", "code-review"],
+            },
+        )
+        self._write_codex_manifest("pr-review-toolkit")
+        skill_root = self.root / "plugins/pr-review-toolkit/skills/pr-review-toolkit"
+        agents = skill_root / "agents"
+        agents.mkdir(parents=True, exist_ok=True)
+        (skill_root / "SKILL.md").write_text(
+            "---\nname: pr-review-toolkit\ndescription: Review pull requests.\n---\n\n"
+            "# PR Review Toolkit\n\nAdapted from Anthropic's PR Review Toolkit.\n",
+            encoding="utf-8",
+        )
+        (agents / "openai.yaml").write_text(
+            'interface:\n  display_name: "PR Review Toolkit"\n',
+            encoding="utf-8",
+        )
+        agent_names = (
+            "pr_review_toolkit_code_reviewer",
+            "pr_review_toolkit_code_simplifier",
+            "pr_review_toolkit_comment_analyzer",
+            "pr_review_toolkit_pr_test_analyzer",
+            "pr_review_toolkit_silent_failure_hunter",
+            "pr_review_toolkit_type_design_analyzer",
+        )
+        for name in agent_names:
+            if name == missing_agent:
+                continue
+            (agents / f"{name}.toml").write_text(
+                f'name = "{name}"\n'
+                'description = "Reviews code."\n'
+                'developer_instructions = "Report findings."\n',
+                encoding="utf-8",
+            )
+        (self.root / "plugins/pr-review-toolkit/LICENSE").write_text(
+            "Apache License\nVersion 2.0, January 2004\n",
+            encoding="utf-8",
+        )
+        (self.root / "plugins/pr-review-toolkit/NOTICE").write_text(
+            "PR Review Toolkit includes modified material from Anthropic's PR Review Toolkit.\n"
+            "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/pr-review-toolkit\n"
+            "Rokk Club adapted it from Claude Code for Codex.\n",
+            encoding="utf-8",
+        )
 
     def test_accepts_empty_marketplaces_and_agents_symlink(self) -> None:
         self.assertEqual(validate_repository(self.root), [])
@@ -206,6 +262,12 @@ class MarketplaceValidationTests(unittest.TestCase):
     def test_accepts_complete_code_simplifier_package(self) -> None:
         self._write_catalogs(codex_plugins=[self._codex_entry("code-simplifier")])
         self._write_code_simplifier_package()
+
+        self.assertEqual(validate_repository(self.root), [])
+
+    def test_accepts_complete_pr_review_toolkit_package(self) -> None:
+        self._write_catalogs(codex_plugins=[self._codex_entry("pr-review-toolkit")])
+        self._write_pr_review_toolkit_package()
 
         self.assertEqual(validate_repository(self.root), [])
 
@@ -349,7 +411,16 @@ class MarketplaceValidationTests(unittest.TestCase):
 
         errors = validate_repository(self.root)
 
-        self.assertTrue(any("code_simplifier.toml is missing" in error for error in errors))
+        self.assertTrue(any("code_simplifier_agent.toml is missing" in error for error in errors))
+
+    def test_rejects_pr_review_toolkit_without_required_agent(self) -> None:
+        missing = "pr_review_toolkit_type_design_analyzer"
+        self._write_catalogs(codex_plugins=[self._codex_entry("pr-review-toolkit")])
+        self._write_pr_review_toolkit_package(missing_agent=missing)
+
+        errors = validate_repository(self.root)
+
+        self.assertTrue(any(f"{missing}.toml is missing" in error for error in errors))
 
 
 if __name__ == "__main__":
