@@ -1,0 +1,36 @@
+{
+  "name": "read-the-room",
+  "version": "0.1.0",
+  "description": "Help Codex shape clear communication for the human and channel in front of it.",
+  "author": {
+    "name": "Rokk Club",
+    "url": "https://github.com/letsrokk"
+  },
+  "homepage": "https://github.com/letsrokk/agent-plugins",
+  "repository": "https://github.com/letsrokk/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "communication",
+    "writing",
+    "productivity"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Read the Room",
+    "shortDescription": "Clear communication shaped for the channel",
+    "longDescription": "Help agents write direct, useful responses and artifacts for human readers across agent sessions, version control, issue trackers, knowledge bases, and chat applications.",
+    "developerName": "Rokk Club",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/letsrokk/agent-plugins",
+    "defaultPrompt": [
+      "Rewrite this clearly for the human and channel.",
+      "Draft a concise pull or merge request description.",
+      "Turn this update into a useful chat message."
+    ]
+  }
+}

@@ -8,6 +8,10 @@
     {
       "name": "papercuts",
       "source": "./plugins/papercuts"
+    },
+    {
+      "name": "read-the-room",
+      "source": "./plugins/read-the-room"
     }
   ]
 }
