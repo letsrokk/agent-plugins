@@ -48,7 +48,7 @@ When describing work or a follow-up, build the account from completed work, cons
 ### Rules
 
 - Answer first. Add context only when it changes what the reader would do.
-- Do not restate code or a diff line by line. Summarize delivered behavior and the details the reader needs to understand, decide, act, review, or maintain the work. Do not repeat an earlier message unless the current artifact must stand alone.
+- Do not restate code, a diff, or another readily available companion source. Summarize only the behavior and rationale the reader needs to understand, decide, act, review, or maintain the work; point to the companion for detail unless the artifact must stand alone.
 - Document where the work landed, not the route to it. Do not include earlier attempts, alternatives weighed, or an account of why you changed approach. Name a rejected option only when a reader would otherwise try it and hit the same constraint, such as "locking here deadlocks with the writer." Open choices are different because the options are the subject.
 - Gloss an unfamiliar term inline in a few words, not in a follow-up sentence.
 - Put one main idea in each sentence, one action in each instruction, and one topic in each paragraph with its point first. Split a sentence that becomes hard to follow. There is no sentence-length limit.
