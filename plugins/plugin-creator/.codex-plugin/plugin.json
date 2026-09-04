@@ -1,0 +1,34 @@
+{
+  "name": "plugin-creator",
+  "version": "0.1.0",
+  "description": "Inspect recent Codex and Claude sessions for plugin skill usage and direct invocation problems.",
+  "author": {
+    "name": "Rokk Club",
+    "url": "https://github.com/letsrokk"
+  },
+  "homepage": "https://github.com/letsrokk/agent-plugins",
+  "repository": "https://github.com/letsrokk/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "agents",
+    "plugins",
+    "skills",
+    "analytics"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Plugin Creator",
+    "shortDescription": "Inspect plugin and skill usage",
+    "longDescription": "Inspect recent Codex and Claude session history and summarize successful plugin skill invocations, direct failures, and incomplete calls.",
+    "developerName": "Rokk Club",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read"
+    ],
+    "websiteURL": "https://github.com/letsrokk/agent-plugins",
+    "defaultPrompt": [
+      "Inspect recent agent sessions for usage of a plugin or skill."
+    ]
+  }
+}
