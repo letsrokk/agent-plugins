@@ -27,14 +27,20 @@ def load_launcher():
 
 
 class PapercutsLauncherTests(unittest.TestCase):
-    def test_cli_launcher_skips_old_python_for_supported_versioned_python(self) -> None:
+    def test_cli_launcher_discovers_supported_versioned_python(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             bin_dir = root / "bin"
             bin_dir.mkdir()
             output_path = root / "invocation.txt"
 
-            for name in ("python3", "python3.14", "python3.13", "python3.12"):
+            for name in (
+                "python3",
+                "python3.14",
+                "python3.13",
+                "python3.12",
+                "python3.11",
+            ):
                 old_python = bin_dir / name
                 old_python.write_text(
                     '#!/bin/sh\n[ "$1" = "-c" ] && exit 1\nexit 99\n',
@@ -42,7 +48,7 @@ class PapercutsLauncherTests(unittest.TestCase):
                 )
                 old_python.chmod(0o755)
 
-            supported_python = bin_dir / "python3.11"
+            supported_python = bin_dir / "python3.42"
             supported_python.write_text(
                 '#!/bin/sh\n[ "$1" = "-c" ] && exit 0\nprintf "%s\\n" "$@" > "$PAPERCUTS_TEST_OUTPUT"\n',
                 encoding="utf-8",
