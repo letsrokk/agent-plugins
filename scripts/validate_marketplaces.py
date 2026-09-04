@@ -27,6 +27,7 @@ CODEX_CATALOG = Path(".agents/plugins/marketplace.json")
 CLAUDE_CATALOG = Path(".claude-plugin/marketplace.json")
 AGENT_PLUGIN_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
 CLAUDE_MARKETPLACE_SCHEMA = "https://json.schemastore.org/claude-code-marketplace.json"
+MAX_SKILL_FILE_BYTES = 7_168
 PLUGIN_NAME = re.compile(r"^[a-z0-9](?:[a-z0-9.-]{0,62}[a-z0-9])?$")
 PORTABLE_MANIFEST_FIELDS = {
     "$schema",
@@ -189,6 +190,12 @@ def _validate_plugin_components(root: Path, name: str, errors: list[str]) -> Non
                 discovered_skills += 1
                 relative_skill = skill_directory.relative_to(root)
                 relative_file = skill_file.relative_to(root)
+                skill_size = skill_file.stat().st_size
+                if skill_size > MAX_SKILL_FILE_BYTES:
+                    errors.append(
+                        f"{relative_file}: must not exceed {MAX_SKILL_FILE_BYTES} bytes "
+                        f"(found {skill_size})"
+                    )
                 skill_name = _skill_frontmatter_name(skill_file, relative_file, errors)
                 if skill_name is not None and skill_name != skill_directory.name:
                     errors.append(
