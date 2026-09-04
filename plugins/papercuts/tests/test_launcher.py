@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 LAUNCHER_PATH = PLUGIN_ROOT / "scripts/launch_mcp.py"
+CLI_LAUNCHER_PATH = PLUGIN_ROOT / "scripts/papercuts"
 
 
 def load_launcher():
@@ -26,6 +27,106 @@ def load_launcher():
 
 
 class PapercutsLauncherTests(unittest.TestCase):
+    def test_cli_launcher_discovers_supported_generic_python_later_in_path(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first_bin = root / "first-bin"
+            second_bin = root / "second-bin"
+            first_bin.mkdir()
+            second_bin.mkdir()
+            output_path = root / "invocation.txt"
+
+            dirname = first_bin / "dirname"
+            dirname.write_text(
+                '#!/bin/sh\n[ "$1" = "--" ] && shift\nprintf "%s\\n" "${1%/*}"\n',
+                encoding="utf-8",
+            )
+            dirname.chmod(0o755)
+
+            old_python = first_bin / "python3"
+            old_python.write_text(
+                '#!/bin/sh\n[ "$1" = "-c" ] && exit 1\nexit 99\n',
+                encoding="utf-8",
+            )
+            old_python.chmod(0o755)
+
+            supported_python = second_bin / "python3"
+            supported_python.write_text(
+                '#!/bin/sh\n[ "$1" = "-c" ] && exit 0\nprintf "%s\\n" "$@" > "$PAPERCUTS_TEST_OUTPUT"\n',
+                encoding="utf-8",
+            )
+            supported_python.chmod(0o755)
+
+            environment = dict(os.environ)
+            environment["PATH"] = os.pathsep.join([str(first_bin), str(second_bin)])
+            environment["PAPERCUTS_TEST_OUTPUT"] = str(output_path)
+            result = subprocess.run(
+                [str(CLI_LAUNCHER_PATH), "list", "--status", "open"],
+                env=environment,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                output_path.read_text(encoding="utf-8").splitlines(),
+                ["-m", "papercuts.cli", "list", "--status", "open"],
+            )
+
+    def test_cli_launcher_discovers_supported_versioned_python(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            output_path = root / "invocation.txt"
+
+            dirname = bin_dir / "dirname"
+            dirname.write_text(
+                '#!/bin/sh\n[ "$1" = "--" ] && shift\nprintf "%s\\n" "${1%/*}"\n',
+                encoding="utf-8",
+            )
+            dirname.chmod(0o755)
+
+            for name in (
+                "python3",
+                "python3.14",
+                "python3.13",
+                "python3.12",
+                "python3.11",
+            ):
+                old_python = bin_dir / name
+                old_python.write_text(
+                    '#!/bin/sh\n[ "$1" = "-c" ] && exit 1\nexit 99\n',
+                    encoding="utf-8",
+                )
+                old_python.chmod(0o755)
+
+            supported_python = root / "python3.42"
+            supported_python.write_text(
+                '#!/bin/sh\n[ "$1" = "-c" ] && exit 0\nprintf "%s\\n" "$@" > "$PAPERCUTS_TEST_OUTPUT"\n',
+                encoding="utf-8",
+            )
+            supported_python.chmod(0o755)
+
+            environment = dict(os.environ)
+            environment["PATH"] = f"{bin_dir}{os.pathsep}"
+            environment["PAPERCUTS_TEST_OUTPUT"] = str(output_path)
+            result = subprocess.run(
+                [str(CLI_LAUNCHER_PATH), "list", "--status", "open"],
+                cwd=root,
+                env=environment,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                output_path.read_text(encoding="utf-8").splitlines(),
+                ["-m", "papercuts.cli", "list", "--status", "open"],
+            )
+
     def test_launcher_uses_native_paths_and_publishes_a_real_pip_cache(self) -> None:
         launcher = load_launcher()
         with tempfile.TemporaryDirectory() as directory:

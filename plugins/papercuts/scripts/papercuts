@@ -3,4 +3,47 @@ set -eu
 
 plugin_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 export PYTHONPATH="$plugin_root/src${PYTHONPATH:+:$PYTHONPATH}"
-exec python3 -m papercuts.cli "$@"
+
+python_is_supported() {
+    "$1" -c 'import sys; raise SystemExit(sys.version_info < (3, 11))' >/dev/null 2>&1
+}
+
+if [ "${PATH+x}" = x ]; then
+    remaining_path=$PATH
+    path_complete=false
+    while [ "$path_complete" = false ]; do
+        case $remaining_path in
+            *:*)
+                directory=${remaining_path%%:*}
+                remaining_path=${remaining_path#*:}
+                ;;
+            *)
+                directory=$remaining_path
+                path_complete=true
+                ;;
+        esac
+        [ -n "$directory" ] || directory=.
+        for python_command in "$directory/python3" "$directory"/python3.*; do
+            [ -x "$python_command" ] || continue
+            name=${python_command##*/}
+            case $name in
+                python3) ;;
+                python3.*)
+                    version=${name#python3.}
+                    case $version in
+                        '' | *[!0-9]*) continue ;;
+                    esac
+                    ;;
+                *) continue ;;
+            esac
+            if python_is_supported "$python_command"; then
+                exec "$python_command" -m papercuts.cli "$@"
+            fi
+        done
+    done
+elif python_is_supported python3; then
+    exec python3 -m papercuts.cli "$@"
+fi
+
+printf '%s\n' 'papercuts requires Python 3.11 or later' >&2
+exit 78
