@@ -344,6 +344,22 @@ class MarketplaceValidationTests(unittest.TestCase):
 
         self.assertTrue(any("skill name must match directory 'expected-name'" in error for error in errors))
 
+    def test_enforces_skill_file_prompt_size_limit(self) -> None:
+        self._write_catalogs(codex_plugins=[self._codex_entry("large-skill")])
+        self._write_portable_manifest("large-skill")
+        self._write_codex_manifest("large-skill")
+        self._write_skill("large-skill", "large-skill")
+        skill_file = self.root / "plugins/large-skill/skills/large-skill/SKILL.md"
+        skill_file.write_bytes(skill_file.read_bytes().ljust(7_168, b"x"))
+
+        self.assertEqual(validate_repository(self.root), [])
+
+        skill_file.write_bytes(skill_file.read_bytes() + b"x")
+
+        errors = validate_repository(self.root)
+
+        self.assertTrue(any("must not exceed 7168 bytes" in error for error in errors))
+
     def test_rejects_malformed_custom_agent_toml(self) -> None:
         self._write_catalogs(codex_plugins=[self._codex_entry("bad-agent")])
         self._write_portable_manifest("bad-agent")

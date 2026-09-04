@@ -10,6 +10,8 @@
 
 Portable skills live under `skills/<skill-name>/SKILL.md`. Codex custom agents live under `skills/<skill-name>/agents/<agent_name>.toml`. Portable MCP configuration may use `mcp.json`; client launch details remain in compatibility manifests when required.
 
+Keep each `SKILL.md` at or below 7,168 bytes to leave headroom when a host loads it into a prompt. Put only universal instructions and routing in the main file. Move task-, channel-, or artifact-specific guidance into focused files under the skill's `references/` directory, and direct the agent to read only the relevant reference. Repository validation enforces the byte limit; check a file directly with `wc -c skills/<skill-name>/SKILL.md`.
+
 See one current plugin package, such as [`plugins/papercuts/`](../plugins/papercuts/), for the package structure. Do not copy its JSON manifests as a second contract.
 
 ## Scripted plugin contract
