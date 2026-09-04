@@ -12,22 +12,33 @@ if python_is_supported python3; then
     exec python3 -m papercuts.cli "$@"
 fi
 
-old_ifs=$IFS
-IFS=:
-for directory in ${PATH:-}; do
-    [ -n "$directory" ] || directory=.
-    for python_command in "$directory"/python3.*; do
-        [ -x "$python_command" ] || continue
-        version=${python_command##*/python3.}
-        case $version in
-            '' | *[!0-9]*) continue ;;
+if [ "${PATH+x}" = x ]; then
+    remaining_path=$PATH
+    path_complete=false
+    while [ "$path_complete" = false ]; do
+        case $remaining_path in
+            *:*)
+                directory=${remaining_path%%:*}
+                remaining_path=${remaining_path#*:}
+                ;;
+            *)
+                directory=$remaining_path
+                path_complete=true
+                ;;
         esac
-        if python_is_supported "$python_command"; then
-            exec "$python_command" -m papercuts.cli "$@"
-        fi
+        [ -n "$directory" ] || directory=.
+        for python_command in "$directory"/python3.*; do
+            [ -x "$python_command" ] || continue
+            version=${python_command##*/python3.}
+            case $version in
+                '' | *[!0-9]*) continue ;;
+            esac
+            if python_is_supported "$python_command"; then
+                exec "$python_command" -m papercuts.cli "$@"
+            fi
+        done
     done
-done
-IFS=$old_ifs
+fi
 
 printf '%s\n' 'papercuts requires Python 3.11 or later' >&2
 exit 78

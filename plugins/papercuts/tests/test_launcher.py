@@ -34,6 +34,13 @@ class PapercutsLauncherTests(unittest.TestCase):
             bin_dir.mkdir()
             output_path = root / "invocation.txt"
 
+            dirname = bin_dir / "dirname"
+            dirname.write_text(
+                '#!/bin/sh\n[ "$1" = "--" ] && shift\nprintf "%s\\n" "${1%/*}"\n',
+                encoding="utf-8",
+            )
+            dirname.chmod(0o755)
+
             for name in (
                 "python3",
                 "python3.14",
@@ -48,7 +55,7 @@ class PapercutsLauncherTests(unittest.TestCase):
                 )
                 old_python.chmod(0o755)
 
-            supported_python = bin_dir / "python3.42"
+            supported_python = root / "python3.42"
             supported_python.write_text(
                 '#!/bin/sh\n[ "$1" = "-c" ] && exit 0\nprintf "%s\\n" "$@" > "$PAPERCUTS_TEST_OUTPUT"\n',
                 encoding="utf-8",
@@ -56,10 +63,11 @@ class PapercutsLauncherTests(unittest.TestCase):
             supported_python.chmod(0o755)
 
             environment = dict(os.environ)
-            environment["PATH"] = os.pathsep.join([str(bin_dir), os.defpath])
+            environment["PATH"] = f"{bin_dir}{os.pathsep}"
             environment["PAPERCUTS_TEST_OUTPUT"] = str(output_path)
             result = subprocess.run(
                 [str(CLI_LAUNCHER_PATH), "list", "--status", "open"],
+                cwd=root,
                 env=environment,
                 check=False,
                 capture_output=True,
