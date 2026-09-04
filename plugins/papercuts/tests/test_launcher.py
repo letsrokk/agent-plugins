@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 LAUNCHER_PATH = PLUGIN_ROOT / "scripts/launch_mcp.py"
+CLI_LAUNCHER_PATH = PLUGIN_ROOT / "scripts/papercuts"
 
 
 def load_launcher():
@@ -26,6 +27,44 @@ def load_launcher():
 
 
 class PapercutsLauncherTests(unittest.TestCase):
+    def test_cli_launcher_skips_old_python_for_supported_versioned_python(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            output_path = root / "invocation.txt"
+
+            old_python = bin_dir / "python3"
+            old_python.write_text(
+                '#!/bin/sh\n[ "$1" = "-c" ] && exit 1\nexit 99\n',
+                encoding="utf-8",
+            )
+            old_python.chmod(0o755)
+
+            supported_python = bin_dir / "python3.11"
+            supported_python.write_text(
+                '#!/bin/sh\n[ "$1" = "-c" ] && exit 0\nprintf "%s\\n" "$@" > "$PAPERCUTS_TEST_OUTPUT"\n',
+                encoding="utf-8",
+            )
+            supported_python.chmod(0o755)
+
+            environment = dict(os.environ)
+            environment["PATH"] = os.pathsep.join([str(bin_dir), os.defpath])
+            environment["PAPERCUTS_TEST_OUTPUT"] = str(output_path)
+            result = subprocess.run(
+                [str(CLI_LAUNCHER_PATH), "list", "--status", "open"],
+                env=environment,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                output_path.read_text(encoding="utf-8").splitlines(),
+                ["-m", "papercuts.cli", "list", "--status", "open"],
+            )
+
     def test_launcher_uses_native_paths_and_publishes_a_real_pip_cache(self) -> None:
         launcher = load_launcher()
         with tempfile.TemporaryDirectory() as directory:
