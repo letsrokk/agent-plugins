@@ -34,12 +34,13 @@ class PapercutsLauncherTests(unittest.TestCase):
             bin_dir.mkdir()
             output_path = root / "invocation.txt"
 
-            old_python = bin_dir / "python3"
-            old_python.write_text(
-                '#!/bin/sh\n[ "$1" = "-c" ] && exit 1\nexit 99\n',
-                encoding="utf-8",
-            )
-            old_python.chmod(0o755)
+            for name in ("python3", "python3.14", "python3.13", "python3.12"):
+                old_python = bin_dir / name
+                old_python.write_text(
+                    '#!/bin/sh\n[ "$1" = "-c" ] && exit 1\nexit 99\n',
+                    encoding="utf-8",
+                )
+                old_python.chmod(0o755)
 
             supported_python = bin_dir / "python3.11"
             supported_python.write_text(
