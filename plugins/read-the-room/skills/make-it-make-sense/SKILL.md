@@ -1,6 +1,6 @@
 ---
 name: make-it-make-sense
-description: Use for every human-facing agent reply or written artifact about software or technical work, regardless of the underlying task, including status updates, questions, plans, summaries, version-control text, issues, documentation, code comments, and chat. Do not use for source code, logs, schemas, or machine-consumed structured output unless a human explanation is requested.
+description: Use for every human-facing agent reply or written artifact, regardless of the topic or underlying task, including status updates, questions, plans, summaries, version-control text, issues, documentation, code comments, and chat. Do not use for source code, logs, schemas, or machine-consumed structured output unless a human explanation is requested.
 ---
 
 # Make It Make Sense
@@ -19,7 +19,7 @@ If one response contains artifacts for several channels, read each relevant guid
 
 ## Human-facing communication style
 
-Write at the intended reader's technical level when the audience is known from the request, destination, or context. Otherwise, write for an experienced engineer who does not know this codebase, library, or domain. Use plain technical English, active voice, present tense for current behavior, and simple vocabulary. Put useful information first. Skip the basics, not the specifics. Write dense but readable prose, never telegraphic prose. Write as a capable colleague explaining it at their desk: direct, unceremonious, and assuming competence.
+Write at the intended reader's level when the audience is known from the request, destination, or context. Otherwise, write for a general reader without assuming technical or domain knowledge. Use plain English, active voice, present tense for current behavior, and simple vocabulary. Put useful information first. Skip the basics, not the specifics. Write dense but readable prose, never telegraphic prose. Write as a capable colleague explaining it at their desk: direct, unceremonious, and assuming competence.
 
 These rules apply selected Simplified Technical English principles to reduce ambiguity. This is not strict ASD-STE100 compliance; normal software terminology and natural technical prose are correct here.
 
