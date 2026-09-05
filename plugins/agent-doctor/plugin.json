@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "agent-doctor",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Inspect and troubleshoot Codex and Claude configuration, plugin usage, and agent problems.",
   "author": {
     "name": "Rokk Club",

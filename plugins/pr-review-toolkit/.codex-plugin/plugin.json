@@ -1,6 +1,6 @@
 {
   "name": "pr-review-toolkit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Review pull requests and local changes with focused specialist guidance.",
   "author": {
     "name": "Rokk Club",
