@@ -8,5 +8,3 @@ Shape the requested artifact so another person can assess, prioritize, implement
 - **Acceptance criteria:** Use observable completion conditions. Do not expand the requested scope with speculative edge cases.
 - **Comment or reply:** State the current outcome, new decision, evidence, blocker, and next action when each matters. Add only the context needed to assess or act on the update.
 - **Status update:** State what changed, what evidence supports it, and what remains.
-
-Keep the established field structure and preserve supplied metadata. Do not change tracker state unless the user authorized that action.

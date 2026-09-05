@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 
 ANALYZER_PATH = (
@@ -64,7 +66,7 @@ class InspectSessionsTests(unittest.TestCase):
                         },
                     ),
                     self._codex_record(
-                        "2026-09-03T10:01:01Z",
+                        "2026-09-04T12:00:01Z",
                         "response_item",
                         {
                             "type": "custom_tool_call_output",
@@ -72,7 +74,10 @@ class InspectSessionsTests(unittest.TestCase):
                             "output": [
                                 {
                                     "type": "input_text",
-                                    "text": "---\nname: review\ndescription: Review code\n---\n",
+                                    "text": json.dumps({
+                                        "output": "---\nname: review\ndescription: Review code\n---\n",
+                                        "exit_code": 0,
+                                    }),
                                 }
                             ],
                         },
@@ -120,7 +125,7 @@ class InspectSessionsTests(unittest.TestCase):
                     },
                     {
                         "type": "user",
-                        "timestamp": "2026-09-02T11:00:01Z",
+                        "timestamp": "2026-09-04T12:00:01Z",
                         "cwd": str(project / "src"),
                         "message": {
                             "content": [
@@ -190,15 +195,18 @@ class InspectSessionsTests(unittest.TestCase):
                 2,
             )
 
-            skill_report = analyzer.analyze(
-                target_kind="skill",
-                target_name="plugin-a:review",
-                project=None,
-                days=30,
-                now=now,
-                codex_home=codex_home,
-                claude_home=claude_home,
-            )
+            with patch.dict(os.environ, {
+                "CLAUDE_CONFIG_DIR": str(claude_home),
+                "HOME": str(root / "unused-home"),
+            }):
+                skill_report = analyzer.analyze(
+                    target_kind="skill",
+                    target_name="plugin-a:review",
+                    project=None,
+                    days=30,
+                    now=now,
+                    codex_home=codex_home,
+                )
             self.assertEqual(
                 skill_report["scopes"]["all"]["combined"]["attempts"],
                 3,
@@ -359,6 +367,25 @@ class InspectSessionsTests(unittest.TestCase):
                                 "is_error": True,
                             }
                         ]
+                    },
+                },
+                {
+                    "type": "assistant",
+                    "timestamp": "2026-09-02T11:00:02Z",
+                    "message": {
+                        "content": "Example: <command-name>plugin-a:review</command-name>"
+                    },
+                },
+                {
+                    "type": "user",
+                    "timestamp": "2026-09-02T11:00:03Z",
+                    "isMeta": True,
+                    "message": {
+                        "content": [{
+                            "type": "tool_result",
+                            "tool_use_id": "transcript-read",
+                            "content": "<command-name>plugin-a:review</command-name>",
+                        }]
                     },
                 },
             ]

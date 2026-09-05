@@ -284,6 +284,11 @@ class PapercutsService:
         moment: datetime,
     ) -> dict[str, Any]:
         records = fold_events(events)
+        event_stats: dict[str, tuple[int, int]] = {}
+        for event in events:
+            complaint_id = _event_complaint_id(event)
+            count, size = event_stats.get(complaint_id, (0, 0))
+            event_stats[complaint_id] = (count + 1, size + _event_size(event))
         selected: list[dict[str, Any]] = []
         for record in records.values():
             if (
@@ -294,19 +299,15 @@ class PapercutsService:
             reason = _prune_reason(record, policy=policy, moment=moment)
             if reason is None:
                 continue
-            history = [
-                event
-                for event in events
-                if _event_complaint_id(event) == record["id"]
-            ]
+            event_count, estimated_bytes = event_stats[record["id"]]
             selected.append(
                 {
                     "id": record["id"],
                     "project": record["project"],
                     "status": record["status"],
                     "reason": reason,
-                    "event_count": len(history),
-                    "estimated_bytes": sum(_event_size(event) for event in history),
+                    "event_count": event_count,
+                    "estimated_bytes": estimated_bytes,
                 }
             )
         selected.sort(key=lambda item: item["id"])
@@ -379,6 +380,8 @@ class PapercutsService:
         *,
         all_projects: bool,
     ) -> dict[str, Any]:
+        if not isinstance(complaint_id, str) or not complaint_id.strip():
+            raise _invalid("complaint ID must not be empty")
         visible = self._visible(records, all_projects=all_projects)
         matches = [record for record in visible if record["id"].startswith(complaint_id)]
         if not matches:
@@ -417,10 +420,11 @@ class PapercutsService:
 def _normalize_text(text: str | None) -> str:
     if not isinstance(text, str):
         raise _invalid("complaint text must be a string")
-    normalized = re.sub(r"\s+", " ", text).strip()
+    sanitized = sanitize_user_string(text, field="complaint text")
+    normalized = re.sub(r"\s+", " ", sanitized).strip()
     if not normalized:
         raise _invalid("complaint text must not be empty")
-    return sanitize_user_string(normalized, field="complaint text")
+    return normalized
 
 
 def _sanitize_note(note: str | None) -> str | None:

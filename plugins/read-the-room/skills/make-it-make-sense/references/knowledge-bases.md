@@ -10,8 +10,4 @@ Write durable documentation that helps its intended reader complete or maintain 
 
 For a README, optimize for using and maintaining the component. For a runbook, make conditions, actions, checks, and stopping points explicit. For a decision record, state the decision, its relevant context, and its consequences; include status, date, owner, or alternatives only when the source supplies them. For reference material, organize by the questions readers need to answer rather than by the order in which the information was discovered.
 
-For a wiki or knowledge-base update, state completed work, consequential actions, decisions, evidence, blockers, and outcomes when they matter to the reader.
-
 For a code comment, explain why non-obvious behavior or a constraint exists. Do not restate the code, narrate implementation history, or record rejected versions.
-
-Do not restate an available companion source. Summarize the behavior and rationale the reader needs, and point to the companion for detail unless the document must stand alone.

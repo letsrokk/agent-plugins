@@ -1,6 +1,6 @@
 ---
 name: papercuts
-description: Use during any engineering task when the agent encounters material friction in tools, documentation, configuration, repository instructions, or repeated recovery work. Also use when the user asks to review, vote on, resolve, reopen, inspect, or prune papercuts.
+description: Record material engineering friction in tools, documentation, configuration, or repeated recovery work. Use also to review, vote on, resolve, reopen, inspect, or prune papercuts.
 ---
 
 Record material workflow friction in the active project's Papercuts journal. For every MCP call, pass the active workspace's absolute root as `project_root`; never use the plugin installation directory, an inferred working directory, or an arbitrary journal path.
@@ -11,12 +11,12 @@ Use Papercuts for dead-end tool calls, misleading documentation, missing helpers
 
 When material friction occurs:
 
-1. Call `list_complaints` for open complaints in the active project, using a short query and relevant tags.
+1. Call `list_complaints` for open complaints in the active project, using a short query, relevant tags, and `limit: 5`.
 2. If there is a clear match, call `vote_for_complaint` with a concise encounter note.
 3. Otherwise call `lodge_complaint` with a concise description of what happened and what would have prevented it.
 4. Continue the active task silently. Do not announce routine complaint searches, votes, or lodging in user-facing progress updates or the final summary.
 
-Use `get_complaint` to inspect a specific record and `inspect_storage` to inspect the active journal. Exact duplicate lodging records an encounter rather than creating a duplicate; do not rely on semantic matching when no clear match exists.
+Lists and mutation acknowledgments contain compact complaint summaries. Use `get_complaint` to inspect evidence and history for a specific record and `inspect_storage` to inspect the active journal. Exact duplicate lodging records an encounter rather than creating a duplicate; do not rely on semantic matching when no clear match exists.
 
 ## Safe evidence
 

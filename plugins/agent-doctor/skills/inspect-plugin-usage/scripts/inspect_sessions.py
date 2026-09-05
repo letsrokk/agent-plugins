@@ -15,7 +15,7 @@ from typing import Any, Iterable, Sequence
 
 SKILL_PATH_PATTERN = re.compile(r"([A-Za-z0-9_./~:-]+/SKILL\.md)")
 COMMAND_NAME_PATTERN = re.compile(r"<command-name>/?([^<]+)</command-name>")
-FRONTMATTER_NAME_PATTERN = r"(?m)^name:\s*{name}\s*$"
+FRONTMATTER_NAME_PATTERN = re.compile(r"(?m)^name:\s*(\S+)\s*$")
 ERROR_PATTERN = re.compile(
     r"permission denied|no such file|not found|access denied|\berror\b|\bfailed\b",
     re.IGNORECASE,
@@ -69,7 +69,9 @@ def analyze(
     start = end - timedelta(days=days)
     resolved_project = project.expanduser().resolve(strict=False) if project else None
     codex_root = codex_home or Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser()
-    claude_root = claude_home or Path("~/.claude").expanduser()
+    claude_root = claude_home or Path(
+        os.environ.get("CLAUDE_CONFIG_DIR", "~/.claude")
+    ).expanduser()
 
     warnings: Counter[tuple[str, str]] = Counter()
     sessions = []
@@ -122,43 +124,30 @@ def _scan_codex(
 
     sessions = []
     for path in sorted(root.rglob("*.jsonl")):
-        records = _read_records(path, "codex", warnings)
-        timed_records = [
-            (record, _parse_timestamp(record.get("timestamp"))) for record in records
-        ]
-        in_window = any(
-            timestamp is not None and start <= timestamp <= end
-            for _, timestamp in timed_records
-        )
-        if not in_window:
-            continue
-
         cwd = None
-        outputs: dict[str, Any] = {}
-        for record, _ in timed_records:
+        in_window = False
+        outputs = {}
+        calls = []
+        for record in _read_records(path, "codex", warnings):
+            timestamp = _parse_timestamp(record.get("timestamp"))
+            selected = timestamp is not None and start <= timestamp <= end
+            in_window |= selected
             payload = record.get("payload")
             if not isinstance(payload, dict):
                 continue
             if record.get("type") == "session_meta" and cwd is None:
                 cwd = _resolve_cwd(payload.get("cwd"))
-            if (
-                record.get("type") == "response_item"
-                and payload.get("type")
-                in {"custom_tool_call_output", "function_call_output"}
-                and payload.get("call_id")
-            ):
-                outputs[str(payload["call_id"])] = payload.get("output")
-        if cwd is None:
-            warnings[("codex", "missing-session-cwd")] += 1
-
-        invocations = []
-        for record, timestamp in timed_records:
-            if timestamp is None or not start <= timestamp <= end:
+            if record.get("type") != "response_item":
                 continue
-            payload = record.get("payload")
-            if not isinstance(payload, dict) or record.get("type") != "response_item":
+            if payload.get("type") in {"custom_tool_call_output", "function_call_output"}:
+                if payload.get("call_id"):
+                    outputs[str(payload["call_id"])] = _codex_output_evidence(
+                        payload.get("output")
+                    )
                 continue
-            if payload.get("type") not in {"custom_tool_call", "function_call"}:
+            if not selected or payload.get("type") not in {
+                "custom_tool_call", "function_call"
+            }:
                 continue
             raw_input = payload.get("input", payload.get("arguments", ""))
             input_text = _flatten_text(raw_input)
@@ -170,17 +159,29 @@ def _scan_codex(
                 identity = _identity_from_skill_path(skill_path)
                 if identity is None or not _matches(identity, target_kind, target_name):
                     continue
-                output = outputs.get(str(payload.get("call_id")))
-                direct_read = _has_direct_read(input_text, skill_path, tool_name)
-                definitive_failure = direct_read and (
-                    len(paths) == 1 or skill_path in _flatten_text(output)
+                calls.append(
+                    (
+                        str(payload.get("call_id")), skill_path, identity[1],
+                        _has_direct_read(input_text, skill_path, tool_name), len(paths) == 1,
+                    )
                 )
-                status, category = _classify_codex_output(
-                    output, identity[1], definitive_failure=definitive_failure
-                )
-                if status == "incomplete" and not direct_read:
-                    continue
-                invocations.append({"status": status, "category": category})
+
+        if not in_window:
+            continue
+        if cwd is None:
+            warnings[("codex", "missing-session-cwd")] += 1
+        invocations = []
+        for call_id, skill_path, skill_name, direct_read, single_path in calls:
+            evidence = outputs.get(call_id)
+            definitive_failure = direct_read and (
+                single_path or (evidence is not None and skill_path in evidence[1])
+            )
+            status, category = _classify_codex_evidence(
+                evidence, skill_name, definitive_failure=definitive_failure
+            )
+            if status == "incomplete" and not direct_read:
+                continue
+            invocations.append({"status": status, "category": category})
 
         sessions.append({"client": "codex", "cwd": cwd, "invocations": invocations})
     return sessions
@@ -200,38 +201,24 @@ def _scan_claude(
 
     sessions = []
     for path in sorted(root.rglob("*.jsonl")):
-        records = _read_records(path, "claude", warnings)
-        timed_records = [
-            (record, _parse_timestamp(record.get("timestamp"))) for record in records
-        ]
-        in_window = any(
-            timestamp is not None and start <= timestamp <= end
-            for _, timestamp in timed_records
-        )
-        if not in_window:
-            continue
-
-        cwd = next(
-            (
-                resolved
-                for record, _ in timed_records
-                if (resolved := _resolve_cwd(record.get("cwd"))) is not None
-            ),
-            None,
-        )
-        if cwd is None:
-            warnings[("claude", "missing-session-cwd")] += 1
+        cwd = None
+        in_window = False
         results: dict[str, bool] = {}
-        for record, _ in timed_records:
-            for block in _content_blocks(record):
+        calls = []
+        invocations = []
+        for record in _read_records(path, "claude", warnings):
+            timestamp = _parse_timestamp(record.get("timestamp"))
+            selected = timestamp is not None and start <= timestamp <= end
+            in_window |= selected
+            if cwd is None:
+                cwd = _resolve_cwd(record.get("cwd"))
+            blocks = _content_blocks(record)
+            for block in blocks:
                 if block.get("type") == "tool_result" and block.get("tool_use_id"):
                     results[str(block["tool_use_id"])] = bool(block.get("is_error"))
-
-        invocations = []
-        for record, timestamp in timed_records:
-            if timestamp is None or not start <= timestamp <= end:
+            if not selected:
                 continue
-            for block in _content_blocks(record):
+            for block in blocks:
                 if block.get("type") != "tool_use" or block.get("name") != "Skill":
                     continue
                 tool_input = block.get("input")
@@ -242,20 +229,24 @@ def _scan_claude(
                 identity = _identity_from_qualified_skill(skill_name)
                 if not _matches(identity, target_kind, target_name):
                     continue
-                call_id = str(block.get("id", ""))
-                if call_id not in results:
-                    invocations.append({"status": "incomplete", "category": None})
-                elif results[call_id]:
-                    invocations.append(
-                        {"status": "problem", "category": "skill-error"}
-                    )
-                else:
-                    invocations.append({"status": "successful", "category": None})
+                calls.append(str(block.get("id", "")))
 
-            for command_name in COMMAND_NAME_PATTERN.findall(_message_text(record)):
+            for command_name in COMMAND_NAME_PATTERN.findall(_command_text(record)):
                 identity = _identity_from_qualified_skill(command_name.strip())
                 if _matches(identity, target_kind, target_name):
                     invocations.append({"status": "successful", "category": None})
+
+        if not in_window:
+            continue
+        if cwd is None:
+            warnings[("claude", "missing-session-cwd")] += 1
+        for call_id in calls:
+            if call_id not in results:
+                invocations.append({"status": "incomplete", "category": None})
+            elif results[call_id]:
+                invocations.append({"status": "problem", "category": "skill-error"})
+            else:
+                invocations.append({"status": "successful", "category": None})
 
         sessions.append({"client": "claude", "cwd": cwd, "invocations": invocations})
     return sessions
@@ -263,8 +254,7 @@ def _scan_claude(
 
 def _read_records(
     path: Path, client: str, warnings: Counter[tuple[str, str]]
-) -> list[dict[str, Any]]:
-    records = []
+) -> Iterable[dict[str, Any]]:
     try:
         with path.open(encoding="utf-8", errors="replace") as source:
             for line in source:
@@ -276,10 +266,9 @@ def _read_records(
                 if isinstance(record, dict):
                     if record.get("type") not in KNOWN_RECORD_TYPES[client]:
                         warnings[(client, "unknown-record")] += 1
-                    records.append(record)
+                    yield record
     except OSError:
         warnings[(client, "unreadable-session")] += 1
-    return records
 
 
 def _summarize(sessions: Iterable[dict[str, Any]]) -> dict[str, Any]:
@@ -363,18 +352,27 @@ def _matches(
     return qualified == target_name
 
 
-def _classify_codex_output(
-    output: Any, skill_name: str, *, definitive_failure: bool
-) -> tuple[str, str | None]:
-    if output is None:
-        return "incomplete", None
-    text = _flatten_text(output)
-    frontmatter = re.compile(
-        FRONTMATTER_NAME_PATTERN.format(name=re.escape(skill_name))
+def _codex_output_evidence(output: Any) -> tuple[set[str], set[str], bool]:
+    text = _flatten_text(output, unwrap_output=True)
+    return (
+        set(FRONTMATTER_NAME_PATTERN.findall(text)),
+        set(SKILL_PATH_PATTERN.findall(text)),
+        bool(ERROR_PATTERN.search(text)),
     )
-    if frontmatter.search(text):
+
+
+def _classify_codex_evidence(
+    evidence: tuple[set[str], set[str], bool] | None,
+    skill_name: str,
+    *,
+    definitive_failure: bool,
+) -> tuple[str, str | None]:
+    if evidence is None:
+        return "incomplete", None
+    names, _, has_error = evidence
+    if skill_name in names:
         return "successful", None
-    if definitive_failure and ERROR_PATTERN.search(text):
+    if definitive_failure and has_error:
         return "problem", "skill-load-error"
     return "incomplete", None
 
@@ -410,20 +408,40 @@ def _content_blocks(record: dict[str, Any]) -> list[dict[str, Any]]:
     return [block for block in content if isinstance(block, dict)]
 
 
-def _message_text(record: dict[str, Any]) -> str:
+def _command_text(record: dict[str, Any]) -> str:
+    if record.get("type") != "user" or record.get("isMeta") is not True:
+        return ""
     message = record.get("message")
     if not isinstance(message, dict):
         return ""
-    return _flatten_text(message.get("content"))
+    content = message.get("content")
+    if isinstance(content, str):
+        return content
+    return "\n".join(
+        block["text"] for block in _content_blocks(record)
+        if block.get("type") == "text" and isinstance(block.get("text"), str)
+    )
 
 
-def _flatten_text(value: Any) -> str:
+def _flatten_text(value: Any, *, unwrap_output: bool = False) -> str:
     if isinstance(value, str):
+        if unwrap_output and value.lstrip().startswith("{"):
+            try:
+                envelope = json.loads(value)
+            except json.JSONDecodeError:
+                pass
+            else:
+                if isinstance(envelope, dict) and "output" in envelope:
+                    return _flatten_text(envelope["output"], unwrap_output=True)
         return value
     if isinstance(value, dict):
-        return "\n".join(_flatten_text(item) for item in value.values())
+        return "\n".join(
+            _flatten_text(item, unwrap_output=unwrap_output) for item in value.values()
+        )
     if isinstance(value, list):
-        return "\n".join(_flatten_text(item) for item in value)
+        return "\n".join(
+            _flatten_text(item, unwrap_output=unwrap_output) for item in value
+        )
     return ""
 
 

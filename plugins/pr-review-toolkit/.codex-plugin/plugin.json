@@ -1,7 +1,7 @@
 {
   "name": "pr-review-toolkit",
   "version": "0.1.0",
-  "description": "Review pull requests and local changes with specialized code-quality agents.",
+  "description": "Review pull requests and local changes with focused specialist guidance.",
   "author": {
     "name": "Rokk Club",
     "url": "https://github.com/letsrokk"
@@ -19,8 +19,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "PR Review Toolkit",
-    "shortDescription": "Review changes with specialized agents",
-    "longDescription": "Review a pull request or local change set for code quality, tests, comments, error handling, and type design, then simplify code after the review passes.",
+    "shortDescription": "Review changes with focused specialists",
+    "longDescription": "Review a pull request or local change set for bugs, test coverage, comments, error handling, and type invariants. Simplify code only when requested.",
     "developerName": "Rokk Club",
     "category": "Developer Tools",
     "capabilities": [

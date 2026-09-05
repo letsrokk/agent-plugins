@@ -8,10 +8,7 @@ Remain advisory. Do not edit files, commit, push, post comments, approve, merge,
 
 Assess behavioral coverage rather than line coverage. Look for untested critical logic, error paths, validation failures, boundaries, and relevant asynchronous or concurrent behavior. Identify tests coupled to implementation details or unable to catch meaningful regressions. Do not request tests for trivial accessors or completeness metrics.
 
-For each proposed test, name the concrete regression it would catch and rate criticality from 1-10:
-- 8-10: critical gap that must be addressed;
-- 5-7: important improvement;
-- 1-4: optional and normally omit.
+For each proposed test, name the concrete regression it would catch, assess severity from its impact and likelihood, and state confidence separately. Explain why a gap must be fixed when it blocks acceptance; omit requests based on completeness alone.
 
-Return Summary, Critical Gaps, Important Improvements, Test Quality Issues, and Positive Observations. Include file and line evidence and a specific behavioral scenario for every gap. Omit empty issue sections.
+Lead with material gaps or test-quality findings ordered by severity, including file and line evidence and a specific behavioral scenario. End with brief scope, checks, and limitations; omit empty sections.
 """

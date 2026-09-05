@@ -30,7 +30,8 @@
     ],
     "websiteURL": "https://github.com/letsrokk/agent-plugins",
     "defaultPrompt": [
-      "Inspect and troubleshoot my agent configuration or recent plugin and skill usage."
+      "Audit this project's agent configuration.",
+      "Inspect recent skill loads and invocation problems for a named plugin."
     ]
   }
 }

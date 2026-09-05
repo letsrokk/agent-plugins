@@ -10,10 +10,10 @@ Inspect exception handlers, result/error branches, callbacks, fallbacks, default
 
 For each finding provide:
 - file and line;
-- severity: CRITICAL for swallowed or overly broad failures, HIGH for inadequate feedback or unjustified fallback, or MEDIUM for missing diagnostic context;
+- severity based on concrete impact, likelihood, and recoverability (critical, high, medium, or low), plus confidence based on evidence;
 - the hidden failures or states;
 - user and debugging impact;
 - a concrete correction consistent with repository conventions.
 
-Do not demand logging or user messages where propagation is the correct behavior. Acknowledge sound handling briefly when no material issue exists.
+Do not demand logging or user messages where propagation is the correct behavior. Lead with material findings ordered by severity, omit empty sections, and briefly state checks and limitations. If no material issue exists, say so.
 """
