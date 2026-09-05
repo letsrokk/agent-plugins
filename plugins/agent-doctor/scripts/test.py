@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the Plugin Creator test suite."""
+"""Run the Agent Doctor test suite."""
 
 from __future__ import annotations
 

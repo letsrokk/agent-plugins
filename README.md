@@ -2,8 +2,6 @@
 
 Rokk Club publishes portable agent plugins for Codex and Claude Code from one repository. Plugins are added one at a time under [`plugins/`](plugins/README.md).
 
-Both marketplaces publish [`papercuts`](plugins/papercuts/README.md) for durable workflow-friction tracking, [`plugin-creator`](plugins/plugin-creator/) for plugin and skill usage inspection, and [`read-the-room`](plugins/read-the-room/README.md) for channel-aware communication. The Codex marketplace also publishes [`code-simplifier`](plugins/code-simplifier/) for behavior-preserving code cleanup, [`eli5`](plugins/eli5/README.md) for visual explanations, and [`pr-review-toolkit`](plugins/pr-review-toolkit/) for specialized change review.
-
 ## Marketplaces
 
 Codex reads `.agents/plugins/marketplace.json` and installs packages that follow the [Agent Plugins v1 specification](https://agent-plugins.org/specification).
@@ -52,18 +50,18 @@ codex plugin add papercuts@rokk-club-codex-plugins
 /plugin install papercuts@rokk-club-claude-plugins
 ```
 
-### plugin-creator ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
+### agent-doctor ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
 
-Inspect recent Codex and Claude sessions to count exact plugin or skill usage and summarize successes, problems, and incomplete calls.
+Inspect and troubleshoot Codex and Claude configuration, then review recent sessions to count exact plugin or skill usage and summarize successes, problems, and incomplete calls.
 
 ```sh
 # Codex CLI
-codex plugin add plugin-creator@rokk-club-codex-plugins
+codex plugin add agent-doctor@rokk-club-codex-plugins
 ```
 
 ```text
 # Claude Code interactive command
-/plugin install plugin-creator@rokk-club-claude-plugins
+/plugin install agent-doctor@rokk-club-claude-plugins
 ```
 
 ### pr-review-toolkit ![Codex](assets/agent-badges/codex.svg)

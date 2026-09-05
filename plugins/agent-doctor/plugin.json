@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "plugin-creator",
+  "name": "agent-doctor",
   "version": "0.1.0",
-  "description": "Inspect recent Codex and Claude sessions for plugin skill usage and direct invocation problems.",
+  "description": "Inspect and troubleshoot Codex and Claude configuration, plugin usage, and agent problems.",
   "author": {
     "name": "Rokk Club",
     "url": "https://github.com/letsrokk"
@@ -14,6 +14,8 @@
     "agents",
     "plugins",
     "skills",
-    "analytics"
+    "analytics",
+    "configuration",
+    "troubleshooting"
   ]
 }
