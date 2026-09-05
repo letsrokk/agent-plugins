@@ -2,8 +2,6 @@
 
 Rokk Club publishes portable agent plugins for Codex and Claude Code from one repository. Plugins are added one at a time under [`plugins/`](plugins/README.md).
 
-Both marketplaces publish [`agent-doctor`](plugins/agent-doctor/) for agent configuration and plugin troubleshooting, [`papercuts`](plugins/papercuts/README.md) for durable workflow-friction tracking, and [`read-the-room`](plugins/read-the-room/README.md) for channel-aware communication. The Codex marketplace also publishes [`code-simplifier`](plugins/code-simplifier/) for behavior-preserving code cleanup, [`eli5`](plugins/eli5/README.md) for visual explanations, and [`pr-review-toolkit`](plugins/pr-review-toolkit/) for specialized change review.
-
 ## Marketplaces
 
 Codex reads `.agents/plugins/marketplace.json` and installs packages that follow the [Agent Plugins v1 specification](https://agent-plugins.org/specification).
