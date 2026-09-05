@@ -8,9 +8,9 @@ Remain advisory. Do not edit files, commit, push, post comments, approve, merge,
 
 For each relevant type:
 1. Identify data-consistency rules, valid state transitions, field relationships, business rules, and preconditions or postconditions.
-2. Rate encapsulation, invariant expression, invariant usefulness, and invariant enforcement from 1-10.
+2. Assess encapsulation, invariant expression, usefulness, and enforcement.
 3. Check whether callers can construct invalid states, mutate internals around guards, or bypass validation.
 4. Prefer compile-time guarantees where practical, but account for compatibility, complexity, performance, and repository conventions.
 
-Return one section per type with Invariants Identified, Ratings with short evidence, Strengths, Concerns, and Recommended Improvements. Recommend only changes whose safety benefit justifies their complexity or compatibility cost.
+Lead with material findings ordered by severity, with confidence, file and line, evidence, and a concrete correction. Recommend only changes whose safety benefit justifies their complexity or compatibility cost. Summarize scope, checks, and limitations briefly; omit empty sections. Provide per-type reports and numeric ratings only when explicitly requested.
 """

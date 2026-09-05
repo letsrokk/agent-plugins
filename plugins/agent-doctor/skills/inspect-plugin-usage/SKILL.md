@@ -1,6 +1,6 @@
 ---
 name: inspect-plugin-usage
-description: Use when recent local Codex or Claude sessions need to be checked for a named plugin or skill's invocation counts, successful loads, direct failures, incomplete evidence, or project-specific totals.
+description: Use when asked how often a named plugin or skill was used in local Codex or Claude sessions, whether it loaded successfully, or how usage differs by project.
 ---
 
 # Inspect Plugin Usage
@@ -19,14 +19,14 @@ python3 scripts/inspect_sessions.py --plugin NAME
 python3 scripts/inspect_sessions.py --skill plugin:skill
 ```
 
-Add `--project PATH` only when the user asks for a project comparison. Add `--days N` only when the user requests a window other than the default 30 days.
+Add `--project PATH` when the user asks for project-specific totals or a project comparison. Add `--days N` only when the user requests a window other than the default 30 days.
 
 The rename does not rewrite session history. Query new calls with `--plugin agent-doctor`; query earlier calls separately with `--plugin plugin-creator` when the user wants pre-rename history.
 
 Summarize the returned JSON with:
 
 - the target and time window;
-- global attempts, successful invocations, direct problems, and incomplete invocations;
+- global attempts, successful loads or tool invocations, direct problems, and incomplete evidence;
 - the project subtotal when present;
 - the Codex and Claude breakdown;
 - problem categories and coverage warnings.
@@ -34,8 +34,8 @@ Summarize the returned JSON with:
 State these limits every time:
 
 - Plugin totals cover invocations of skills supplied by that plugin, not plugin installation or non-skill activity.
-- Codex calls are inferred from recognized initial `SKILL.md` reads; Claude calls use recognized `Skill` tool records and legacy command markers.
+- Codex counts are observed initial `SKILL.md` reads, not proof the agent applied the skill. A successful load requires matching frontmatter in the read output. Claude counts use `Skill` tool records and legacy command metadata.
 - Project attribution uses the session working directory and can be inaccurate when a session changes directories.
-- A legacy Claude command marker is weaker evidence than a completed `Skill` tool result and can overlap with one.
+- A legacy Claude command marker in user metadata is weaker evidence than a completed `Skill` tool result and can overlap with one. Ordinary quoted tags and tool-result text do not count.
 
 Treat `incomplete` as missing evidence, not a confirmed failure. Treat problem categories as direct load or tool-result evidence, not proof that the skill later behaved incorrectly. Suggest troubleshooting only when the returned category or warning supports it, and label other possible causes as unverified. Never quote transcript content. If coverage warnings exist, explain that counts reflect only readable, recognized session records.

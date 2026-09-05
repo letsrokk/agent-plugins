@@ -12,6 +12,6 @@ The `make-it-make-sense` skill covers:
 - Wiki and knowledge-base pages, READMEs, runbooks, decision records, code comments, and durable documentation
 - Chat messages, announcements, status updates, and thread replies
 
-The skill description exposes human-facing communication, channel, and artifact terms used for automatic discovery. Once active, the skill directs the agent to read only the relevant channel reference. Automatic selection remains host-controlled and may not activate for every underlying task, especially after context compaction. Invoke `make-it-make-sense` explicitly, or require it in host-level instructions, when the policy must apply to a response or existing draft.
+The skill description exposes communication and artifact terms for automatic discovery. Once active, the agent reads the relevant channel reference and reuses it while it remains in context. Automatic selection remains host-controlled and may not activate for every task, especially after compaction. Invoke `make-it-make-sense` explicitly, or require it in host-level instructions, when the policy must apply to a response or draft.
 
 Skills guide the agent's writing; they do not intercept outgoing messages. Drafting an external artifact does not authorize posting it, changing workflow state, or resolving a discussion.

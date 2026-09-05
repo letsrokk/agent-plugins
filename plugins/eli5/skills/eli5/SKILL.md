@@ -1,10 +1,10 @@
 ---
 name: eli5
-description: Use when the user invokes $eli5 with a topic or asks for a dead-simple visual explainer of how something works.
+description: Use for $eli5, 'explain like I’m five', beginner explanations, or simple visual explanations of an unfamiliar topic.
 ---
 
 # eli5
 
-Explain like I'm someone who knows nothing about this topic, using an in-chat visual explainer with big pictures and few words.
+Explain the user's topic to a beginner with one concrete analogy, a simple visual, and few words. Keep the mechanism accurate and define essential terms.
 
-Topic: Use the topic provided by the user.
+Use an available in-chat visualization capability when it helps; otherwise use a small Markdown diagram or labeled sequence. Do not require an extra plugin or build an app for a simple explanation. Ask for a topic only if none is available in the request or context.

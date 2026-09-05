@@ -101,7 +101,7 @@ def _lodge_complaint(
         tags=arguments.get("tags") or (),
         context=_context(arguments, evidence_key="evidence"),
     )
-    return {"complaint": result["record"], "changed": result["changed"]}
+    return {"complaint": _summary(result["record"]), "changed": result["changed"]}
 
 
 def _list_complaints(
@@ -117,7 +117,20 @@ def _list_complaints(
         all_projects=arguments.get("all_projects", False),
         limit=arguments.get("limit", 50),
     )
-    return {"complaints": complaints, "count": len(complaints)}
+    return {
+        "complaints": [_summary(record) for record in complaints],
+        "count": len(complaints),
+    }
+
+
+def _summary(record: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        key: record[key]
+        for key in (
+            "id", "text", "status", "severity", "tags", "project",
+            "encounter_count", "last_encounter_at",
+        )
+    }
 
 
 def _get_complaint(
@@ -139,7 +152,7 @@ def _vote_for_complaint(
         note=arguments.get("note"),
         context=_context(arguments),
     )
-    return {"complaint": result["record"], "changed": result["changed"]}
+    return {"complaint": _summary(result["record"]), "changed": result["changed"]}
 
 
 def _resolve_complaint(
@@ -149,7 +162,7 @@ def _resolve_complaint(
         arguments["complaint_id"],
         note=arguments.get("note"),
     )
-    return {"complaint": result["record"], "changed": result["changed"]}
+    return {"complaint": _summary(result["record"]), "changed": result["changed"]}
 
 
 def _reopen_complaint(
@@ -159,7 +172,7 @@ def _reopen_complaint(
         arguments["complaint_id"],
         note=arguments.get("note"),
     )
-    return {"complaint": result["record"], "changed": result["changed"]}
+    return {"complaint": _summary(result["record"]), "changed": result["changed"]}
 
 
 def _inspect_storage(

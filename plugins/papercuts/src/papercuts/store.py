@@ -601,7 +601,7 @@ def _open_regular_file_at(
     exclusive: bool = False,
     missing_ok: bool = False,
 ) -> int | None:
-    open_flags = flags | getattr(os, "O_NOFOLLOW", 0)
+    open_flags = flags | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
     if create:
         open_flags |= os.O_CREAT
     if exclusive:

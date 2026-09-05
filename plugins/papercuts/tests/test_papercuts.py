@@ -6,6 +6,7 @@ import inspect
 import json
 import os
 import socket
+import subprocess
 import sys
 import tempfile
 import types
@@ -274,6 +275,12 @@ class PapercutsPluginTests(unittest.TestCase):
             )
             self.assertEqual(mcp_result["complaints"][0]["id"], complaint_id)
             self.assertEqual(mcp_result["count"], 1)
+            self.assertNotIn("context", mcp_result["complaints"][0])
+            self.assertNotIn("recent_encounters", mcp_result["complaints"][0])
+            detail = invoke_tool(service, "get_complaint", {"complaint_id": complaint_id})
+            self.assertIn("context", detail["complaint"])
+            acknowledgment = invoke_tool(service, "reopen_complaint", {"complaint_id": complaint_id})
+            self.assertNotIn("status_history", acknowledgment["complaint"])
 
             invalid_project_result = _invoke_project_tool(
                 str(root / "missing"),
@@ -769,6 +776,34 @@ class PapercutsPluginTests(unittest.TestCase):
                     len(inspection_before.splitlines()),
                 )
                 self.assertTrue(inspection["healthy"])
+
+    def test_invalid_lodging_ids_and_nonregular_storage_are_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            service = PapercutsService(resolve_storage(root, home=root, environ={}))
+            service.lodge("One complaint")
+            before = service.storage.journal_path.read_bytes()
+            with self.subTest("raw environment text"):
+                with self.assertRaises(PapercutsError) as rejected:
+                    service.lodge("USER=alice\nINTERNAL_HOST=private-host")
+                self.assertEqual(rejected.exception.code, "invalid_input")
+                self.assertEqual(service.storage.journal_path.read_bytes(), before)
+            for complaint_id in ("", "   "):
+                with self.subTest(complaint_id=complaint_id):
+                    with self.assertRaises(PapercutsError) as rejected:
+                        service.resolve(complaint_id)
+                    self.assertEqual(rejected.exception.code, "invalid_input")
+                    self.assertEqual(service.storage.journal_path.read_bytes(), before)
+            if hasattr(os, "mkfifo"):
+                fifo = root / "fifo.jsonl"
+                os.mkfifo(fifo)
+                result = subprocess.run(
+                    [sys.executable, "-m", "papercuts.cli", "--file", str(fifo), "list"],
+                    env={**os.environ, "PYTHONPATH": str(PLUGIN_SRC)},
+                    capture_output=True, text=True, timeout=2,
+                )
+                self.assertEqual(result.returncode, 65)
+                self.assertEqual(json.loads(result.stderr)["error"]["code"], "invalid_input")
 
     def test_stale_prune_plan_cannot_replace_changed_journal(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

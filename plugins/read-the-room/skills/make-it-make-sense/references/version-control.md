@@ -10,10 +10,7 @@ Use the contract for the requested artifact:
 
 Before drafting a pull or merge request description, read the diff. Do not inventory changed files or methods, repeat rationale already documented in code, recount commit history, or assess the work's quality. Include rationale only when it affects review or is not recoverable from the diff.
 
-Describe completed work and consequential actions, not unperformed work or dropped approaches. A consequential action changes delivered or operational state. Name a rejected option only when a reviewer would otherwise try it and hit the same material constraint.
-
-- Bad: "`retry_request()` creates a deadline inside the loop so each retry receives the full timeout. Keeping the deadline outside the loop would let an earlier attempt consume the later attempts' time budget. The code uses a per-attempt context and cancels it before continuing, which prevents timers from accumulating."
-- Good: "Retries now apply the timeout per attempt; the rationale is documented beside the loop. Focused timeout tests pass. Review cancellation behavior."
+Describe delivered work. Mention a rejected option only when it explains a material constraint a reviewer would otherwise encounter.
 
 Scope verification claims to their evidence: a focused test proves its covered path, not every related behavior.
 

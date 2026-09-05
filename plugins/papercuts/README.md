@@ -91,3 +91,5 @@ plugins/papercuts/scripts/papercuts doctor
 ## MCP tools
 
 Codex and Claude Code start the same local stdio MCP server through `scripts/launch_mcp.py`; each compatibility manifest selects its client storage. Every MCP call requires the active absolute workspace root as `project_root`. The tools are `lodge_complaint`, `list_complaints`, `get_complaint`, `vote_for_complaint`, `resolve_complaint`, `reopen_complaint`, `inspect_storage`, `preview_prune`, and `apply_prune`. MCP cannot set scope or accept an arbitrary journal path.
+
+MCP lists and complaint mutation acknowledgments return summaries with ID, text, status, severity, tags, project, encounter count, and last encounter time. Use `get_complaint` for full evidence and history. Automatic duplicate searches request at most five results. CLI output and journal records retain their existing detail.

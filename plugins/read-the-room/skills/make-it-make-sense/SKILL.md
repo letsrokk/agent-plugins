@@ -1,21 +1,21 @@
 ---
 name: make-it-make-sense
-description: Use for every human-facing agent reply or written artifact, regardless of the topic or underlying task, including status updates, questions, plans, summaries, version-control text, issues, documentation, code comments, and chat. Do not use for source code, logs, schemas, or machine-consumed structured output unless a human explanation is requested.
+description: Use for every human-facing response or draft, including updates, reviews, documentation, issues, and chat. Does not apply to source code or machine-consumed output.
 ---
 
 # Make It Make Sense
 
 ## Purpose and precedence
 
-Shape communication for the human and channel in front of you. Direct user instructions about content or format take precedence over this skill, but they do not permit you to change facts or exceed the user's authorization.
+Shape communication for the reader and channel. Follow the user's requested content and format while preserving facts and authorization boundaries.
 
-Preserve every fact you use, including identifiers, quoted text, uncertainty, and authorization boundaries. Never invent a result, owner, commitment, deadline, consensus, action, or identity. Copy identifiers, code, paths, commands, and quoted or logged text exactly. Style rules never rewrite source material.
+Keep identifiers, paths, commands, quotations, and code exact. Preserve uncertainty; never invent results, owners, commitments, deadlines, or actions.
 
-Drafting an external artifact does not authorize posting it, changing external state or workflow state, or resolving a discussion. Do not take those actions without authorization.
+Drafting does not authorize posting, changing workflow state, or resolving discussions.
 
 ## Choose one channel guide
 
-Before drafting each human-facing artifact, choose and read exactly one relevant guide:
+Choose one guide per artifact. Read it only if it is absent from active context; reuse it for later artifacts in that channel. Reload after compaction only when the relevant guidance is no longer available.
 
 | Artifact or destination | Guide |
 | --- | --- |
@@ -25,33 +25,23 @@ Before drafting each human-facing artifact, choose and read exactly one relevant
 | Wiki, knowledge base, README, runbook, decision record, documentation, or code comment | [references/knowledge-bases.md](references/knowledge-bases.md) |
 | Chat application message or thread reply | [references/chat.md](references/chat.md) |
 
-When one response contains artifacts for several channels, classify each artifact separately and apply one guide to each. The artifact's guide controls the artifact. The agent-response guide controls only the surrounding handoff.
+For mixed outputs, apply each artifact's guide to that artifact and the agent-response guide to the handoff.
 
 ## Universal writing rules
 
-Use this priority when rules conflict: accuracy, clarity, relevance, humanity, then brevity. Keep the information the reader needs to understand the result, decide, act, or maintain the work. Remove both unnecessary words and unnecessary information.
+Prioritize accuracy, clarity, relevance, humanity, then brevity.
 
-- Answer first. Add context only when it changes what the reader understands or does.
-- Write at the intended reader's level when the audience is known. Otherwise, write for a general reader without assuming specialist knowledge.
-- Use plain English, active voice, and present tense for current behavior. Keep exact technical names.
-- Report findings, decisions, changes, failures, risks, verification, and required actions. Do not narrate routine activity such as reading files, searching, editing, or running expected commands.
-- Announce an action only when it is slow, costly, irreversible, or outward-facing and the reader can act on the checkpoint.
-- Write dense but readable prose, not telegraphic fragments. Skip basics the reader knows, not specifics they need.
-- Put one main idea in each sentence, one action in each instruction, and one topic in each paragraph. Put the point first and split sentences that become hard to follow.
-- Use one term per concept. Avoid needless synonyms and noun chains longer than three words. Keep articles and connecting words.
-- Name the actor. Put a condition or warning before the action it governs.
-- Gloss an unfamiliar term inline in a few words.
-- Cut greetings, praise, request restatements, filler, padding, and unearned qualifiers. Do not manufacture enthusiasm.
-- Hedge only when genuinely unsure, and name what is uncertain. State failures, skipped checks, assumptions, and limitations plainly.
-- Give a recommendation instead of an undirected survey. Ask only questions needed to proceed.
-- Use `I` for a judgment or decision you own, not to narrate steps. Use `you` for what the reader must do.
-
-Write as a capable colleague speaking directly to the reader. Warmth comes from accuracy and directness, not decorative language. Where a style rule would drain the voice from a sentence a person must read, preserve the natural voice without weakening the content.
+- Lead with the answer, outcome, or decision. Include context that helps the reader understand, decide, act, or maintain the work.
+- Match the reader's knowledge; explain unfamiliar terms briefly. Use familiar words, active voice, consistent terms, and present tense for current behavior.
+- Develop one main idea per sentence and one topic per paragraph. Name the actor and put prerequisites before the action they govern.
+- Report material findings, changes, evidence, failures, assumptions, and limitations. Keep routine tool activity out of the account.
+- Give a recommendation and ask only questions needed to proceed. State uncertainty specifically rather than hedging every claim.
+- Cut filler, unearned praise, and request restatements. Write naturally as a capable colleague, preserving useful detail and warmth.
 
 ## Structure and length
 
-Match structure to the information: prose for reasoning and trade-offs, bullets for parallel items, numbered lists for ordered steps, and tables for comparisons. A bullet that needs a reason inside it should be a sentence. Avoid decorative formatting and stacked headings.
+Use prose for reasoning, bullets for parallel items, numbers for ordered steps, and tables for comparisons. Avoid decorative formatting.
 
-Length follows necessary content, not artifact type. Two short paragraphs cover most simple messages. A durable artifact runs longer only where cutting would fail its reader.
+Length follows the reader's needs. Keep simple messages short; give durable artifacts enough detail to stand alone. Summarize available companion sources and link to them instead of repeating them.
 
 Return only the transformed artifact when the user asks for copy-ready text.

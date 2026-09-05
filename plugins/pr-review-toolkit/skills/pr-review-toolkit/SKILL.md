@@ -1,66 +1,41 @@
 ---
 name: pr-review-toolkit
-description: Use when a pull request or local change set needs focused or comprehensive review for code quality, tests, comments, error handling, type design, or behavior-preserving simplification.
+description: Use when a pull request or local diff needs review for bugs, test coverage, comments, error handling, or type invariants.
 ---
 
 # PR Review Toolkit
 
 Adapted from Anthropic's PR Review Toolkit for Codex. See the plugin-level `NOTICE` for source and modification details.
 
-Resolve one review boundary, select the requested or applicable specialists, dispatch the namespaced custom agents, and aggregate their results. Preserve the upstream behavior that simplification runs only after review passes or when the user explicitly requests `simplify`.
+Resolve one review boundary and apply the relevant specialist instructions. Reviews are advisory; simplification requires an explicit user request.
 
 ## Resolve the scope
 
-1. Confirm that the current context is a Git repository. Otherwise, stop and ask the user to run from a repository or provide usable project context.
-2. Parse any requested aspects: `comments`, `tests`, `errors`, `types`, `code`, `simplify`, or `all`. Treat `parallel` as an execution preference, not a review aspect. Reject unknown aspect names with the supported list.
-3. Prefer an explicit pull request, path, commit range, or other concrete boundary in the user's request.
-4. Without explicit scope, inspect staged, unstaged, and untracked changes. If any exist, use the complete dirty set and do not substitute a hosted pull request.
-5. Only when the worktree is clean, resolve an associated GitHub pull request with `gh pr view`. Establish its base and use the complete diff. Do not assume a base branch.
-6. If no usable boundary can be established, stop and ask the user to provide or confirm one.
-7. Read all instruction files that apply to the resolved paths, including `AGENTS.md` and client-equivalent repository guidance.
+1. Prefer an explicit pull request, path, commit range, or other concrete boundary in the user's request.
+2. Without explicit scope, inspect staged, unstaged, and untracked changes. If any exist, use the complete dirty set.
+3. Only with a clean worktree, resolve an associated GitHub pull request with `gh pr view`. Establish its base and complete diff without assuming a base branch.
+4. If no usable boundary can be established, ask for scope. Read instruction files applicable to the resolved paths.
 
-Prepare one scope package for every dispatched agent:
+Prepare one scope package: scope source, concrete paths and changed units, base when applicable, repository-guidance paths, and the boundary (adjacent reads are context-only). Workers must not rediscover the change boundary.
 
-```text
-Scope source: explicit | uncommitted changes | PR <identifier>
-Scope: concrete paths and changed units
-Base: base commit or branch when applicable
-Instructions: applicable repository-guidance paths
-Boundary: review only this scope; adjacent reads are context-only
-Expected result: the specialist's required structured report with file and line evidence
-```
+## Select and run specialists
 
-Do not ask agents to rediscover the pull request or change boundary independently.
+Supported aspects are `code`, `tests`, `comments`, `errors`, `types`, `simplify`, and `all`. Run only explicitly named aspects when provided, regardless of the automatic selection conditions below. Default and `all` use those conditions to select review aspects; neither requests simplification.
 
-## Select reviewers
+- `code`: always review the resolved scope using [code reviewer](agents/pr_review_toolkit_code_reviewer.toml).
+- `tests`: when meaningful production behavior or tests changed, use [test analyzer](agents/pr_review_toolkit_pr_test_analyzer.toml), including production changes without accompanying tests.
+- `comments`: when comments or documentation changed, use [comment analyzer](agents/pr_review_toolkit_comment_analyzer.toml).
+- `errors`: when error handling, fallbacks, retries, or failure reporting changed, use [failure hunter](agents/pr_review_toolkit_silent_failure_hunter.toml).
+- `types`: when types or their invariants changed, use [type analyzer](agents/pr_review_toolkit_type_design_analyzer.toml).
 
-When the user names aspects, run exactly those specialists. `all` means all specialists applicable to the resolved change set, followed by simplification when review passes. Without named aspects, use the same behavior as `all`:
+Load only selected specialists' canonical instructions. For small scopes, apply them locally. Delegate substantial, independent review aspects when isolation is useful: prefer the namespaced custom agent matching the instruction filename; if unavailable, supply a general agent with that specialist's instructions and the scope package. If delegation is unavailable, review locally. Run useful independent read-only workers concurrently within host limits unless the user requests sequential execution. Avoid duplicate passes over the same concern.
 
-- `code`: always run `pr_review_toolkit_code_reviewer`.
-- `tests`: run `pr_review_toolkit_pr_test_analyzer` when tests changed.
-- `comments`: run `pr_review_toolkit_comment_analyzer` when comments or documentation changed.
-- `errors`: run `pr_review_toolkit_silent_failure_hunter` when error handling, fallbacks, retries, or failure reporting changed.
-- `types`: run `pr_review_toolkit_type_design_analyzer` when types or their invariants changed.
-- `simplify`: run `pr_review_toolkit_code_simplifier` only after the selected reviewers report no blocking findings. When `simplify` is the only explicitly requested aspect, dispatch it directly.
+Keep every review advisory: no edits, commits, pushes, posted comments, approvals, merges, or pull-request state changes.
 
-Dispatch each reviewer as an isolated custom agent with the prepared scope package. If the user requests parallel execution, dispatch independent read-only reviewers concurrently within the available agent limit. Otherwise, dispatch them sequentially. The simplifier always waits for the review result and never runs in parallel with reviewers.
+## Report and optional simplification
 
-Tell each reviewer to remain advisory, make no edits, preserve user work, and not commit, push, post comments, approve, merge, or change pull-request state. If a required custom agent is unavailable, stop rather than performing that specialist review inline or substituting another agent.
+Deduplicate findings by root cause and retain the strongest evidence. Lead with material findings ordered by impact, including file and line, evidence, severity, confidence, and a concrete correction. End with a brief scope, checks, and limitations summary. Omit empty sections and routine praise; if there are no material findings, say so plainly.
 
-## Aggregate and simplify
+Severity expresses impact; confidence expresses evidence strength. Critical or high-impact findings and explicitly justified must-fix gaps block simplification. A high confidence score alone does not block it.
 
-Deduplicate overlapping findings by root cause and keep the strongest evidence. Organize the combined result as:
-
-```markdown
-# PR Review Summary
-
-## Critical Issues
-## Important Issues
-## Suggestions
-## Strengths
-## Recommended Action
-```
-
-Treat findings labeled critical, high, important, must-fix, test criticality 5-10, or code-review confidence 80-100 as blocking. Do not run the simplifier while blocking findings remain. Report the action plan and let the user address them before a new review.
-
-When simplification runs, give `pr_review_toolkit_code_simplifier` the same resolved edit boundary. Require behavior preservation, protection of all existing user changes, proportionate verification, and a concise report of edits and test results. It must not commit, push, or open or update a pull request.
+When the user explicitly requests `simplify`, apply the canonical [simplifier instructions](agents/pr_review_toolkit_code_simplifier.toml) within the same edit boundary after selected reviews finish without blocking findings. If only simplification was requested, proceed directly. Use the same local or delegated execution choices above, and never run edits concurrently with reviewers. Report edits, verification results, and limitations.
