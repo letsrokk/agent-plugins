@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Plugin Creator Python sources without writing bytecode."""
+"""Validate Agent Doctor Python sources without writing bytecode."""
 
 from __future__ import annotations
 

@@ -65,10 +65,10 @@
       "category": "Developer Tools"
     },
     {
-      "name": "plugin-creator",
+      "name": "agent-doctor",
       "source": {
         "source": "local",
-        "path": "./plugins/plugin-creator"
+        "path": "./plugins/agent-doctor"
       },
       "policy": {
         "installation": "AVAILABLE",

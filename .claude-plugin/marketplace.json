@@ -14,8 +14,8 @@
       "source": "./plugins/read-the-room"
     },
     {
-      "name": "plugin-creator",
-      "source": "./plugins/plugin-creator"
+      "name": "agent-doctor",
+      "source": "./plugins/agent-doctor"
     }
   ]
 }

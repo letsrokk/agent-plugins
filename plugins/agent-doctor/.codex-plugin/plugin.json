@@ -1,7 +1,7 @@
 {
-  "name": "plugin-creator",
+  "name": "agent-doctor",
   "version": "0.1.0",
-  "description": "Inspect recent Codex and Claude sessions for plugin skill usage and direct invocation problems.",
+  "description": "Inspect and troubleshoot Codex and Claude configuration, plugin usage, and agent problems.",
   "author": {
     "name": "Rokk Club",
     "url": "https://github.com/letsrokk"
@@ -13,13 +13,15 @@
     "agents",
     "plugins",
     "skills",
-    "analytics"
+    "analytics",
+    "configuration",
+    "troubleshooting"
   ],
   "skills": "./skills/",
   "interface": {
-    "displayName": "Plugin Creator",
-    "shortDescription": "Inspect plugin and skill usage",
-    "longDescription": "Inspect recent Codex and Claude session history and summarize successful plugin skill invocations, direct failures, and incomplete calls.",
+    "displayName": "Agent Doctor",
+    "shortDescription": "Diagnose agent configuration and usage",
+    "longDescription": "Inspect Codex and Claude configuration and recent session history to diagnose configuration, plugin usage, and invocation problems.",
     "developerName": "Rokk Club",
     "category": "Developer Tools",
     "capabilities": [
@@ -28,7 +30,7 @@
     ],
     "websiteURL": "https://github.com/letsrokk/agent-plugins",
     "defaultPrompt": [
-      "Inspect recent agent sessions for usage of a plugin or skill."
+      "Inspect and troubleshoot my agent configuration or recent plugin and skill usage."
     ]
   }
 }
