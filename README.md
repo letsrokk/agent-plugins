@@ -20,14 +20,21 @@ Both catalogs reference the same package directories. Portable components stay s
 
 ## Plugins
 
+### Original plugins
+
 | Name | Description | Install commands | Supported agents |
 | --- | --- | --- | --- |
-| code-simplifier | Simplify a precise code scope without changing observable behavior. | `codex plugin add code-simplifier@rokk-club-codex-plugins` | ![Codex](assets/agent-badges/codex.svg) |
-| eli5 | Explain any topic with a dead-simple visual explainer that uses big pictures and few words. | `codex plugin add eli5@rokk-club-codex-plugins` | ![Codex](assets/agent-badges/codex.svg) |
-| papercuts | Give coding agents a durable local journal for material workflow friction. | `codex plugin add papercuts@rokk-club-codex-plugins`<br>`/plugin install papercuts@rokk-club-claude-plugins` | ![Codex](assets/agent-badges/codex.svg)<br>![Claude Code](assets/agent-badges/claude-code.svg) |
-| agent-doctor | Inspect and troubleshoot Codex and Claude configuration, then review recent sessions to count exact plugin or skill usage and summarize successes, problems, and incomplete calls. | `codex plugin add agent-doctor@rokk-club-codex-plugins`<br>`/plugin install agent-doctor@rokk-club-claude-plugins` | ![Codex](assets/agent-badges/codex.svg)<br>![Claude Code](assets/agent-badges/claude-code.svg) |
-| pr-review-toolkit | Review pull requests and local changes for code quality, tests, comments, error handling, and type design, then simplify code after the review passes. | `codex plugin add pr-review-toolkit@rokk-club-codex-plugins` | ![Codex](assets/agent-badges/codex.svg) |
-| read-the-room | Shape clear communication for human readers across agent sessions, version control, issue trackers, knowledge bases, and chat applications. | `codex plugin add read-the-room@rokk-club-codex-plugins`<br>`/plugin install read-the-room@rokk-club-claude-plugins` | ![Codex](assets/agent-badges/codex.svg)<br>![Claude Code](assets/agent-badges/claude-code.svg) |
+| papercuts | Give coding agents a durable local journal for material workflow friction. | <p><code>codex plugin add papercuts@rokk-club-codex-plugins</code></p><p><code>/plugin install papercuts@rokk-club-claude-plugins</code></p> | ![Codex](assets/agent-badges/codex.svg)<br>![Claude Code](assets/agent-badges/claude-code.svg) |
+| agent-doctor | Inspect and troubleshoot Codex and Claude configuration, then review recent sessions to count exact plugin or skill usage and summarize successes, problems, and incomplete calls. | <p><code>codex plugin add agent-doctor@rokk-club-codex-plugins</code></p><p><code>/plugin install agent-doctor@rokk-club-claude-plugins</code></p> | ![Codex](assets/agent-badges/codex.svg)<br>![Claude Code](assets/agent-badges/claude-code.svg) |
+| read-the-room | Shape clear communication for human readers across agent sessions, version control, issue trackers, knowledge bases, and chat applications. | <p><code>codex plugin add read-the-room@rokk-club-codex-plugins</code></p><p><code>/plugin install read-the-room@rokk-club-claude-plugins</code></p> | ![Codex](assets/agent-badges/codex.svg)<br>![Claude Code](assets/agent-badges/claude-code.svg) |
+
+### Ports
+
+| Name | Description | Install commands | Supported agents |
+| --- | --- | --- | --- |
+| eli5 | Explain any topic with a dead-simple visual explainer that uses big pictures and few words. | <p><code>codex plugin add eli5@rokk-club-codex-plugins</code></p> | ![Codex](assets/agent-badges/codex.svg) |
+| pr-review-toolkit | Review pull requests and local changes for code quality, tests, comments, error handling, and type design, then simplify code after the review passes. | <p><code>codex plugin add pr-review-toolkit@rokk-club-codex-plugins</code></p> | ![Codex](assets/agent-badges/codex.svg) |
+| code-simplifier | Simplify a precise code scope without changing observable behavior. | <p><code>codex plugin add code-simplifier@rokk-club-codex-plugins</code></p> | ![Codex](assets/agent-badges/codex.svg) |
 
 ## Add a plugin
 
