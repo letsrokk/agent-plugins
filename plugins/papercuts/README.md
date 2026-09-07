@@ -40,6 +40,8 @@ codex plugin add papercuts@rokk-club-codex-plugins
 
 A synchronous `SessionStart` hook uses the `startup|resume|clear|compact` matcher to inject the canonical Papercuts skill instructions for new and resumed sessions and after context is cleared or compacted. Its status message is `Loading Papercuts instructions...`. The hook only reads instructions; it does not access journals or create complaints. This makes the logging workflow available without waiting for skill discovery.
 
+Startup context contains the logging workflow and safety boundaries. The agent reads [evidence procedures](skills/papercuts/references/evidence.md) before submitting commands, stderr, evidence files, or path-sensitive details, or when redaction is uncertain, and [maintenance procedures](skills/papercuts/references/maintenance.md) before inspection, resolution, reopening, or pruning. It reuses references while they remain in context. The hook supplies the skill directory once so relative references resolve independently of the working directory.
+
 After installation or an update, inspect the hook in Codex `/hooks`, review its current definition, and trust it. Start a fresh session and confirm the instructions are present without explicitly invoking the skill. Plugin installation and enablement do not automatically grant hook trust. In Claude Code, verify hook discovery and MCP startup in a fresh session. If a hook or server cannot find `node`, correct the client process's PATH and restart it.
 
 ## User storage and migration from 0.2

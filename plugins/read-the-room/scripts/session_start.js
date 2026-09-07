@@ -10,15 +10,12 @@ try {
   const lines = read(resolve(skill, 'SKILL.md')).split(/\r?\n/);
   const end = lines.indexOf('---', 1);
   if (lines[0] !== '---' || end === -1) throw new Error('SKILL.md must have YAML frontmatter');
-  const body = lines.slice(end + 1).join('\n').trim().replace(
-    /\]\((references\/[^)]+)\)/g,
-    (_, reference) => `](<${resolve(skill, reference)}>)`,
-  );
+  const body = lines.slice(end + 1).join('\n').trim();
   const guide = read(resolve(skill, 'references/agent-responses.md')).trim();
   if (!body || !guide) throw new Error('Writing policy and agent-response guide must not be empty');
   console.log(JSON.stringify({ hookSpecificOutput: {
     hookEventName: 'SessionStart',
-    additionalContext: `${body}\n\n${guide}`,
+    additionalContext: `Resolve relative references against this skill directory: <${skill}>\n\n${body}\n\n${guide}`,
   } }));
 } catch (error) {
   console.error(`read-the-room could not load its writing policy: ${error.message}`);

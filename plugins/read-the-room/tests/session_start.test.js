@@ -36,12 +36,14 @@ test('packaged hook loads current guidance from any directory for each configure
     const output = JSON.parse(result.stdout).hookSpecificOutput;
     assert.equal(output.hookEventName, 'SessionStart');
     const context = output.additionalContext;
+    assert.ok(context.startsWith(`Resolve relative references against this skill directory: <${skill}>\n\n`));
+    assert.equal(context.split(skill).length - 1, 1);
     assert.ok(context.includes('# Make It Make Sense'));
     assert.ok(context.includes('Drafting does not authorize posting'));
     assert.ok(!context.includes('name: make-it-make-sense'));
     for (const name of ['agent-responses', 'version-control', 'issue-trackers', 'knowledge-bases', 'chat']) {
       const path = resolve(skill, `references/${name}.md`);
-      assert.ok(context.includes(`](<${path}>)`));
+      assert.ok(context.includes(`](references/${name}.md)`));
       assert.equal(context.includes(readFileSync(path, 'utf8').trim()), name === 'agent-responses');
     }
     if (source === 'compact') assert.ok(context.includes('Fresh policy after compaction.'));
