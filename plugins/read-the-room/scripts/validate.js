@@ -15,7 +15,7 @@ try {
     }
   }
   const config = JSON.parse(readFileSync(resolve(root, 'hooks/hooks.json'), 'utf8'));
-  assert.deepEqual(config, { hooks: { SessionStart: [{ hooks: [{
+  assert.deepEqual(config, { hooks: { SessionStart: [{ matcher: 'startup|resume|clear|compact', hooks: [{
     type: 'command',
     command: 'node "${CLAUDE_PLUGIN_ROOT}/scripts/session_start.js"',
     timeout: 5,

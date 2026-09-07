@@ -15,15 +15,17 @@ function fixture(t) {
   return { root, plugin, skill: resolve(plugin, 'skills/make-it-make-sense') };
 }
 
-test('packaged hook loads current guidance from any directory and session source', (t) => {
+test('packaged hook loads current guidance from any directory for each configured session source', (t) => {
   const { root, plugin, skill } = fixture(t);
   const config = JSON.parse(readFileSync(resolve(plugin, 'hooks/hooks.json'), 'utf8'));
   const group = config.hooks.SessionStart[0];
-  assert.equal(group.matcher, undefined);
+  assert.equal(group.matcher, 'startup|resume|clear|compact');
+  const matcher = new RegExp(group.matcher);
   assert.equal(group.hooks[0].timeout, 5);
   assert.equal(group.hooks[0].async, undefined);
   assert.equal(group.hooks[0].statusMessage, 'Loading Read the Room writing guidance...');
   for (const source of ['startup', 'resume', 'clear', 'compact']) {
+    assert.equal(matcher.test(source), true);
     if (source === 'compact') appendFileSync(resolve(skill, 'SKILL.md'), '\nFresh policy after compaction.\n');
     const result = spawnSync(group.hooks[0].command, {
       shell: true, cwd: root, env: { ...process.env, CLAUDE_PLUGIN_ROOT: plugin },

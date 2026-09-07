@@ -20,14 +20,16 @@ function fixture(t) {
   return { root, plugin, home, policy: resolve(plugin, 'skills/papercuts/SKILL.md') };
 }
 
-test('packaged hook injects canonical workflow for every session source without storage writes', (t) => {
+test('packaged hook injects canonical workflow for each configured session source without storage writes', (t) => {
   const { root, plugin, home, policy } = fixture(t);
   const config = JSON.parse(readFileSync(resolve(plugin, 'hooks/hooks.json'), 'utf8'));
-  assert.deepEqual(config, { hooks: { SessionStart: [{ hooks: [{
+  assert.deepEqual(config, { hooks: { SessionStart: [{ matcher: 'startup|resume|clear|compact', hooks: [{
     type: 'command', command: 'node "${CLAUDE_PLUGIN_ROOT}/scripts/session_start.js"',
     timeout: 5, statusMessage: 'Loading Papercuts instructions...',
   }] }] } });
+  const matcher = new RegExp(config.hooks.SessionStart[0].matcher);
   for (const source of ['startup', 'resume', 'clear', 'compact']) {
+    assert.equal(matcher.test(source), true);
     if (source === 'compact') appendFileSync(policy, '\nFresh instructions after compaction.\n');
     const result = spawnSync(config.hooks.SessionStart[0].hooks[0].command, {
       shell: true, cwd: root,
