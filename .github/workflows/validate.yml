@@ -48,13 +48,13 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          python-version: "3.12"
+          node-version: "24"
 
       - name: Run plugin tests
-        run: python3 scripts/test.py
+        run: node scripts/test.js
 
   plugin-validation:
     needs: plugin-changes
@@ -70,13 +70,17 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          python-version: "3.12"
+          node-version: "24"
+
+      - name: Install Papercuts build dependencies
+        if: matrix.plugin == 'papercuts'
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Validate plugin
-        run: python3 scripts/validate.py
+        run: node scripts/validate.js
 
   validate:
     runs-on: ubuntu-latest

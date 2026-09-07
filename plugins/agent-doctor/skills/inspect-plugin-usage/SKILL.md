@@ -15,8 +15,8 @@ Require one exact-name target:
 Run the analyzer from this skill's directory:
 
 ```sh
-python3 scripts/inspect_sessions.py --plugin NAME
-python3 scripts/inspect_sessions.py --skill plugin:skill
+node scripts/inspect_sessions.js --plugin NAME
+node scripts/inspect_sessions.js --skill plugin:skill
 ```
 
 Add `--project PATH` when the user asks for project-specific totals or a project comparison. Add `--days N` only when the user requests a window other than the default 30 days.

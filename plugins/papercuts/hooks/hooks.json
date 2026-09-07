@@ -7,7 +7,7 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/session_start.js\"",
             "timeout": 5,
-            "statusMessage": "Loading Read the Room writing guidance..."
+            "statusMessage": "Loading Papercuts instructions..."
           }
         ]
       }

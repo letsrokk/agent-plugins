@@ -2,13 +2,23 @@
 
 ## Manifest roles
 
+Use Agent Plugins v1 as the base for shared metadata and package layout. Accept native Codex and Claude Code structures where the portable format or a client’s implementation cannot express or load a required component. Keep one shared payload and separate client configuration; portability must not disable working hooks or MCP servers.
+
 | File | Role |
 | --- | --- |
-| `plugins/<name>/plugin.json` | Portable Agent Plugins v1 identity and shared package metadata. It must not contain Codex-only `skills`, `mcpServers`, or `interface` fields. |
+| `plugins/<name>/plugin.json` | Agent Plugins v1 identity and shared package metadata. Keep client-only `skills`, `hooks`, `mcpServers`, and `interface` fields in native manifests. Omit `$schema` when native loading is required, retaining the shared metadata. |
 | `plugins/<name>/.codex-plugin/plugin.json` | Required for Codex catalog entries. It declares Codex discovery routes, MCP launch configuration, and UI metadata. Its `name` and `version` must match the portable manifest. |
 | `plugins/<name>/.claude-plugin/plugin.json` | Required only for Claude Code catalog entries. It contains Claude Code-specific metadata and MCP launch configuration. |
 
 Portable skills live under `skills/<skill-name>/SKILL.md`. Codex custom agents live under `skills/<skill-name>/agents/<agent_name>.toml`. Portable MCP configuration may use `mcp.json`; client launch details remain in compatibility manifests when required.
+
+### Choosing portable or native loading
+
+Keep the Agent Plugins v1 `$schema` for plugins whose components load correctly through the portable path. For a native exception, retain root `plugin.json`, provide the target client's native manifest, synchronize names and versions, and explain the exception in the plugin README. Do not add client-specific directories or catalog entries for clients the plugin does not target.
+
+Verified with Codex CLI 0.153.4: the Agent Plugins v1 loader skips plugin hooks and reads MCP configuration from `mcp.json`, ignoring native `mcpServers` declarations. Declaring `hooks` in `.codex-plugin/plugin.json` alone does not overcome this. Papercuts and Read the Room therefore omit the root `$schema` so Codex selects native loading. Papercuts keeps its client-specific MCP launch settings in each native manifest. The validator rejects a Codex plugin combining the portable schema with native hooks or `mcpServers`. Recheck host behavior before changing this exception; see the [Codex loader](https://github.com/openai/codex/blob/main/codex-rs/core-plugins/src/loader.rs) and [portable manifest adapter](https://github.com/openai/codex/blob/main/codex-rs/core-plugins/src/agent_plugin_manifest.rs).
+
+Claude Code uses `.claude-plugin/plugin.json`, discovers `hooks/hooks.json` by default, and supports MCP configuration in its manifest or root `.mcp.json`. Do not confuse Claude's `.mcp.json` with portable `mcp.json`. Use `${CLAUDE_PLUGIN_ROOT}` for Claude launch paths; Codex native MCP settings may use plugin-relative paths and `cwd`. Keep the executable payload shared even when launch settings differ. See the [Claude Code plugin reference](https://code.claude.com/docs/en/plugins-reference).
 
 Keep each `SKILL.md` at or below 7,168 bytes to leave headroom when a host loads it into a prompt. Put only universal instructions and routing in the main file. Move task-, channel-, or artifact-specific guidance into focused files under the skill's `references/` directory, and direct the agent to read only the relevant reference. Repository validation enforces the byte limit; check a file directly with `wc -c skills/<skill-name>/SKILL.md`.
 
@@ -22,50 +32,45 @@ A plugin is scripted when its package contains any of these directories:
 - `src/`
 - `skills/<skill-name>/scripts/`
 
-Every scripted plugin must provide these Python 3.11-compatible entrypoints:
+Every scripted plugin must provide these Node.js 24-compatible entrypoints:
 
-- `scripts/test.py` runs the plugin's tests.
-- `scripts/validate.py` runs its static and package-specific validation.
+- `scripts/test.js` runs the plugin's tests.
+- `scripts/validate.js` runs its static and package-specific validation.
 
-Both entrypoints take no arguments, run from the plugin root, and return zero only when the check passes. They must not prompt, depend on untracked local state, or modify tracked files. Keep dependencies self-contained or install them inside the entrypoint when the plugin already requires that behavior.
+Both entrypoints take no arguments, run from the plugin root, and return zero only when the check passes. They must not prompt, depend on untracked local state, or modify tracked files. Use plain JavaScript and Node's built-in modules and test runner where sufficient.
 
-Use this test entrypoint for a standard-library `unittest` suite:
+Use this CommonJS test entrypoint for a `node:test` suite:
 
-```python
-#!/usr/bin/env python3
-from pathlib import Path
-import unittest
+```js
+#!/usr/bin/env node
+const { spawnSync } = require('node:child_process');
+const { readdirSync } = require('node:fs');
+const path = require('node:path');
 
-
-plugin_root = Path(__file__).resolve().parents[1]
-suite = unittest.defaultTestLoader.discover(str(plugin_root / "tests"))
-result = unittest.TextTestRunner(verbosity=2).run(suite)
-raise SystemExit(0 if result.wasSuccessful() else 1)
+const root = path.resolve(__dirname, '..');
+const tests = readdirSync(path.join(root, 'tests'))
+  .filter(name => name.endsWith('.test.js')).sort()
+  .map(name => path.join('tests', name));
+if (tests.length === 0) throw new Error('No tests found');
+const result = spawnSync(process.execPath, ['--test', ...tests], {
+  cwd: root,
+  stdio: 'inherit',
+});
+if (result.error) console.error(result.error.message);
+process.exit(result.status ?? 1);
 ```
 
-Use this validation entrypoint when syntax compilation is the plugin's complete static check:
+Validation should run `node --check` on executable JavaScript and check the plugin's package contracts, including hook configuration when present. Do not scan dependencies under `node_modules/`.
 
-```python
-#!/usr/bin/env python3
-from pathlib import Path
-import sys
-import tokenize
-
-
-plugin_root = Path(__file__).resolve().parents[1]
-failed = False
-for directory in ("scripts", "src", "tests"):
-    for path in sorted((plugin_root / directory).rglob("*.py")):
-        try:
-            with tokenize.open(path) as source:
-                compile(source.read(), str(path.relative_to(plugin_root)), "exec")
-        except (OSError, SyntaxError, UnicodeError) as error:
-            print(f"{path.relative_to(plugin_root)}: {error}", file=sys.stderr)
-            failed = True
-raise SystemExit(1 if failed else 0)
-```
+Installed plugins must work with only Node.js on the noninteractive process's `PATH`. Runtime dependencies must be bundled in the plugin, with a committed lockfile and third-party license notices. Do not install dependencies or fetch code from a hook or MCP launcher. Papercuts uses npm only for contributor builds and CI: run `npm ci --ignore-scripts --no-audit --no-fund` in its plugin root before validation. Its validation checks that the committed bundle reproduces from the locked dependencies without rewriting it. Read the plugin README for its build command.
 
 GitHub Actions runs both entrypoints on Ubuntu for each changed scripted plugin. A change to this document, the repository instructions, the marketplace validator, the plugin selector, or the validation workflow runs them for every scripted plugin. Skill-only plugins do not need these entrypoints and do not create plugin matrix jobs.
+
+## Lifecycle hooks
+
+Use the shared `hooks/hooks.json` default location for Codex and Claude Code. Hook commands must quote `${CLAUDE_PLUGIN_ROOT}` paths and include a short `statusMessage` describing the action. Keep startup instruction hooks synchronous and read their canonical skill policy on each invocation instead of duplicating it in the script.
+
+Codex plugin installation does not trust hooks automatically. After installation or a hook definition change, review and trust the hook in `/hooks`, then start a fresh session. Verify context injection without explicitly invoking the skill. Never edit saved trust hashes or installed cache files. Claude Code discovers the same bundled hooks when the plugin is enabled.
 
 ## Create and release a plugin
 
@@ -109,8 +114,8 @@ Run the plugin entrypoints from a scripted plugin's root:
 
 ```sh
 cd plugins/<plugin-name>
-python3 scripts/test.py
-python3 scripts/validate.py
+node scripts/test.js
+node scripts/validate.js
 cd ../..
 ```
 
