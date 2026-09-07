@@ -22,15 +22,12 @@ Both catalogs reference the same package directories. Portable components stay s
 
 ### Rokk Club plugins
 
-<table>
-<thead>
-<tr><th>Name</th><th>Description</th><th>Install commands</th><th>Supported agents</th></tr>
-</thead>
-<tbody>
-<tr>
-<td>papercuts</td>
-<td>Give coding agents a durable local journal for material workflow friction.</td>
-<td>
+#### papercuts
+
+![Codex](assets/agent-badges/codex.svg)\
+![Claude Code](assets/agent-badges/claude-code.svg)
+
+Give coding agents a durable local journal for material workflow friction.
 
 Codex:
 
@@ -44,13 +41,12 @@ Claude:
 /plugin install papercuts@rokk-club-claude-plugins
 ```
 
-</td>
-<td><img src="assets/agent-badges/codex.svg" alt="Codex"><br><img src="assets/agent-badges/claude-code.svg" alt="Claude Code"></td>
-</tr>
-<tr>
-<td>agent-doctor</td>
-<td>Inspect and troubleshoot Codex and Claude configuration, then review recent sessions to count exact plugin or skill usage and summarize successes, problems, and incomplete calls.</td>
-<td>
+#### agent-doctor
+
+![Codex](assets/agent-badges/codex.svg)\
+![Claude Code](assets/agent-badges/claude-code.svg)
+
+Inspect and troubleshoot Codex and Claude configuration, then review recent sessions to count exact plugin or skill usage and summarize successes, problems, and incomplete calls.
 
 Codex:
 
@@ -64,13 +60,12 @@ Claude:
 /plugin install agent-doctor@rokk-club-claude-plugins
 ```
 
-</td>
-<td><img src="assets/agent-badges/codex.svg" alt="Codex"><br><img src="assets/agent-badges/claude-code.svg" alt="Claude Code"></td>
-</tr>
-<tr>
-<td>read-the-room</td>
-<td>Shape clear communication for human readers across agent sessions, version control, issue trackers, knowledge bases, and chat applications.</td>
-<td>
+#### read-the-room
+
+![Codex](assets/agent-badges/codex.svg)\
+![Claude Code](assets/agent-badges/claude-code.svg)
+
+Shape clear communication for human readers across agent sessions, version control, issue trackers, knowledge bases, and chat applications.
 
 Codex:
 
@@ -84,23 +79,13 @@ Claude:
 /plugin install read-the-room@rokk-club-claude-plugins
 ```
 
-</td>
-<td><img src="assets/agent-badges/codex.svg" alt="Codex"><br><img src="assets/agent-badges/claude-code.svg" alt="Claude Code"></td>
-</tr>
-</tbody>
-</table>
-
 ### Ports
 
-<table>
-<thead>
-<tr><th>Name</th><th>Description</th><th>Install commands</th><th>Supported agents</th></tr>
-</thead>
-<tbody>
-<tr>
-<td>eli5</td>
-<td>Explain any topic with a dead-simple visual explainer that uses big pictures and few words.</td>
-<td>
+#### eli5
+
+![Codex](assets/agent-badges/codex.svg)
+
+Explain any topic with a dead-simple visual explainer that uses big pictures and few words.
 
 Codex:
 
@@ -108,13 +93,11 @@ Codex:
 codex plugin add eli5@rokk-club-codex-plugins
 ```
 
-</td>
-<td><img src="assets/agent-badges/codex.svg" alt="Codex"></td>
-</tr>
-<tr>
-<td>pr-review-toolkit</td>
-<td>Review pull requests and local changes for code quality, tests, comments, error handling, and type design, then simplify code after the review passes.</td>
-<td>
+#### pr-review-toolkit
+
+![Codex](assets/agent-badges/codex.svg)
+
+Review pull requests and local changes for code quality, tests, comments, error handling, and type design, then simplify code after the review passes.
 
 Codex:
 
@@ -122,25 +105,17 @@ Codex:
 codex plugin add pr-review-toolkit@rokk-club-codex-plugins
 ```
 
-</td>
-<td><img src="assets/agent-badges/codex.svg" alt="Codex"></td>
-</tr>
-<tr>
-<td>code-simplifier</td>
-<td>Simplify a precise code scope without changing observable behavior.</td>
-<td>
+#### code-simplifier
+
+![Codex](assets/agent-badges/codex.svg)
+
+Simplify a precise code scope without changing observable behavior.
 
 Codex:
 
 ```sh
 codex plugin add code-simplifier@rokk-club-codex-plugins
 ```
-
-</td>
-<td><img src="assets/agent-badges/codex.svg" alt="Codex"></td>
-</tr>
-</tbody>
-</table>
 
 ## Add a plugin
 
