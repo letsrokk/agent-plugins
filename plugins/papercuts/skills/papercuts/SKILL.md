@@ -24,6 +24,8 @@ Submit only the useful minimum: a command of at most 1,024 characters, an intege
 
 Redaction is best effort, not a guarantee. Never submit secrets, credentials, raw environment dumps, arbitrary attachments, or unbounded evidence. The journal does not accept raw environment evidence.
 
+Generic system paths such as `/tmp` and `/dev/null` stay readable; identifying descendants are elided (for example, `/tmp/client/file` becomes `/tmp/...`), and home paths and UNC shares are redacted. Quote paths containing spaces. When path details are essential or redaction is uncertain, call `lodge_complaint` with `dry_run: true` (CLI: `lodge --dry-run`), inspect the sanitized text and evidence in `preview`, adjust if needed, then lodge with `dry_run: false` or omit the flag. Preview validates inputs but does not read or write the journal, amend old records, or guarantee a later write. Keep ordinary lodging to one call.
+
 ## Review and lifecycle
 
 Use `list_complaints` and `get_complaint` when the user asks to review or inspect Papercuts. Resolve only when verified evidence shows the friction no longer occurs, and reopen only when verified evidence shows it has returned. Record a concise note that names that evidence for either action.

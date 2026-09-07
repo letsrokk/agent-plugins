@@ -9,7 +9,7 @@ const booleans = names => Object.fromEntries(names.map(name => [name,{type:'bool
 const evidence = strings(['cmd','exit','stderr-file']);
 const policies = strings(['resolved-older-than-days','open-max-encounters','open-inactive-for-days','projects']);
 const optionsByCommand = {
-  lodge:{...strings(['severity','evidence']),tag:{type:'string',multiple:true},...evidence},
+  lodge:{...booleans(['dry-run']),...strings(['severity','evidence']),tag:{type:'string',multiple:true},...evidence},
   list:{...strings(['status','query','severity','min-encounters','recent-days','limit','format']),...booleans(['all-projects']),tag:{type:'string',multiple:true}},
   get:booleans(['all-projects']), vote:{...strings(['note']),...evidence},resolve:strings(['note']),reopen:strings(['note']),doctor:booleans(['repair-tail']),prune:policies,config:{}
 };

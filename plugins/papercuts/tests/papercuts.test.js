@@ -88,11 +88,11 @@ test('secret redaction retains actionable commands and bounds evidence before wr
   const f = fixture(t); f.service.lodge('Sentinel'); const before = fs.readFileSync(f.storage.journal_path);
   const secrets = sanitizeContext({command:"curl -H 'Authorization: Bearer bearer-secret' https://user:password@example.invalid API_TOKEN=token-value",stderr:'ghp_abcdefghijklmnopqrstuvwxyz123456 sk-proj-abcdefghijklmnopqrstuvwxyz123456',note:'AWS_ACCESS_KEY_ID=secret CI_JOB_JWT=jwt-secret'});
   for (const text of ['bearer-secret','user:password','token-value','ghp_','sk-proj-','jwt-secret']) assert.ok(!JSON.stringify(secrets).includes(text));
-  for (const context of [{stderr:'HOME=/Users/example\nPATH=/bin'},{stderr:'Environment:\nAWS_ACCESS_KEY_ID=secret\nCI_JOB_JWT=secret'},{stderr:'HOME=a\0PATH=b\0'},{stderr:'{"AWS_ACCESS_KEY_ID":"a","CI_JOB_JWT":"b"}'},{env:{}},{command:'x'.repeat(1025)},{note:'x'.repeat(2049)},{stderr:'ü'.repeat(2049)},{exit_status:true},{stderr:'x',stderr_file:'x'}]) assert.throws(() => f.service.lodge('Invalid evidence',{context}),errorCode('invalid_input'));
+  for (const context of [{stderr:'HOME=/Users/example\nPATH=/bin'},{stderr:'Environment:\nAWS_ACCESS_KEY_ID=secret\nCI_JOB_JWT=secret'},{stderr:'HOME=a\0PATH=b\0'},{stderr:'{"AWS_ACCESS_KEY_ID":"a","CI_JOB_JWT":"b"}'},{env:{}},{command:'x'.repeat(1025)},{note:'x'.repeat(2049)},{stderr:'ü'.repeat(2049)},{exit_status:true},{stderr:'x',stderr_file:'x'}]) for (const dry_run of [false,true]) assert.throws(() => f.service.lodge('Invalid evidence',{context,dry_run}),errorCode('invalid_input'));
   assert.deepEqual(fs.readFileSync(f.storage.journal_path),before);
   for (const text of [String.raw`Prevention: native paths (C:\... or C:/...) while shell utilities take /c/... MSYS paths.`,String.raw`awk '/^\x60\x60\x60markdown$/{f=1;next} f&&/^\x60\x60\x60$/{exit} f' "5 Meta/Agent Instructions/Coding Agent Instructions.md" > mirror.md && diff mirror.md ~/.claude/CLAUDE.md`,"grep '/^foo$/' file","grep '/./' file","grep '/.*foo/' file","grep '/[ab]/i' file","sed -n '/^foo$/p' file",'./scripts/repro.sh','../src/models.py','.claude/skills/vault-task/SKILL.md:235-236 reads evidence']) assert.equal(sanitizeString(text),text);
   assert.equal(sanitizeString(String.raw`run /Users/alice/private/config then C:\Users\alice\secret.txt, open https://example.com/private). and clone git@github:acme/private.git`),'run [REDACTED_PATH] then [REDACTED_PATH], open [REDACTED_URL]). and clone [REDACTED_URL]');
-  for (const [text,expected] of [['/^alice/private/key.txt','[REDACTED_PATH]'],['/[alice]/private/key.txt','[REDACTED_PATH]'],['/Users/alice/...','[REDACTED_PATH]...']]) assert.equal(sanitizeString(text),expected);
+  for (const [text,expected] of [['/^alice/private/key.txt','[REDACTED_PATH]'],['/[alice]/private/key.txt','[REDACTED_PATH]'],['/Users/alice/...','[REDACTED_PATH]']]) assert.equal(sanitizeString(text),expected);
   const a = f.service.lodge('Secret sk-proj-abcdefghijklmnopqrstuvwxyz123456',{tags:['sk-proj-abcdefghijklmnopqrstuvwxyz123456']});
   const b = f.service.lodge('Secret sk-proj-zyxwvutsrqponmlkjihgfedcba654321',{tags:['sk-proj-zyxwvutsrqponmlkjihgfedcba654321']});
   assert.equal(a.record.id,b.record.id);
@@ -175,4 +175,52 @@ test('Unicode query folding and tag ordering preserve Python-era matching and ID
   assert.deepEqual(record.tags,['\ue000','😀']);
   f.service.lodge('Straße Σςσ');
   assert.equal(f.service.list({query:'STRASSE σσσ'}).length,1);
+});
+test('system paths stay readable while identifying descendants and quoted paths are elided',() => {
+  const unchanged = ['bash /tmp and python /tmp differ','2>/dev/null suppresses stderr','/usr/bin/bash: unexpected EOF','`/tmp/...`.',String.raw`C:\tmp is a live directory`,
+    ...['/','/tmp','/var/tmp','/dev','/usr','/usr/bin','/usr/local/bin','/etc','/bin','/dev/null','/dev/zero','/dev/random','/dev/urandom','/dev/tty','/bin/sh','/bin/bash','/usr/bin/sh','/usr/bin/bash','C:\\','C:/','/c/','c:/TMP','/c/Windows']];
+  const cases = [...unchanged.map(text => [text,text]),
+    ['/tmp/client-project/secret-file','/tmp/...'],['/usr/bin/customer-tool','/usr/bin/...'],['/usr/bin/bash/private','/usr/bin/...'],
+    [String.raw`C:\Windows\Temp\customer-file`,String.raw`C:\Windows\...`],['c:/tmp/customer','c:/tmp/...'],['/c/Windows/customer','/c/Windows/...'],
+    ['/home/alice/work/client','[REDACTED_PATH]'],['/work/customer-name/file','[REDACTED_PATH]'],['/tmp-other/client','[REDACTED_PATH]'],
+    [String.raw`\\internal-host\share\file`,'[REDACTED_PATH]'],['/Users/alice/...','[REDACTED_PATH]'],
+    ['`/tmp/private file` and "/home/alice/private file"', '`/tmp/...` and "[REDACTED_PATH]"'],
+    [String.raw`'C:\Users\alice\Private Folder\file'`,"'[REDACTED_PATH]'"],
+    [String.raw`"C:\tmp\Private Folder\file"`,String.raw`"C:\tmp\..."`],
+    ['`https://example.invalid/private`.', '`[REDACTED_URL]`.'],['(`/tmp/client`).','(`/tmp/...`).'],
+    ['API_TOKEN=/tmp/secret','API_TOKEN=[REDACTED]']];
+  for (const [input,expected] of cases) {
+    assert.equal(sanitizeString(input),expected,input);
+    assert.equal(sanitizeString(expected),expected,`Repeated: ${input}`);
+  }
+});
+test('lodge previews normalize the proposed payload without reading or changing the journal',t => {
+  const f = fixture(t),directory = path.dirname(f.storage.journal_path);
+  const text = '  Failure in /tmp/client  ',options = {severity:'major',tags:[' Tools ','tools'],context:{command:'bash /tmp/client',note:'API_TOKEN=private',stderr:'2>/dev/null',exit_status:2}};
+  const preview = f.service.lodge(text,{...options,dry_run:true});
+  assert.equal(preview.dry_run,true); assert.equal(preview.changed,false);
+  assert.equal(preview.preview.text,'Failure in /tmp/...');
+  assert.deepEqual(preview.preview.context,{command:'bash /tmp/...',note:'API_TOKEN=[REDACTED]',stderr:'2>/dev/null',exit_status:2});
+  assert.ok(!fs.existsSync(directory));
+  assert.throws(() => f.service.lodge(text,{dry_run:'true'}),errorCode('invalid_input'));
+  const record = f.service.lodge(text,options).record;
+  assert.deepEqual(preview.preview,Object.fromEntries(Object.keys(preview.preview).map(key => [key,record[key]])));
+  f.service.resolve(record.id);
+  const before = fs.readFileSync(f.storage.journal_path),entries = fs.readdirSync(directory);
+  assert.deepEqual(f.service.lodge(text,{...options,dry_run:true}),preview);
+  assert.deepEqual(fs.readFileSync(f.storage.journal_path),before); assert.deepEqual(fs.readdirSync(directory),entries);
+  assert.equal(f.service.get(record.id).status,'resolved'); assert.equal(f.service.get(record.id).encounter_count,1);
+  fs.writeFileSync(f.storage.journal_path,'invalid journal\n');
+  assert.deepEqual(f.service.lodge(text,{...options,dry_run:true}),preview);
+});
+test('CLI dry-run exposes sanitized evidence and leaves missing storage untouched',t => {
+  const f = fixture(t),file = path.join(f.root,'stderr.txt'); fs.writeFileSync(file,'Failed in /tmp/client');
+  const args = ['lodge','Failure in /tmp/client','--severity','major','--tag','Tools','--cmd','bash /tmp/client','--exit','2','--stderr-file','stderr.txt','--evidence','API_TOKEN=private'];
+  const preview = cli(f,[...args,'--dry-run']); assert.equal(preview.status,0,preview.stderr);
+  const data = JSON.parse(preview.stdout).data;
+  assert.equal(data.dry_run,true); assert.equal(data.changed,false); assert.equal(data.preview.context.stderr,'Failed in /tmp/...');
+  assert.ok(!fs.existsSync(path.dirname(f.storage.journal_path)));
+  const record = JSON.parse(cli(f,args).stdout).data.record;
+  assert.deepEqual(data.preview,Object.fromEntries(Object.keys(data.preview).map(key => [key,record[key]])));
+  assert.match(cli(f,['--help']).stdout,/--dry-run/);
 });
