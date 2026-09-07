@@ -1,5 +1,7 @@
 # Repository Plugin Development Workflow Implementation Plan
 
+> Historical design record. Its implementation details and commands are superseded by the Node.js tooling described in [Plugin development](../../plugin-development.md).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Give contributors one repository-owned Codex plugin creation and local-development contract, and make the marketplace validator reject packages that violate it.

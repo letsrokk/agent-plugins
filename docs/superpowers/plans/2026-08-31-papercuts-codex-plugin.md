@@ -1,5 +1,7 @@
 # Papercuts Codex Plugin Implementation Plan
 
+> Historical design record. Its implementation details and commands are superseded by the Node.js tooling described in [Plugin development](../../plugin-development.md).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a Codex-only `papercuts` plugin that automatically records workflow friction in a configurable JSONL journal and exposes review, encounter voting, lifecycle, health, and explicitly authorized pruning through a CLI and MCP tools.

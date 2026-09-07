@@ -1,5 +1,7 @@
 # Papercuts Codex Plugin Design
 
+> Historical design record. Its implementation details and commands are superseded by the Node.js tooling described in [Plugin development](../../plugin-development.md).
+
 **Date:** 2026-08-31  
 **Status:** Approved design  
 **Target:** Codex plugin only
