@@ -20,71 +20,21 @@ Both catalogs reference the same package directories. Portable components stay s
 
 ## Plugins
 
-### code-simplifier ![Codex](assets/agent-badges/codex.svg)
+### Original plugins
 
-Simplify a precise code scope without changing observable behavior.
+| Name | Description | Install commands | Supported agents |
+| --- | --- | --- | --- |
+| papercuts | Give coding agents a durable local journal for material workflow friction. | <p>Codex: <code>codex plugin add papercuts@rokk-club-codex-plugins</code></p><p>Claude: <code>/plugin install papercuts@rokk-club-claude-plugins</code></p> | ![Codex](assets/agent-badges/codex.svg)<br>![Claude Code](assets/agent-badges/claude-code.svg) |
+| agent-doctor | Inspect and troubleshoot Codex and Claude configuration, then review recent sessions to count exact plugin or skill usage and summarize successes, problems, and incomplete calls. | <p>Codex: <code>codex plugin add agent-doctor@rokk-club-codex-plugins</code></p><p>Claude: <code>/plugin install agent-doctor@rokk-club-claude-plugins</code></p> | ![Codex](assets/agent-badges/codex.svg)<br>![Claude Code](assets/agent-badges/claude-code.svg) |
+| read-the-room | Shape clear communication for human readers across agent sessions, version control, issue trackers, knowledge bases, and chat applications. | <p>Codex: <code>codex plugin add read-the-room@rokk-club-codex-plugins</code></p><p>Claude: <code>/plugin install read-the-room@rokk-club-claude-plugins</code></p> | ![Codex](assets/agent-badges/codex.svg)<br>![Claude Code](assets/agent-badges/claude-code.svg) |
 
-```sh
-codex plugin add code-simplifier@rokk-club-codex-plugins
-```
+### Ports
 
-### eli5 ![Codex](assets/agent-badges/codex.svg)
-
-Explain any topic with a dead-simple visual explainer that uses big pictures and few words.
-
-```sh
-codex plugin add eli5@rokk-club-codex-plugins
-```
-
-### papercuts ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
-
-Give coding agents a durable local journal for material workflow friction.
-
-```sh
-# Codex CLI
-codex plugin add papercuts@rokk-club-codex-plugins
-```
-
-```text
-# Claude Code interactive command
-/plugin install papercuts@rokk-club-claude-plugins
-```
-
-### agent-doctor ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
-
-Inspect and troubleshoot Codex and Claude configuration, then review recent sessions to count exact plugin or skill usage and summarize successes, problems, and incomplete calls.
-
-```sh
-# Codex CLI
-codex plugin add agent-doctor@rokk-club-codex-plugins
-```
-
-```text
-# Claude Code interactive command
-/plugin install agent-doctor@rokk-club-claude-plugins
-```
-
-### pr-review-toolkit ![Codex](assets/agent-badges/codex.svg)
-
-Review pull requests and local changes for code quality, tests, comments, error handling, and type design, then simplify code after the review passes.
-
-```sh
-codex plugin add pr-review-toolkit@rokk-club-codex-plugins
-```
-
-### read-the-room ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
-
-Shape clear communication for human readers across agent sessions, version control, issue trackers, knowledge bases, and chat applications.
-
-```sh
-# Codex CLI
-codex plugin add read-the-room@rokk-club-codex-plugins
-```
-
-```text
-# Claude Code interactive command
-/plugin install read-the-room@rokk-club-claude-plugins
-```
+| Name | Description | Install commands | Supported agents |
+| --- | --- | --- | --- |
+| eli5 | Explain any topic with a dead-simple visual explainer that uses big pictures and few words. | <p>Codex: <code>codex plugin add eli5@rokk-club-codex-plugins</code></p> | ![Codex](assets/agent-badges/codex.svg) |
+| pr-review-toolkit | Review pull requests and local changes for code quality, tests, comments, error handling, and type design, then simplify code after the review passes. | <p>Codex: <code>codex plugin add pr-review-toolkit@rokk-club-codex-plugins</code></p> | ![Codex](assets/agent-badges/codex.svg) |
+| code-simplifier | Simplify a precise code scope without changing observable behavior. | <p>Codex: <code>codex plugin add code-simplifier@rokk-club-codex-plugins</code></p> | ![Codex](assets/agent-badges/codex.svg) |
 
 ## Add a plugin
 
