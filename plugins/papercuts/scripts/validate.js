@@ -11,7 +11,9 @@ for (const directory of ['src','scripts','tests','dist']) {
     if (result.status !== 0 || result.error) process.exit(1);
   }
 }
-const hook = JSON.parse(fs.readFileSync(path.join(root,'hooks/hooks.json'),'utf8')).hooks.SessionStart[0].hooks[0];
+const group = JSON.parse(fs.readFileSync(path.join(root,'hooks/hooks.json'),'utf8')).hooks.SessionStart[0];
+assert.equal(group.matcher,'startup|resume|clear|compact');
+const hook = group.hooks[0];
 assert.equal(hook.statusMessage,'Loading Papercuts instructions...');
 assert.equal(hook.command,'node "${CLAUDE_PLUGIN_ROOT}/scripts/session_start.js"');
 for (const name of ['.codex-plugin','.claude-plugin']) {
