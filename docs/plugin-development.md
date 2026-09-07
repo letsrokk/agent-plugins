@@ -1,5 +1,7 @@
 # Plugin development
 
+Repository tooling requires Node.js 24 or later. At the repository root, run `npm ci --ignore-scripts --no-audit --no-fund` to install the pinned TOML parser used to validate custom agents. Run `npm test` and `npm run validate` before committing. Plugin build dependencies remain separate and are installed from the relevant plugin directory.
+
 ## Manifest roles
 
 Use Agent Plugins v1 as the base for shared metadata and package layout. Accept native Codex and Claude Code structures where the portable format or a client’s implementation cannot express or load a required component. Keep one shared payload and separate client configuration; portability must not disable working hooks or MCP servers.
@@ -64,7 +66,7 @@ Validation should run `node --check` on executable JavaScript and check the plug
 
 Installed plugins must work with only Node.js on the noninteractive process's `PATH`. Runtime dependencies must be bundled in the plugin, with a committed lockfile and third-party license notices. Do not install dependencies or fetch code from a hook or MCP launcher. Papercuts uses npm only for contributor builds and CI: run `npm ci --ignore-scripts --no-audit --no-fund` in its plugin root before validation. Its validation checks that the committed bundle reproduces from the locked dependencies without rewriting it. Read the plugin README for its build command.
 
-GitHub Actions runs both entrypoints on Ubuntu for each changed scripted plugin. A change to this document, the repository instructions, the marketplace validator, the plugin selector, or the validation workflow runs them for every scripted plugin. Skill-only plugins do not need these entrypoints and do not create plugin matrix jobs.
+GitHub Actions runs both entrypoints on Ubuntu for each changed scripted plugin. A change to this document, the repository instructions, the marketplace validator, the plugin selector, the root package manifest or lockfile, or the validation workflow runs them for every scripted plugin. Skill-only plugins do not need these entrypoints and do not create plugin matrix jobs.
 
 ## Lifecycle hooks
 
@@ -78,7 +80,7 @@ Codex plugin installation does not trust hooks automatically. After installation
 2. Add at least one discoverable component.
 3. Add `plugins/<name>/README.md` with a short description, a usage example, and a brief explanation of the result. Follow the concise style of [eli5's README](../plugins/eli5/README.md).
 4. Add the compatibility manifest for each target catalog.
-5. Keep every manifest version and any package `__version__` equal.
+5. Keep every plugin manifest version equal.
 6. Add catalog entries with exact `./plugins/<name>` sources.
 7. If the plugin is scripted, add and run its test and validation entrypoints.
 8. Run both repository validation commands.
@@ -87,7 +89,7 @@ Codex plugin installation does not trust hooks automatically. After installation
 Release versions on `main` use stable `MAJOR.MINOR.PATCH` SemVer. A pull request that
 changes an existing plugin can leave its version unchanged; after validation succeeds on
 `main`, GitHub Actions increments the patch version and synchronizes the portable, Codex,
-Claude, and Python version declarations that exist for that plugin. New and deleted plugins
+and Claude plugin manifests that exist for that plugin. New and deleted plugins
 are excluded from automatic bumps.
 
 Set a strictly higher version in the pull request when the change needs an intentional major,
@@ -122,8 +124,8 @@ cd ../..
 Then run the repository checks and reinstall the plugin:
 
 ```sh
-python3 -m unittest discover -s tests -v
-python3 scripts/validate_marketplaces.py
+npm test
+npm run validate
 codex plugin marketplace add /absolute/path/to/agent-plugins-dev
 codex plugin add <plugin-name>@rokk-club-codex-plugins-dev
 codex plugin list

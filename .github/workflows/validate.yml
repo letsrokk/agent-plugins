@@ -20,10 +20,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          python-version: "3.12"
+          node-version: "24"
 
       - name: Select changed scripted plugins
         id: select
@@ -31,7 +31,7 @@ jobs:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
-          plugins="$(python3 scripts/plugin_ci.py changed "$BASE_SHA" "$HEAD_SHA")"
+          plugins="$(node scripts/plugin_ci.js changed "$BASE_SHA" "$HEAD_SHA")"
           echo "plugins=$plugins" >> "$GITHUB_OUTPUT"
 
   plugin-tests:
@@ -90,16 +90,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          python-version: "3.12"
+          node-version: "24"
+
+      - name: Install repository validation dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Run unit tests
-        run: python3 -m unittest discover -s tests -v
+        run: npm test
 
       - name: Validate marketplace catalogs
-        run: python3 scripts/validate_marketplaces.py
+        run: npm run validate
 
       - name: Check plugin version policy
         if: github.event_name == 'pull_request'
@@ -108,7 +111,7 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           MERGE_BASE="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
-          python3 scripts/version_plugins.py check "$MERGE_BASE" "$HEAD_SHA"
+          node scripts/version_plugins.js check "$MERGE_BASE" "$HEAD_SHA"
 
   version:
     if: >-
@@ -134,10 +137,10 @@ jobs:
           fetch-depth: 0
           ref: main
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          python-version: "3.12"
+          node-version: "24"
 
       - name: Apply and push plugin versions
         env:
@@ -151,7 +154,7 @@ jobs:
           for attempt in 1 2 3; do
             git fetch origin main
             git reset --hard origin/main
-            python3 scripts/version_plugins.py apply "$BASE_SHA" "$HEAD_SHA"
+            node scripts/version_plugins.js apply "$BASE_SHA" "$HEAD_SHA"
 
             if git diff --quiet -- plugins/; then
               exit 0

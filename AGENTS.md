@@ -15,13 +15,13 @@ A plugin with root `scripts/`, root `src/`, or `skills/*/scripts/` is scripted. 
 
 [`docs/plugin-development.md`](docs/plugin-development.md) is the authoritative contributor workflow for manifest roles, local development, and release preparation.
 
-Existing plugins changed without a version update receive an automatic patch bump after validation on `main`. An explicit release version must be a strictly higher stable `MAJOR.MINOR.PATCH` value, synchronized across all existing manifests and package `__version__` declarations. New and deleted plugins do not receive automatic bumps.
+Existing plugins changed without a version update receive an automatic patch bump after validation on `main`. An explicit release version must be a strictly higher stable `MAJOR.MINOR.PATCH` value, synchronized across all existing plugin manifests. New and deleted plugins do not receive automatic bumps.
 
 Keep catalog entries ordered intentionally. Codex entries must include `policy.installation`, `policy.authentication`, and `category`. Use `AVAILABLE` and `ON_INSTALL` unless a plugin has a documented reason to differ.
 
-Repository validation requires Python 3.11 or later. Before committing, run:
+Repository tooling requires Node.js 24 or later. Install contributor dependencies with `npm ci --ignore-scripts --no-audit --no-fund` at the repository root. Before committing, run:
 
 ```sh
-python3 -m unittest discover -s tests -v
-python3 scripts/validate_marketplaces.py
+npm test
+npm run validate
 ```
