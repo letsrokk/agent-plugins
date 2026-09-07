@@ -71,12 +71,13 @@ GitHub Actions runs both entrypoints on Ubuntu for each changed scripted plugin.
 
 1. Create `plugins/<name>/plugin.json` with a release version.
 2. Add at least one discoverable component.
-3. Add the compatibility manifest for each target catalog.
-4. Keep every manifest version and any package `__version__` equal.
-5. Add catalog entries with exact `./plugins/<name>` sources.
-6. If the plugin is scripted, add and run its test and validation entrypoints.
-7. Run both repository validation commands.
-8. Remove any `+codex.local-*` suffix before a release commit.
+3. Add `plugins/<name>/README.md` with a short description, a usage example, and a brief explanation of the result. Follow the concise style of [eli5's README](../plugins/eli5/README.md).
+4. Add the compatibility manifest for each target catalog.
+5. Keep every manifest version and any package `__version__` equal.
+6. Add catalog entries with exact `./plugins/<name>` sources.
+7. If the plugin is scripted, add and run its test and validation entrypoints.
+8. Run both repository validation commands.
+9. Remove any `+codex.local-*` suffix before a release commit.
 
 Release versions on `main` use stable `MAJOR.MINOR.PATCH` SemVer. A pull request that
 changes an existing plugin can leave its version unchanged; after validation succeeds on
