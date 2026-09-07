@@ -310,6 +310,28 @@ class MarketplaceValidationTests(unittest.TestCase):
 
         self.assertTrue(any("unknown field 'skills'" in error for error in errors))
 
+    def test_codex_native_components_require_native_manifest_selection(self) -> None:
+        name = "native-components"
+        self._write_catalogs(codex_plugins=[self._codex_entry(name)])
+        self._write_skill(name, name)
+        for field, value in (("hooks", "./hooks/hooks.json"), ("mcpServers", {"server": {"command": "node"}})):
+            with self.subTest(field=field):
+                self._write_portable_manifest(name)
+                self._write_json(f"plugins/{name}/.codex-plugin/plugin.json", {
+                    "name": name, "version": "0.1.0", "skills": "./skills/", field: value,
+                })
+                self.assertTrue(any("omit $schema" in error for error in validate_repository(self.root)))
+                self._write_json(f"plugins/{name}/plugin.json", {"name": name, "version": "0.1.0"})
+                self.assertEqual(validate_repository(self.root), [])
+
+    def test_schema_omission_requires_a_native_manifest(self) -> None:
+        self._write_catalogs(claude_plugins=[self._claude_entry("native")])
+        self._write_skill("native", "native")
+        self._write_json("plugins/native/plugin.json", {"name": "native", "version": "0.1.0"})
+        self.assertTrue(any("$schema" in error for error in validate_repository(self.root)))
+        self._write_json("plugins/native/.claude-plugin/plugin.json", {"name": "native", "version": "0.1.0"})
+        self.assertEqual(validate_repository(self.root), [])
+
     def test_rejects_plugin_without_discoverable_component(self) -> None:
         self._write_catalogs(codex_plugins=[self._codex_entry("empty-plugin")])
         self._write_portable_manifest("empty-plugin")
@@ -319,19 +341,19 @@ class MarketplaceValidationTests(unittest.TestCase):
         self.assertTrue(any("must provide at least one skill or mcp.json" in error for error in errors))
 
     def test_scripted_plugin_requires_test_and_validation_entrypoints(self) -> None:
-        source = self.root / "plugins/scripted/src/scripted.py"
+        source = self.root / "plugins/scripted/src/scripted.js"
         source.parent.mkdir(parents=True)
-        source.write_text("pass\n", encoding="utf-8")
+        source.write_text("'use strict';\n", encoding="utf-8")
 
         errors = validate_repository(self.root)
 
-        self.assertTrue(any("scripts/test.py is missing" in error for error in errors))
-        self.assertTrue(any("scripts/validate.py is missing" in error for error in errors))
+        self.assertTrue(any("scripts/test.js is missing" in error for error in errors))
+        self.assertTrue(any("scripts/validate.js is missing" in error for error in errors))
 
         scripts = self.root / "plugins/scripted/scripts"
         scripts.mkdir()
-        (scripts / "test.py").write_text("pass\n", encoding="utf-8")
-        (scripts / "validate.py").write_text("pass\n", encoding="utf-8")
+        (scripts / "test.js").write_text("'use strict';\n", encoding="utf-8")
+        (scripts / "validate.js").write_text("'use strict';\n", encoding="utf-8")
 
         self.assertEqual(validate_repository(self.root), [])
 

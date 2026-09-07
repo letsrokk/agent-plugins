@@ -308,7 +308,13 @@ def _validate_portable_manifest(
         if not (root / relative_path).exists():
             errors[-1] = f"{catalog}: plugin '{name}' is missing portable manifest {relative_path}"
         return None
-    if manifest.get("$schema") != AGENT_PLUGIN_SCHEMA:
+    has_native_manifest = any(
+        (root / "plugins" / name / client / "plugin.json").is_file()
+        for client in (".codex-plugin", ".claude-plugin")
+    )
+    if manifest.get("$schema") != AGENT_PLUGIN_SCHEMA and not (
+        "$schema" not in manifest and has_native_manifest
+    ):
         errors.append(f"{relative_path}: $schema must be {AGENT_PLUGIN_SCHEMA}")
     if manifest.get("name") != name:
         errors.append(f"{relative_path}: name must match catalog entry '{name}'")
@@ -347,6 +353,14 @@ def _validate_codex_manifest(
     if manifest.get("name") != name:
         errors.append(f"{relative_path}: name must match catalog entry '{name}'")
     portable_version = portable_manifest.get("version")
+    has_native_components = (
+        "hooks" in manifest or "mcpServers" in manifest
+        or (root / "plugins" / name / "hooks/hooks.json").is_file()
+    )
+    if portable_manifest.get("$schema") == AGENT_PLUGIN_SCHEMA and has_native_components:
+        errors.append(
+            f"plugins/{name}/plugin.json: omit $schema to enable native Codex hooks or mcpServers"
+        )
     if isinstance(portable_version, str) and portable_version:
         if manifest.get("version") != portable_version:
             errors.append(
@@ -505,7 +519,7 @@ def _validate_scripted_plugins(root: Path, errors: list[str]) -> None:
     for plugin in sorted(path for path in plugins.iterdir() if path.is_dir()):
         if not is_scripted_plugin(plugin):
             continue
-        for entrypoint in ("test.py", "validate.py"):
+        for entrypoint in ("test.js", "validate.js"):
             if not (plugin / "scripts" / entrypoint).is_file():
                 errors.append(f"plugins/{plugin.name}/scripts/{entrypoint} is missing")
 

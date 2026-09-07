@@ -49,7 +49,7 @@ class PluginCISelectionTests(unittest.TestCase):
         self._write("plugins/alpha/src/alpha.py", "changed\n")
         self._write("plugins/skill-only/skills/example/SKILL.md", "changed\n")
         shutil.rmtree(self.root / "plugins/deleted")
-        self._write("plugins/new-scripted/skills/example/scripts/check.py")
+        self._write("plugins/new-scripted/skills/example/scripts/check.js")
         head = self._commit("change plugins")
 
         self.assertEqual(

@@ -3,7 +3,7 @@ name: papercuts
 description: Record material engineering friction in tools, documentation, configuration, or repeated recovery work. Use also to review, vote on, resolve, reopen, inspect, or prune papercuts.
 ---
 
-Record material workflow friction in the active project's Papercuts journal. For every MCP call, pass the active workspace's absolute root as `project_root`; never use the plugin installation directory, an inferred working directory, or an arbitrary journal path.
+Record material workflow friction for the active project in the client's user journal (`~/.codex/papercuts.jsonl` or `~/.claude/papercuts.jsonl`). Project and custom journal locations are unsupported; do not change storage configuration. For every MCP call, pass the active workspace's absolute root as `project_root`; never use the plugin installation directory, an inferred working directory, or an arbitrary journal path.
 
 ## Automatic lodging
 

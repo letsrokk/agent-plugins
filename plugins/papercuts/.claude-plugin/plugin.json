@@ -1,6 +1,6 @@
 {
   "name": "papercuts",
-  "version": "0.2.9",
+  "version": "0.4.0",
   "description": "Give Claude Code a durable complaint journal for workflow friction.",
   "author": {
     "name": "Rokk Club",
@@ -17,9 +17,9 @@
   ],
   "mcpServers": {
     "papercuts": {
-      "command": "python3",
+      "command": "node",
       "args": [
-        "${CLAUDE_PLUGIN_ROOT}/scripts/launch_mcp.py"
+        "${CLAUDE_PLUGIN_ROOT}/dist/mcp_server.js"
       ],
       "cwd": "${CLAUDE_PLUGIN_ROOT}",
       "env": {

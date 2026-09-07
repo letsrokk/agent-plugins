@@ -1,6 +1,6 @@
 {
   "name": "papercuts",
-  "version": "0.2.9",
+  "version": "0.4.0",
   "description": "Give Codex a durable complaint journal for workflow friction.",
   "author": {
     "name": "Rokk Club",
@@ -18,9 +18,9 @@
   "skills": "./skills/",
   "mcpServers": {
     "papercuts": {
-      "command": "python3",
+      "command": "node",
       "args": [
-        "./scripts/launch_mcp.py"
+        "./dist/mcp_server.js"
       ],
       "cwd": "."
     }
@@ -41,5 +41,6 @@
       "Review the open papercuts for this project.",
       "Preview stale papercuts that may be pruned."
     ]
-  }
+  },
+  "hooks": "./hooks/hooks.json"
 }
