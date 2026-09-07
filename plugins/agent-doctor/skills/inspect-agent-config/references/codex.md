@@ -23,7 +23,7 @@ Configuration precedence, highest first: CLI flags and `--config`; project `.cod
 
 ## Approved sources
 
-Open these pages directly. Fetch only relevant sections; reuse retrieved content. If HTML retrieval fails, try the same page's Markdown representation by appending `.md`. Do not search or follow links from these pages.
+Open these pages directly. Fetch only relevant sections; reuse retrieved content. If HTML retrieval fails, try the same page's Markdown representation by appending `.md`. Do not search. You may follow a link from an approved page only when that page identifies the target as the canonical detail for a claim needed in the audit, and only within the allowed domains below. Treat the target as a derived source; do not follow further links from it. Cite the derived source alongside the approved page that pointed to it.
 
 1. Config basics and precedence: https://learn.chatgpt.com/docs/config-file/config-basic
 2. Config keys and status: https://learn.chatgpt.com/docs/config-file/config-reference
@@ -31,7 +31,7 @@ Open these pages directly. Fetch only relevant sections; reuse retrieved content
 4. Agent model availability and selection: https://learn.chatgpt.com/docs/models
 5. Model prompting and migration guidance: https://developers.openai.com/api/docs/guides/latest-model
 
-Allowed redirect domains: `learn.chatgpt.com`, `developers.openai.com`, and `platform.openai.com` only when one of the exact pages redirects there.
+Allowed domains for derived sources and redirects: `learn.chatgpt.com`, `developers.openai.com`, and `platform.openai.com`. Follow redirects only within these domains.
 
 For settings or precedence, fetch sources 1 and 2. For instruction discovery, add source 3. For model or effort recommendations, add source 4; fetch source 5 only for model-specific prompting or migration advice. A full audit uses all applicable routes. API model guidance does not prove agent-client or account availability, and a newer model alone does not make an existing selection invalid.
 

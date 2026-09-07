@@ -24,7 +24,7 @@ Settings precedence, highest first: managed; command line; project-local `.claud
 
 ## Approved sources
 
-Open these pages directly. Fetch only relevant sections; reuse retrieved content. If HTML retrieval fails, try the same page's Markdown representation by appending `.md`. Do not search or follow links from these pages.
+Open these pages directly. Fetch only relevant sections; reuse retrieved content. If HTML retrieval fails, try the same page's Markdown representation by appending `.md`. Do not search. You may follow a link from an approved page only when that page identifies the target as the canonical detail for a claim needed in the audit, and only within the allowed domains below. Treat the target as a derived source; do not follow further links from it. Cite the derived source alongside the approved page that pointed to it.
 
 1. Settings scopes and precedence: https://code.claude.com/docs/en/settings
 2. Instruction and memory discovery: https://code.claude.com/docs/en/memory
@@ -35,7 +35,7 @@ Open these pages directly. Fetch only relevant sections; reuse retrieved content
 7. Current prompting practices: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
 8. Setting keys, types, and scope restrictions: https://code.claude.com/docs/en/settings-reference
 
-Allowed redirect domains: `code.claude.com`, `platform.claude.com`, and `docs.anthropic.com` only when one of the exact pages redirects there.
+Allowed domains for derived sources and redirects: `code.claude.com`, `platform.claude.com`, and `docs.anthropic.com`. Follow redirects only within these domains.
 
 For settings or precedence, fetch source 1 and source 8 for the keys under review. For instructions, fetch source 2. For model or effort advice, fetch source 3 and add source 5 for model comparisons. For prompting, use source 7; source 6 is only for deciding whether prompting addresses the problem. Fetch source 4 for ignored settings, load failures, or disputed runtime behavior. A full audit uses all applicable routes. Distinguish Claude Code model support from API availability and account access.
 
