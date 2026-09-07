@@ -37,13 +37,30 @@ export function stableJSON(value) {
 export const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 export const nonempty = value => typeof value === 'string' && value.trim().length > 0;
 const program = String.raw`(?<![A-Za-z0-9_.~])/(?=[^/\r\n]*(?:[\^$*+?()[{|\\]|\.(?:[*+?]|/)))(?:\\.|[^/\\\r\n])+/[adgimpsuvxy]*(?=$|[\s"'\x60{(;|&)\]}])`;
-const posix = new RegExp(`(?<program>${program})|(?<path>(?<![A-Za-z0-9.:/~])/(?!/)[^\\s"']*)`, 'g');
-function locations(value, pattern, replacement, preserve = false) {
+const pathPattern = prefix => String.raw`(?:(?<=")${prefix}[^"\r\n]*(?=")|(?<=')${prefix}[^'\r\n]*(?=')|(?<=\x60)${prefix}[^\x60\r\n]*(?=\x60)|${prefix}[^\s"'\x60]*)`;
+const posix = new RegExp(`(?<program>${program})|(?<path>${pathPattern(String.raw`(?<![A-Za-z0-9.:/~])/(?!/)`)})`, 'g');
+const windows = new RegExp(pathPattern(String.raw`(?<![A-Za-z0-9])(?:[A-Za-z]:[\\/]|\\\\)`), 'g');
+const roots = ['/usr/local/bin','/usr/bin','/var/tmp','/tmp','/dev','/usr','/etc','/bin'];
+const systemPaths = new Set(['/','/dev/null','/dev/zero','/dev/random','/dev/urandom','/dev/tty','/bin/sh','/bin/bash','/usr/bin/sh','/usr/bin/bash']);
+function sanitizePath(value) {
+  if (systemPaths.has(value)) return value;
+  const drive = value.match(/^(?:[A-Z]:[\\/]|\/[A-Z]\/)(?:(?:tmp|Windows)(?=$|[\\/]))?/i)?.[0];
+  if (drive) {
+    const separator = drive.includes('\\') ? '\\' : '/';
+    if (value === drive || value === drive + '...') return value;
+    if (!drive.endsWith(separator) && value.startsWith(drive + separator)) return drive + separator + '...';
+    return '[REDACTED_PATH]';
+  }
+  const root = roots.find(root => value === root || value.startsWith(root + '/'));
+  return root ? root + (value === root ? '' : '/...') : '[REDACTED_PATH]';
+}
+function locations(value, pattern, replacement) {
   return value.replace(pattern, (...args) => {
     const match = args[0], groups = args.at(-1);
     if (isObject(groups) && groups.program !== undefined) return match;
-    if (preserve && /^(?:[A-Z]:[\\/]|\/[A-Z]\/)\.\.\.$/i.test(match.replace(/[,;:!?)\]}]+$/, ''))) return match;
-    return replacement + match.slice(match.replace(/[.,;:!?)\]}]+$/, '').length);
+    let content = match.replace(/[.,;:!?)\]}]+$/, '');
+    if (/[\\/]$/.test(content) && match.slice(content.length).startsWith('...')) content += '...';
+    return (typeof replacement === 'function' ? replacement(content) : replacement) + match.slice(content.length);
   });
 }
 export function sanitizeString(value, field = 'evidence') {
@@ -60,10 +77,10 @@ export function sanitizeString(value, field = 'evidence') {
     .replace(/\b([a-z][a-z0-9+.-]*:\/\/)[^/\s:@]+(?::[^/\s@]*)?@/gi, '$1[REDACTED]@')
     .replace(/\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})\b/g, '[REDACTED]')
     .replace(/\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b/g, '[REDACTED]');
-  result = locations(result, /\b(?:https?|ssh|git|ftp|file):\/\/[^\s"']+/gi, '[REDACTED_URL]');
-  result = locations(result, /(?<![A-Za-z0-9_.-])(?:[A-Za-z0-9_.-]+@[A-Za-z0-9.-]+|[A-Za-z0-9.-]+\.[A-Za-z]{2,}):(?=[^\s"']*[\\/])[^\s"']+/gi, '[REDACTED_URL]');
-  result = locations(result, /(?<![A-Za-z0-9])(?:[A-Za-z]:[\\/]|\\\\)[^\s"']+/gi, '[REDACTED_PATH]', true);
-  return locations(result, posix, '[REDACTED_PATH]', true);
+  result = locations(result, /\b(?:https?|ssh|git|ftp|file):\/\/[^\s"'\x60]+/gi, '[REDACTED_URL]');
+  result = locations(result, /(?<![A-Za-z0-9_.-])(?:[A-Za-z0-9_.-]+@[A-Za-z0-9.-]+|[A-Za-z0-9.-]+\.[A-Za-z]{2,}):(?=[^\s"'\x60]*[\\/])[^\s"'\x60]+/gi, '[REDACTED_URL]');
+  result = locations(result, windows, sanitizePath);
+  return locations(result, posix, sanitizePath);
 }
 function readEvidence(file) {
   if (typeof file !== 'string') throw invalid('stderr_file must be a path');

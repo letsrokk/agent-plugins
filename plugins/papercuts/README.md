@@ -16,6 +16,10 @@ Papercuts stores data locally. It has no telemetry and makes no network requests
 
 Context supports a command up to 1,024 characters, an integer exit status, sanitized stderr up to 4,096 UTF-8 bytes, and a note up to 2,048 characters. Evidence files must be regular files no larger than 1 MiB. Tags are limited to ten.
 
+Path redaction preserves generic roots (`/`, `/tmp`, `/var/tmp`, `/dev`, `/usr`, `/usr/bin`, `/usr/local/bin`, `/etc`, `/bin`) and exact shell/device paths (`/bin/sh`, `/bin/bash`, `/usr/bin/sh`, `/usr/bin/bash`, `/dev/null`, `/dev/zero`, `/dev/random`, `/dev/urandom`, `/dev/tty`). Other descendants are elided at the longest approved root: `/usr/bin/customer-tool` becomes `/usr/bin/...`. Windows drive roots and their `tmp` and `Windows` roots are also preserved, case-insensitively, including forward-slash and MSYS notation; descendants of `tmp` and `Windows` are elided. Other absolute paths, including home directories and UNC shares, become `[REDACTED_PATH]`. Relative paths and existing generic elisions remain readable. Quote paths containing spaces so the whole path can be sanitized.
+
+For example, `bash /tmp/client-project/script 2>/dev/null fails` becomes `bash /tmp/... 2>/dev/null fails`. Redaction applies to text, tags, and evidence and preserves Markdown backticks. Historical records and their IDs stay unchanged; newly sanitized text can produce a different ID, so continue searching for semantic matches before lodging.
+
 ## Installation
 
 Add this repository's marketplace in the client, then install `papercuts` from that marketplace.
@@ -65,7 +69,7 @@ The home and client directory must be owned by the current user and not writable
 All ordinary commands emit one JSON envelope on stdout. Errors emit one structured JSON envelope on stderr. `list --format md` is the only human-readable output mode.
 
 ```text
-papercuts [--client codex|claude] lodge TEXT [--severity minor|major|blocker] [--tag TAG] [--cmd COMMAND] [--exit STATUS] [--stderr-file PATH] [--evidence NOTE]
+papercuts [--client codex|claude] lodge TEXT [--dry-run] [--severity minor|major|blocker] [--tag TAG] [--cmd COMMAND] [--exit STATUS] [--stderr-file PATH] [--evidence NOTE]
 papercuts [--client codex|claude] list [--status open|resolved|all] [--query TEXT] [--tag TAG] [--severity minor|major|blocker] [--min-encounters N] [--recent-days N] [--all-projects] [--limit N] [--format json|md]
 papercuts [--client codex|claude] get ID [--all-projects]
 papercuts [--client codex|claude] vote ID [--note TEXT] [--cmd COMMAND] [--exit STATUS] [--stderr-file PATH]
@@ -87,11 +91,15 @@ plugins/papercuts/scripts/papercuts doctor
 
 `prune preview` is safe and writes nothing. Before `prune apply PLAN_ID`, inspect the preview and explicitly authorize that exact plan ID. A general request to clean up, authorization for an earlier plan, or a stale plan never authorizes a newly generated plan.
 
+Use `lodge --dry-run` to inspect sanitized content before saving it. The usual JSON envelope contains `data: {dry_run: true, changed: false, preview: {id, text, severity, tags, context, project}}`. Preview uses the same validation, evidence limits, sanitization, and ID calculation as lodging, without reading the journal or creating directories, locks, or events. Inspect the preview, adjust the input if needed, then run the command without `--dry-run` to lodge it. Preview does not amend old records, check duplicates or write permissions, or guarantee a later write; the real call revalidates inputs and handles duplicates normally.
+
 ## MCP tools
 
 Codex and Claude Code start the same local stdio MCP server through the committed `dist/mcp_server.js` bundle; each compatibility manifest selects its client storage. Every MCP call requires the active absolute workspace root as `project_root`. The tools are `lodge_complaint`, `list_complaints`, `get_complaint`, `vote_for_complaint`, `resolve_complaint`, `reopen_complaint`, `inspect_storage`, `preview_prune`, and `apply_prune`. MCP cannot change storage or accept an arbitrary journal path.
 
 MCP lists and complaint mutation acknowledgments return summaries with ID, text, status, severity, tags, project, encounter count, and last encounter time. Use `get_complaint` for full evidence and history. Automatic duplicate searches request at most five results. CLI output and journal records retain their existing detail.
+
+`lodge_complaint` accepts optional `dry_run: true` and returns `{dry_run: true, changed: false, preview: {id, text, severity, tags, context, project}}`, including sanitized evidence. After inspecting it, make a separate call with the same inputs and `dry_run: false` (the default) to save the complaint. Preview has the same limits as CLI dry-run above.
 
 ## Contributor checks
 

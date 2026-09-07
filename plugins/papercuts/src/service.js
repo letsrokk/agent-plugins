@@ -34,9 +34,11 @@ export class PapercutsService {
     if (matches.length > 1) throw new PapercutsError('ambiguous_id',`Complaint ID prefix is ambiguous: ${id}`);
     return matches[0];
   }
-  lodge(text,{severity:level = 'minor',tags = [],context = {}} = {}) {
+  lodge(text,{severity:level = 'minor',tags = [],context = {},dry_run = false} = {}) {
+    if (typeof dry_run !== 'boolean') throw invalid('dry_run must be a boolean');
     text = normalizeText(text); tags = normalizeTags(tags); severity(level); context = sanitizeContext(context);
     const id = `pc_${hash(stableJSON({contract:1,project_id:this.storage.project.id,text,tags})).slice(0,16)}`;
+    if (dry_run) return {dry_run:true,changed:false,preview:{id,text,severity:level,tags,context,project:this.storage.project}};
     return this.store.mutation(events => {
       const existing = foldEvents(events).get(id), added = [];
       if (!existing) added.push(this.event('complaint',{id,text,severity:level,tags,context}));

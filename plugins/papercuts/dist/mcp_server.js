@@ -35729,13 +35729,30 @@ function stableJSON(value) {
 var isObject2 = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 var nonempty = (value) => typeof value === "string" && value.trim().length > 0;
 var program = String.raw`(?<![A-Za-z0-9_.~])/(?=[^/\r\n]*(?:[\^$*+?()[{|\\]|\.(?:[*+?]|/)))(?:\\.|[^/\\\r\n])+/[adgimpsuvxy]*(?=$|[\s"'\x60{(;|&)\]}])`;
-var posix = new RegExp(`(?<program>${program})|(?<path>(?<![A-Za-z0-9.:/~])/(?!/)[^\\s"']*)`, "g");
-function locations(value, pattern, replacement, preserve = false) {
+var pathPattern = (prefix) => String.raw`(?:(?<=")${prefix}[^"\r\n]*(?=")|(?<=')${prefix}[^'\r\n]*(?=')|(?<=\x60)${prefix}[^\x60\r\n]*(?=\x60)|${prefix}[^\s"'\x60]*)`;
+var posix = new RegExp(`(?<program>${program})|(?<path>${pathPattern(String.raw`(?<![A-Za-z0-9.:/~])/(?!/)`)})`, "g");
+var windows = new RegExp(pathPattern(String.raw`(?<![A-Za-z0-9])(?:[A-Za-z]:[\\/]|\\\\)`), "g");
+var roots = ["/usr/local/bin", "/usr/bin", "/var/tmp", "/tmp", "/dev", "/usr", "/etc", "/bin"];
+var systemPaths = /* @__PURE__ */ new Set(["/", "/dev/null", "/dev/zero", "/dev/random", "/dev/urandom", "/dev/tty", "/bin/sh", "/bin/bash", "/usr/bin/sh", "/usr/bin/bash"]);
+function sanitizePath(value) {
+  if (systemPaths.has(value)) return value;
+  const drive = value.match(/^(?:[A-Z]:[\\/]|\/[A-Z]\/)(?:(?:tmp|Windows)(?=$|[\\/]))?/i)?.[0];
+  if (drive) {
+    const separator = drive.includes("\\") ? "\\" : "/";
+    if (value === drive || value === drive + "...") return value;
+    if (!drive.endsWith(separator) && value.startsWith(drive + separator)) return drive + separator + "...";
+    return "[REDACTED_PATH]";
+  }
+  const root = roots.find((root2) => value === root2 || value.startsWith(root2 + "/"));
+  return root ? root + (value === root ? "" : "/...") : "[REDACTED_PATH]";
+}
+function locations(value, pattern, replacement) {
   return value.replace(pattern, (...args) => {
     const match = args[0], groups = args.at(-1);
     if (isObject2(groups) && groups.program !== void 0) return match;
-    if (preserve && /^(?:[A-Z]:[\\/]|\/[A-Z]\/)\.\.\.$/i.test(match.replace(/[,;:!?)\]}]+$/, ""))) return match;
-    return replacement + match.slice(match.replace(/[.,;:!?)\]}]+$/, "").length);
+    let content = match.replace(/[.,;:!?)\]}]+$/, "");
+    if (/[\\/]$/.test(content) && match.slice(content.length).startsWith("...")) content += "...";
+    return (typeof replacement === "function" ? replacement(content) : replacement) + match.slice(content.length);
   });
 }
 function sanitizeString(value, field = "evidence") {
@@ -35752,10 +35769,10 @@ function sanitizeString(value, field = "evidence") {
     if (keys.length >= 2 && keys.every((k) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(k)) && (keys.filter((k) => k.toUpperCase() === k).length >= 2 || keys.filter((k) => ["home", "path", "pwd", "shell", "temp", "tmp", "user", "userprofile"].includes(k.toLowerCase())).length >= 2)) throw invalid("raw environment evidence is not allowed");
   }
   let result = value.replace(/((?<![A-Za-z0-9_.-])["']?(?=[A-Za-z_])[A-Za-z0-9_.-]*(?:TOKEN|SECRET|PASSWORD|API_KEY|ACCESS_KEY(?:_ID)?|JWT)[A-Za-z0-9_.-]*["']?\s*[:=]\s*)(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s,;]+)/gi, "$1[REDACTED]").replace(/\bBearer\s+[A-Za-z0-9._~+/=-]+/gi, "Bearer [REDACTED]").replace(/\b([a-z][a-z0-9+.-]*:\/\/)[^/\s:@]+(?::[^/\s@]*)?@/gi, "$1[REDACTED]@").replace(/\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})\b/g, "[REDACTED]").replace(/\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b/g, "[REDACTED]");
-  result = locations(result, /\b(?:https?|ssh|git|ftp|file):\/\/[^\s"']+/gi, "[REDACTED_URL]");
-  result = locations(result, /(?<![A-Za-z0-9_.-])(?:[A-Za-z0-9_.-]+@[A-Za-z0-9.-]+|[A-Za-z0-9.-]+\.[A-Za-z]{2,}):(?=[^\s"']*[\\/])[^\s"']+/gi, "[REDACTED_URL]");
-  result = locations(result, /(?<![A-Za-z0-9])(?:[A-Za-z]:[\\/]|\\\\)[^\s"']+/gi, "[REDACTED_PATH]", true);
-  return locations(result, posix, "[REDACTED_PATH]", true);
+  result = locations(result, /\b(?:https?|ssh|git|ftp|file):\/\/[^\s"'\x60]+/gi, "[REDACTED_URL]");
+  result = locations(result, /(?<![A-Za-z0-9_.-])(?:[A-Za-z0-9_.-]+@[A-Za-z0-9.-]+|[A-Za-z0-9.-]+\.[A-Za-z]{2,}):(?=[^\s"'\x60]*[\\/])[^\s"'\x60]+/gi, "[REDACTED_URL]");
+  result = locations(result, windows, sanitizePath);
+  return locations(result, posix, sanitizePath);
 }
 function readEvidence(file2) {
   if (typeof file2 !== "string") throw invalid("stderr_file must be a path");
@@ -36235,12 +36252,14 @@ var PapercutsService = class {
     if (matches.length > 1) throw new PapercutsError("ambiguous_id", `Complaint ID prefix is ambiguous: ${id2}`);
     return matches[0];
   }
-  lodge(text, { severity: level2 = "minor", tags = [], context: context2 = {} } = {}) {
+  lodge(text, { severity: level2 = "minor", tags = [], context: context2 = {}, dry_run = false } = {}) {
+    if (typeof dry_run !== "boolean") throw invalid("dry_run must be a boolean");
     text = normalizeText(text);
     tags = normalizeTags(tags);
     severity(level2);
     context2 = sanitizeContext(context2);
     const id2 = `pc_${hash2(stableJSON({ contract: 1, project_id: this.storage.project.id, text, tags })).slice(0, 16)}`;
+    if (dry_run) return { dry_run: true, changed: false, preview: { id: id2, text, severity: level2, tags, context: context2, project: this.storage.project } };
     return this.store.mutation((events) => {
       const existing = foldEvents(events).get(id2), added = [];
       if (!existing) added.push(this.event("complaint", { id: id2, text, severity: level2, tags, context: context2 }));
@@ -36363,11 +36382,12 @@ function invokeTool(service, name, args) {
     if (name === "preview_prune") return { preview: service.previewPrune(policy(args)) };
     if (name === "apply_prune") return { result: service.applyPrune(policy(args), args.plan_id) };
     let result;
-    if (name === "lodge_complaint") result = service.lodge(args.text, { severity: args.severity, tags: args.tags ?? [], context: { ...context(args), ...args.evidence == null ? {} : { note: args.evidence } } });
+    if (name === "lodge_complaint") result = service.lodge(args.text, { dry_run: args.dry_run, severity: args.severity, tags: args.tags ?? [], context: { ...context(args), ...args.evidence == null ? {} : { note: args.evidence } } });
     else if (name === "vote_for_complaint") result = service.vote(args.complaint_id, { note: args.note, context: context(args) });
     else if (name === "resolve_complaint") result = service.resolve(args.complaint_id, args);
     else if (name === "reopen_complaint") result = service.reopen(args.complaint_id, args);
     else throw invalid(`unknown MCP tool: ${name}`);
+    if (result.dry_run) return result;
     return { complaint: summary(result.record), changed: result.changed };
   } catch (error61) {
     return errorResult(error61);
@@ -36389,7 +36409,7 @@ var id = { complaint_id: external_exports.string() };
 var thresholds = { resolved_older_than_days: external_exports.number().int().nonnegative().default(30), open_max_encounters: external_exports.number().int().nonnegative().default(1), open_inactive_for_days: external_exports.number().int().nonnegative().default(90), ...allProjects };
 var level = external_exports.enum(["minor", "major", "blocker"]);
 var definitions = {
-  lodge_complaint: ["Lodge concise workflow friction when no existing open complaint matches.", { text: external_exports.string(), severity: level.default("minor"), tags: external_exports.array(external_exports.string()).nullable().optional(), ...evidence, evidence: optionalString() }],
+  lodge_complaint: ["Lodge concise workflow friction when no existing open complaint matches.", { text: external_exports.string(), dry_run: external_exports.boolean().default(false), severity: level.default("minor"), tags: external_exports.array(external_exports.string()).nullable().optional(), ...evidence, evidence: optionalString() }],
   list_complaints: ["Search complaints before lodging new friction or reviewing existing work.", { status: external_exports.enum(["open", "resolved", "all"]).default("open"), query: optionalString(), tags: external_exports.array(external_exports.string()).nullable().optional(), severity: level.nullable().optional(), min_encounters: external_exports.number().int().nonnegative().nullable().optional(), recent_days: external_exports.number().int().nonnegative().nullable().optional(), limit: external_exports.number().int().nonnegative().default(50), ...allProjects }],
   get_complaint: ["Inspect one complaint by full ID or unique prefix before acting on it.", { ...id, ...allProjects }],
   vote_for_complaint: ["Record another encounter when existing workflow friction clearly matches.", { ...id, note: optionalString(), ...evidence }],

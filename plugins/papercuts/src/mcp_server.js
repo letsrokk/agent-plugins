@@ -19,11 +19,12 @@ export function invokeTool(service,name,args) {
     if (name === 'preview_prune') return {preview:service.previewPrune(policy(args))};
     if (name === 'apply_prune') return {result:service.applyPrune(policy(args),args.plan_id)};
     let result;
-    if (name === 'lodge_complaint') result = service.lodge(args.text,{severity:args.severity,tags:args.tags ?? [],context:{...context(args),...(args.evidence == null ? {} : {note:args.evidence})}});
+    if (name === 'lodge_complaint') result = service.lodge(args.text,{dry_run:args.dry_run,severity:args.severity,tags:args.tags ?? [],context:{...context(args),...(args.evidence == null ? {} : {note:args.evidence})}});
     else if (name === 'vote_for_complaint') result = service.vote(args.complaint_id,{note:args.note,context:context(args)});
     else if (name === 'resolve_complaint') result = service.resolve(args.complaint_id,args);
     else if (name === 'reopen_complaint') result = service.reopen(args.complaint_id,args);
     else throw invalid(`unknown MCP tool: ${name}`);
+    if (result.dry_run) return result;
     return {complaint:summary(result.record),changed:result.changed};
   } catch (error) { return errorResult(error); }
 }
@@ -41,7 +42,7 @@ const id = {complaint_id:z.string()};
 const thresholds = {resolved_older_than_days:z.number().int().nonnegative().default(30),open_max_encounters:z.number().int().nonnegative().default(1),open_inactive_for_days:z.number().int().nonnegative().default(90),...allProjects};
 const level = z.enum(['minor','major','blocker']);
 const definitions = {
-  lodge_complaint:['Lodge concise workflow friction when no existing open complaint matches.',{text:z.string(),severity:level.default('minor'),tags:z.array(z.string()).nullable().optional(),...evidence,evidence:optionalString()}],
+  lodge_complaint:['Lodge concise workflow friction when no existing open complaint matches.',{text:z.string(),dry_run:z.boolean().default(false),severity:level.default('minor'),tags:z.array(z.string()).nullable().optional(),...evidence,evidence:optionalString()}],
   list_complaints:['Search complaints before lodging new friction or reviewing existing work.',{status:z.enum(['open','resolved','all']).default('open'),query:optionalString(),tags:z.array(z.string()).nullable().optional(),severity:level.nullable().optional(),min_encounters:z.number().int().nonnegative().nullable().optional(),recent_days:z.number().int().nonnegative().nullable().optional(),limit:z.number().int().nonnegative().default(50),...allProjects}],
   get_complaint:['Inspect one complaint by full ID or unique prefix before acting on it.',{...id,...allProjects}],
   vote_for_complaint:['Record another encounter when existing workflow friction clearly matches.',{...id,note:optionalString(),...evidence}],
