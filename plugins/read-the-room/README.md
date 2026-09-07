@@ -12,7 +12,7 @@ The `make-it-make-sense` skill covers:
 - Wiki and knowledge-base pages, READMEs, runbooks, decision records, code comments, and durable documentation
 - Chat messages, announcements, status updates, and thread replies
 
-The bundled `SessionStart` hook requires `python3` version 3.11 or later. In Claude Code and Codex, it loads the canonical policy and agent-response guide when a session starts, resumes, clears, or compacts. Other channel guides remain available on demand and are reused while present in context. The hook reads the policy files on every invocation.
+The bundled `SessionStart` hook requires `python3` version 3.7 or later. In Claude Code and Codex, it loads the canonical policy and agent-response guide when a session starts, resumes, clears, or compacts. Other channel guides remain available on demand and are reused while present in context. The hook reads the policy files on every invocation.
 
 In Codex, review and trust the plugin hook through `/hooks` before it can run. Installing the plugin alone does not trust its hooks. See the [Codex hook documentation](https://learn.chatgpt.com/docs/hooks#plugin-bundled-hooks) and [Claude Code SessionStart documentation](https://code.claude.com/docs/en/hooks#sessionstart).
 

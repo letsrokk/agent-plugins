@@ -6,7 +6,7 @@ The skill records dead-end tool calls, misleading documentation, missing helpers
 
 ## Requirements and privacy
 
-The CLI and local MCP server require `python3` version 3.11 or later. The MCP launcher prefers [uv](https://docs.astral.sh/uv/) when it is available. Without `uv`, it uses `python3 -m pip` and installs the pinned `mcp==2.1.1` dependency into an isolated, interpreter-specific directory under `${XDG_CACHE_HOME:-~/.cache}/papercuts/`. The core and CLI have no dependency beyond Python.
+The CLI and local MCP server require `python3` version 3.10 or later. The CLI uses the first `python3` on `PATH` and fails with an error if it is missing or too old; it does not search for other installed interpreters. The MCP launcher prefers [uv](https://docs.astral.sh/uv/) when it is available, using the interpreter that launched it with Python downloads disabled and without loading the caller’s uv project. Without `uv`, it uses `python3 -m pip` and installs the pinned `mcp==2.1.1` dependency into an isolated, interpreter-specific directory under `${XDG_CACHE_HOME:-~/.cache}/papercuts/`. The core and CLI have no dependency beyond Python.
 
 Papercuts stores data locally. It has no telemetry and makes no network requests, except for `uv` or `pip` fetching that pinned MCP dependency on first run. Credential redaction is best effort, not a guarantee: never submit secrets, credentials, raw environment dumps, arbitrary attachments, or unbounded evidence.
 

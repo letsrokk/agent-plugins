@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import os
 import subprocess
@@ -27,105 +28,76 @@ def load_launcher():
 
 
 class PapercutsLauncherTests(unittest.TestCase):
-    def test_cli_launcher_discovers_supported_generic_python_later_in_path(self) -> None:
+    def test_cli_launcher_uses_first_python3_and_preserves_arguments(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            first_bin = root / "first-bin"
-            second_bin = root / "second-bin"
-            first_bin.mkdir()
-            second_bin.mkdir()
-            output_path = root / "invocation.txt"
-
-            dirname = first_bin / "dirname"
-            dirname.write_text(
-                '#!/bin/sh\n[ "$1" = "--" ] && shift\nprintf "%s\\n" "${1%/*}"\n',
-                encoding="utf-8",
+            output = root / "invocation.txt"
+            python = root / "python3"
+            python.write_text(
+                '#!/bin/sh\n[ "$1" = "-c" ] && exit 0\nprintf "%s\\n" "$@" > "$PAPERCUTS_TEST_OUTPUT"\nexit 17\n'
             )
-            dirname.chmod(0o755)
-
-            old_python = first_bin / "python3"
-            old_python.write_text(
-                '#!/bin/sh\n[ "$1" = "-c" ] && exit 1\nexit 99\n',
-                encoding="utf-8",
-            )
-            old_python.chmod(0o755)
-
-            supported_python = second_bin / "python3"
-            supported_python.write_text(
-                '#!/bin/sh\n[ "$1" = "-c" ] && exit 0\nprintf "%s\\n" "$@" > "$PAPERCUTS_TEST_OUTPUT"\n',
-                encoding="utf-8",
-            )
-            supported_python.chmod(0o755)
-
-            environment = dict(os.environ)
-            environment["PATH"] = os.pathsep.join([str(first_bin), str(second_bin)])
-            environment["PAPERCUTS_TEST_OUTPUT"] = str(output_path)
+            python.chmod(0o755)
+            environment = dict(os.environ, PATH=str(root) + os.pathsep + os.defpath,
+                               PAPERCUTS_TEST_OUTPUT=str(output))
             result = subprocess.run(
-                [str(CLI_LAUNCHER_PATH), "list", "--status", "open"],
-                env=environment,
-                check=False,
-                capture_output=True,
-                text=True,
+                [str(CLI_LAUNCHER_PATH), "list", "--query", "two words"],
+                env=environment, capture_output=True, text=True,
             )
+            self.assertEqual(result.returncode, 17, result.stderr)
+            self.assertEqual(output.read_text().splitlines(),
+                             ["-m", "papercuts.cli", "list", "--query", "two words"])
 
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual(
-                output_path.read_text(encoding="utf-8").splitlines(),
-                ["-m", "papercuts.cli", "list", "--status", "open"],
-            )
+    def test_cli_launcher_does_not_search_for_another_interpreter(self) -> None:
+        for missing in (False, True):
+            with self.subTest(missing=missing), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                first = root / "first"
+                second = root / "second"
+                first.mkdir()
+                second.mkdir()
+                marker = root / "alternative-used"
+                dirname = first / "dirname"
+                dirname.write_text('#!/bin/sh\n[ "$1" = "--" ] && shift\nprintf "%s\\n" "${1%/*}"\n')
+                dirname.chmod(0o755)
+                if not missing:
+                    python = first / "python3"
+                    python.write_text(
+                        '#!/bin/sh\nprintf "%s\\n" "papercuts requires Python 3.10 or later; found 3.9.6" >&2\nexit 78\n'
+                    )
+                    python.chmod(0o755)
+                alternatives = [first / "python3.14"]
+                if not missing:
+                    alternatives.append(second / "python3")
+                for alternative in alternatives:
+                    alternative.write_text('#!/bin/sh\nprintf used > "$PAPERCUTS_TEST_OUTPUT"\nexit 0\n')
+                    alternative.chmod(0o755)
+                environment = dict(os.environ, PATH=os.pathsep.join([str(first), str(second)]),
+                                   PAPERCUTS_TEST_OUTPUT=str(marker))
+                result = subprocess.run([str(CLI_LAUNCHER_PATH), "list"], env=environment,
+                                        capture_output=True, text=True)
+                self.assertEqual(result.returncode, 78, result.stderr)
+                self.assertIn("Python 3.10 or later", result.stderr)
+                self.assertIn("python3 was not found" if missing else "3.9.6", result.stderr)
+                self.assertFalse(marker.exists())
 
-    def test_cli_launcher_discovers_supported_versioned_python(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            bin_dir = root / "bin"
-            bin_dir.mkdir()
-            output_path = root / "invocation.txt"
-
-            dirname = bin_dir / "dirname"
-            dirname.write_text(
-                '#!/bin/sh\n[ "$1" = "--" ] && shift\nprintf "%s\\n" "${1%/*}"\n',
-                encoding="utf-8",
-            )
-            dirname.chmod(0o755)
-
-            for name in (
-                "python3",
-                "python3.14",
-                "python3.13",
-                "python3.12",
-                "python3.11",
-            ):
-                old_python = bin_dir / name
-                old_python.write_text(
-                    '#!/bin/sh\n[ "$1" = "-c" ] && exit 1\nexit 99\n',
-                    encoding="utf-8",
-                )
-                old_python.chmod(0o755)
-
-            supported_python = root / "python3.42"
-            supported_python.write_text(
-                '#!/bin/sh\n[ "$1" = "-c" ] && exit 0\nprintf "%s\\n" "$@" > "$PAPERCUTS_TEST_OUTPUT"\n',
-                encoding="utf-8",
-            )
-            supported_python.chmod(0o755)
-
-            environment = dict(os.environ)
-            environment["PATH"] = f"{bin_dir}{os.pathsep}"
-            environment["PAPERCUTS_TEST_OUTPUT"] = str(output_path)
-            result = subprocess.run(
-                [str(CLI_LAUNCHER_PATH), "list", "--status", "open"],
-                cwd=root,
-                env=environment,
-                check=False,
-                capture_output=True,
-                text=True,
-            )
-
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual(
-                output_path.read_text(encoding="utf-8").splitlines(),
-                ["-m", "papercuts.cli", "list", "--status", "open"],
-            )
+    def test_mcp_version_boundary_precedes_dependency_setup(self) -> None:
+        launcher = load_launcher()
+        for version, supported in (((3, 9, 6), False), ((3, 10, 0), True)):
+            with self.subTest(version=version), patch.object(launcher.sys, "version_info", version), \
+                    patch.object(launcher.shutil, "which", return_value="uv") as which, \
+                    patch.object(launcher, "_run", return_value=0) as run, \
+                    patch("sys.stderr", new_callable=io.StringIO) as stderr:
+                self.assertEqual(launcher.main({}), 0 if supported else 78)
+                if supported:
+                    command = run.call_args.args[0]
+                    self.assertEqual(command[command.index("--python") + 1], sys.executable)
+                    self.assertIn("--no-python-downloads", command)
+                    self.assertIn("--no-project", command)
+                else:
+                    which.assert_not_called()
+                    run.assert_not_called()
+                    self.assertIn("3.10", stderr.getvalue())
+                    self.assertIn("3.9.6", stderr.getvalue())
 
     def test_launcher_uses_native_paths_and_publishes_a_real_pip_cache(self) -> None:
         launcher = load_launcher()
