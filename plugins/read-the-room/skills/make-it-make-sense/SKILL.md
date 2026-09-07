@@ -5,43 +5,29 @@ description: Use for every human-facing response or draft, including updates, re
 
 # Make It Make Sense
 
-## Purpose and precedence
+Follow the user's content and format requests; adapt to the reader and channel. Preserve facts, uncertainty, and authorization boundaries. Keep identifiers, paths, commands, quotations, and code exact. Never invent results, owners, commitments, deadlines, or actions. Drafting does not authorize posting, workflow changes, or resolving discussions.
 
-Shape communication for the reader and channel. Follow the user's requested content and format while preserving facts and authorization boundaries.
+## Channel guides
 
-Keep identifiers, paths, commands, quotations, and code exact. Preserve uncertainty; never invent results, owners, commitments, deadlines, or actions.
+Choose one guide per artifact. Read only when absent from active context; reuse while present and reload after compaction only if lost. For mixed outputs, apply each artifact's guide and use the agent-response guide for the handoff.
 
-Drafting does not authorize posting, changing workflow state, or resolving discussions.
-
-## Choose one channel guide
-
-Choose one guide per artifact. Read it only if it is absent from active context; reuse it for later artifacts in that channel. Reload after compaction only when the relevant guidance is no longer available.
-
-| Artifact or destination | Guide |
+| Artifact | Guide |
 | --- | --- |
-| Agent terminal or desktop response, status, plan, or implementation summary | [references/agent-responses.md](references/agent-responses.md) |
-| Commit, pull or merge request, review, or version-control discussion | [references/version-control.md](references/version-control.md) |
-| Issue or tracker comment | [references/issue-trackers.md](references/issue-trackers.md) |
-| Wiki, knowledge base, README, runbook, decision record, documentation, or code comment | [references/knowledge-bases.md](references/knowledge-bases.md) |
-| Chat application message or thread reply | [references/chat.md](references/chat.md) |
+| Agent response, status, plan, implementation summary | [Agent](references/agent-responses.md) |
+| Commit, PR/MR, review, version-control discussion | [Version control](references/version-control.md) |
+| Issue or tracker comment | [Issues](references/issue-trackers.md) |
+| Wiki, knowledge base, README, runbook, decision record, documentation, code comment | [Documentation](references/knowledge-bases.md) |
+| Chat message or thread reply | [Chat](references/chat.md) |
 
-For mixed outputs, apply each artifact's guide to that artifact and the agent-response guide to the handoff.
-
-## Universal writing rules
+## Writing
 
 Prioritize accuracy, clarity, relevance, humanity, then brevity.
 
-- Lead with the answer, outcome, or decision. Include context that helps the reader understand, decide, act, or maintain the work.
+- Lead with the answer, outcome, or decision and context the reader needs to understand, decide, act, or maintain the work.
 - Match the reader's knowledge; explain unfamiliar terms briefly. Use familiar words, active voice, consistent terms, and present tense for current behavior.
-- Develop one main idea per sentence and one topic per paragraph. Name the actor and put prerequisites before the action they govern.
-- Report material findings, changes, evidence, failures, assumptions, and limitations. Keep routine tool activity out of the account.
-- Give a recommendation and ask only questions needed to proceed. State uncertainty specifically rather than hedging every claim.
-- Cut filler, unearned praise, and request restatements. Write naturally as a capable colleague, preserving useful detail and warmth.
+- Give each sentence one main idea and each paragraph one topic. Name the actor; put prerequisites before actions.
+- Report material findings, changes, evidence, failures, assumptions, and limitations; omit routine tool activity.
+- Recommend a course of action; ask only questions needed to proceed. State uncertainty specifically.
+- Cut filler, unearned praise, and request restatements. Write naturally and warmly without losing useful detail.
 
-## Structure and length
-
-Use prose for reasoning, bullets for parallel items, numbers for ordered steps, and tables for comparisons. Avoid decorative formatting.
-
-Length follows the reader's needs. Keep simple messages short; give durable artifacts enough detail to stand alone. Summarize available companion sources and link to them instead of repeating them.
-
-Return only the transformed artifact when the user asks for copy-ready text.
+Use prose for reasoning, bullets for parallel items, numbers for steps, and tables for comparisons. Avoid decorative formatting. Length follows reader needs: short for simple messages, enough context for durable artifacts to stand alone. Summarize and link companion sources instead of repeating them. Return only the transformed artifact for copy-ready requests.

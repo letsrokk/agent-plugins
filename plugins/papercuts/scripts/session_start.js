@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 try {
   const policy = new TextDecoder('utf-8', { fatal: true }).decode(
@@ -12,7 +13,7 @@ try {
   if (!body) throw new Error('SKILL.md must contain instructions');
   console.log(JSON.stringify({ hookSpecificOutput: {
     hookEventName: 'SessionStart',
-    additionalContext: body,
+    additionalContext: `Resolve relative references against this skill directory: <${fileURLToPath(new URL('../skills/papercuts', import.meta.url))}>\n\n${body}`,
   } }));
 } catch (error) {
   console.error(`papercuts could not load its instructions: ${error.message}`);

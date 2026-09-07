@@ -5,6 +5,11 @@ import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 const root = fileURLToPath(new URL('../',import.meta.url));
+const skill = path.join(root,'skills/papercuts');
+const policy = fs.readFileSync(path.join(skill,'SKILL.md'),'utf8');
+for (const [, reference] of policy.matchAll(/\]\((references\/[^)]+)\)/g)) {
+  assert.ok(fs.statSync(path.join(skill,reference)).isFile(), `Missing reference: ${reference}`);
+}
 for (const directory of ['src','scripts','tests','dist']) {
   for (const file of fs.readdirSync(path.join(root,directory),{recursive:true}).filter(name => name.endsWith('.js') || name === 'papercuts')) {
     const result = spawnSync(process.execPath,['--check',path.join(root,directory,file)],{stdio:'inherit'});

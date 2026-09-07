@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process';
 
 const pluginRoot = fileURLToPath(new URL('..', import.meta.url));
 function fixture(t) {
-  const root = mkdtempSync(resolve(tmpdir(), 'papercuts hook '));
+  const root = realpathSync(mkdtempSync(resolve(tmpdir(), 'papercuts hook ')));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const plugin = resolve(root, 'installed plugin');
   for (const directory of ['hooks', 'skills']) cpSync(resolve(pluginRoot, directory), resolve(plugin, directory), { recursive: true });
@@ -42,7 +42,14 @@ test('packaged hook injects canonical workflow for each configured session sourc
     assert.equal(output.hookEventName, 'SessionStart');
     const context = output.additionalContext;
     const canonicalBody = readFileSync(policy, 'utf8').split('---\n').slice(2).join('---\n').trim();
-    assert.equal(context, canonicalBody);
+    const skill = resolve(plugin, 'skills/papercuts');
+    assert.ok(context.startsWith(`Resolve relative references against this skill directory: <${skill}>\n\n`));
+    assert.equal(context.split(skill).length - 1, 1);
+    assert.ok(context.endsWith(canonicalBody));
+    for (const name of ['evidence', 'maintenance']) {
+      assert.ok(context.includes(`](references/${name}.md)`));
+      assert.ok(!context.includes(readFileSync(resolve(skill, `references/${name}.md`), 'utf8').trim()));
+    }
     for (const instruction of ['material', 'limit: 5', 'vote_for_complaint', 'lodge_complaint', "active workspace's absolute root", 'Continue the active task silently', 'Never submit secrets', 'Resolve only when verified evidence', 'reopen only when verified evidence', 'exact preview plan ID']) {
       assert.ok(context.includes(instruction), instruction);
     }
