@@ -4,6 +4,10 @@ Papercuts gives Codex and Claude Code a durable local journal for material engin
 
 The skill records dead-end tool calls, misleading documentation, missing helpers, repeated recovery work, configuration footguns, unclear repository instructions, and failures that consume meaningful time. It excludes expected validation failures, corrected typing mistakes, and ordinary unsuccessful searches unless an interface made the failure predictably misleading.
 
+## Inspiration
+
+This plugin was inspired by [treygoff24/papercuts](https://github.com/treygoff24/papercuts), which gives AI agents a place to record the workflow friction they encounter.
+
 ## Requirements and privacy
 
 The CLI, hooks, and bundled local MCP server require Node.js 24 or later. `node` must be available on the noninteractive client process's `PATH`. Installed plugins need no Python, uv, pip, npm, `node_modules`, or dependency downloads. The CLI and core use Node built-ins; the server includes its pinned official MCP SDK dependencies.
