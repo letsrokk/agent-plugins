@@ -62,14 +62,3 @@ class SessionStartTests(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(result.stdout, "")
                 self.assertIn("could not load its writing policy", result.stderr)
-
-    def test_unsupported_python_reports_requirement_without_context(self):
-        result = subprocess.run(
-            [sys.executable, "-c", "import runpy, sys; sys.version_info = (3, 10); "
-             "runpy.run_path(sys.argv[1], run_name='__main__')",
-             str(PLUGIN_ROOT / "scripts/session_start.py")],
-            capture_output=True, text=True,
-        )
-        self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(result.stdout, "")
-        self.assertIn("Python 3.11 or later", result.stderr)

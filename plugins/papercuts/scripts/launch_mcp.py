@@ -51,8 +51,12 @@ def _run(command: list[str], environment: dict[str, str]) -> int:
 
 
 def main(environ: Mapping[str, str] | None = None) -> int:
-    if sys.version_info < (3, 11):
-        print("papercuts MCP requires Python 3.11 or later", file=sys.stderr)
+    if sys.version_info < (3, 10):
+        version = ".".join(map(str, sys.version_info[:3]))
+        print(
+            f"papercuts MCP requires Python 3.10 or later; found {version}. Update python3 on PATH.",
+            file=sys.stderr,
+        )
         return 78
 
     environment = dict(os.environ if environ is None else environ)
@@ -66,6 +70,10 @@ def main(environ: Mapping[str, str] | None = None) -> int:
                     uv,
                     "run",
                     "--quiet",
+                    "--python",
+                    sys.executable,
+                    "--no-python-downloads",
+                    "--no-project",
                     "--with",
                     f"mcp=={MCP_VERSION}",
                     "--",

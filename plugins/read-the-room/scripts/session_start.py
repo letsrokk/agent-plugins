@@ -10,10 +10,6 @@ from pathlib import Path
 
 
 def main() -> int:
-    if sys.version_info < (3, 11):
-        print("read-the-room hooks require Python 3.11 or later", file=sys.stderr)
-        return 1
-
     skill = Path(__file__).resolve().parents[1] / "skills" / "make-it-make-sense"
     try:
         lines = (skill / "SKILL.md").read_text(encoding="utf-8").splitlines()
