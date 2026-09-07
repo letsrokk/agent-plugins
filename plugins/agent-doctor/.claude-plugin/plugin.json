@@ -1,6 +1,6 @@
 {
   "name": "agent-doctor",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "Inspect and troubleshoot Codex and Claude configuration, plugin usage, and agent problems.",
   "author": {
     "name": "Rokk Club",

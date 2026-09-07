@@ -43,7 +43,7 @@ After installation or an update, inspect the hook in Codex `/hooks`, review its 
 
 Lists stay scoped to the current project unless `--all-projects` is supplied. The CLI selects its client from `--client`, then `PAPERCUTS_CLIENT`, then `codex`. No journal or backup falls back to another client.
 
-Version 0.3 removes project journals, arbitrary journal paths, `--file`, `PAPERCUTS_FILE`, and `config set-scope`. Legacy configuration files selecting `user` are accepted unchanged; project scope, unknown configuration, and old environment overrides fail explicitly. Existing journals and configuration are never moved, merged, overwritten, or deleted automatically.
+Version 0.4 removes project journals, arbitrary journal paths, `--file`, `PAPERCUTS_FILE`, and `config set-scope`. Legacy configuration files selecting `user` are accepted unchanged; project scope, unknown configuration, and old environment overrides fail explicitly. Existing journals and configuration are never moved, merged, overwritten, or deleted automatically.
 
 Before removing obsolete configuration, back up the old journal and any existing destination. If the client user journal does not exist, manually copy the old journal there, preserving its JSONL bytes and restricting its permissions to the current user. If the destination already contains records, retain both backups and review their histories before combining them: concatenating duplicate complaint histories can corrupt the journal. Run `papercuts doctor` after manual migration. Remove the obsolete override only after deciding which user journal should be active. Old Python dependency caches can be removed separately once no older installation uses them.
 
