@@ -12,6 +12,10 @@ The `make-it-make-sense` skill covers:
 - Wiki and knowledge-base pages, READMEs, runbooks, decision records, code comments, and durable documentation
 - Chat messages, announcements, status updates, and thread replies
 
-The skill description exposes communication and artifact terms for automatic discovery. Once active, the agent reads the relevant channel reference and reuses it while it remains in context. Automatic selection remains host-controlled and may not activate for every task, especially after compaction. Invoke `make-it-make-sense` explicitly, or require it in host-level instructions, when the policy must apply to a response or draft.
+The bundled `SessionStart` hook requires `python3` version 3.11 or later. In Claude Code and Codex, it loads the canonical policy and agent-response guide when a session starts, resumes, clears, or compacts. Other channel guides remain available on demand and are reused while present in context. The hook reads the policy files on every invocation.
+
+In Codex, review and trust the plugin hook through `/hooks` before it can run. Installing the plugin alone does not trust its hooks. See the [Codex hook documentation](https://learn.chatgpt.com/docs/hooks#plugin-bundled-hooks) and [Claude Code SessionStart documentation](https://code.claude.com/docs/en/hooks#sessionstart).
+
+For example, ask “Draft a concise pull request description” and the agent has the core writing guidance before responding, then reads the version-control guide as needed. If hooks are disabled or unavailable, invoke `make-it-make-sense` explicitly, or require it in host-level instructions. Automatic skill discovery alone remains host-controlled.
 
 Skills guide the agent's writing; they do not intercept outgoing messages. Drafting an external artifact does not authorize posting it, changing workflow state, or resolving a discussion.
