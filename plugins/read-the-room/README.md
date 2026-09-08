@@ -4,6 +4,10 @@ Help agents shape clear communication for the human and channel in front of them
 
 Read the Room packages a shared human-facing communication contract as one portable skill. [`skills/make-it-make-sense/SKILL.md`](skills/make-it-make-sense/SKILL.md) is the canonical policy. Channel references contain only the rules specific to each artifact.
 
+The policy follows William Zinsser's four principles: Clarity, Simplicity, Brevity, and Humanity. It incorporates Google documentation practices and selected Simplified Technical English techniques without enforcing ASD-STE100 compliance. [Sources and adaptations](skills/make-it-make-sense/references/sources.md) records the rationale for maintainers and is not loaded at startup.
+
+Keep startup guidance small by removing duplication and loading channel details on demand. Preserve instructions, meaningful exceptions, and writing quality before reducing size. Use the [writing scenarios](tests/writing-scenarios.md) to assess policy changes alongside the automated hook checks; those checks verify loading, not prose quality.
+
 The `make-it-make-sense` skill covers:
 
 - Human-readable agent updates, questions, plans, findings, blockers, and final answers
