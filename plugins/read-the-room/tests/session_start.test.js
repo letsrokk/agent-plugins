@@ -41,7 +41,7 @@ test('packaged hook loads current guidance from any directory for each configure
     assert.ok(context.includes('# Make It Make Sense'));
     assert.ok(context.includes('Drafting does not authorize posting'));
     assert.ok(!context.includes('name: make-it-make-sense'));
-    for (const name of ['agent-responses', 'version-control', 'issue-trackers', 'knowledge-bases', 'chat']) {
+    for (const name of ['agent-responses', 'version-control', 'issue-trackers', 'knowledge-bases', 'chat', 'sources']) {
       const path = resolve(skill, `references/${name}.md`);
       assert.ok(context.includes(`](references/${name}.md)`));
       assert.equal(context.includes(readFileSync(path, 'utf8').trim()), name === 'agent-responses');

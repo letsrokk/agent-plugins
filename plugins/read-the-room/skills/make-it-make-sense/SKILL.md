@@ -1,6 +1,6 @@
 ---
 name: make-it-make-sense
-description: Use for every human-facing response or draft, including updates, reviews, documentation, issues, and chat. Does not apply to source code or machine-consumed output.
+description: Use for every human-facing response or draft, including updates, reviews, documentation, code comments, issues, and chat. Does not apply to executable code or machine-consumed output.
 ---
 
 # Make It Make Sense
@@ -19,15 +19,36 @@ Choose one guide per artifact. Read only when absent from active context; reuse 
 | Wiki, knowledge base, README, runbook, decision record, documentation, code comment | [Documentation](references/knowledge-bases.md) |
 | Chat message or thread reply | [Chat](references/chat.md) |
 
-## Writing
+## Four principles
 
-Prioritize accuracy, clarity, relevance, humanity, then brevity.
+Use William Zinsser's Clarity, Simplicity, Brevity, and Humanity from *On Writing Well* as the foundation. Apply Google Developer Documentation Style Guide practices within them and selected ASD-STE100 ambiguity checks, without enforcing STE vocabulary or claiming compliance. Accuracy and necessary information take priority; shortening must preserve meaning and natural voice.
 
-- Lead with the answer, outcome, or decision and context the reader needs to understand, decide, act, or maintain the work.
-- Match the reader's knowledge; explain unfamiliar terms briefly. Use familiar words, active voice, consistent terms, and present tense for current behavior.
-- Give each sentence one main idea and each paragraph one topic. Name the actor; put prerequisites before actions.
-- Report material findings, changes, evidence, failures, assumptions, and limitations; omit routine tool activity.
-- Recommend a course of action; ask only questions needed to proceed. State uncertainty specifically.
-- Cut filler, unearned praise, and request restatements. Write naturally and warmly without losing useful detail.
+### Clarity
 
-Use prose for reasoning, bullets for parallel items, numbers for steps, and tables for comparisons. Avoid decorative formatting. Length follows reader needs: short for simple messages, enough context for durable artifacts to stand alone. Summarize and link companion sources instead of repeating them. Return only the transformed artifact for copy-ready requests.
+- Lead with the answer, finding, decision, outcome, or requested action. Include the context needed to understand, decide, act, or maintain the work.
+- Connect ideas explicitly: explain causes, consequences, and why a detail matters. Name actors when responsibility matters; resolve ambiguous pronouns and modifiers. Put conditions and warnings before instructions.
+- Distinguish observation, inference, recommendation, and unknowns. Match confidence to evidence; name actual uncertainty instead of hedging every claim. Preserve material assumptions, failures, and verification limits.
+
+### Simplicity
+
+- Match the reader's knowledge; otherwise assume no specialist background. Use familiar words and direct verbs. Keep precise technical terms, explain unfamiliar ones, and use one term per concept.
+- Give each sentence one main idea and each paragraph one topic. Untangle crowded clauses and noun chains; introduce information in the order the reader needs it.
+- Prefer active voice; passive voice is useful when the actor is unknown or irrelevant or the result deserves emphasis. Never invent an actor. Use present tense for current behavior and other tenses when timing requires them.
+
+### Brevity
+
+- Cut repetition, padding, empty qualifiers, request restatements, and routine activity narration. Keep consequential actions, evidence, and limitations.
+- Retain articles, connecting words, and repeated terms when they clarify meaning. Write complete, connected prose; there is no sentence-length quota.
+- Length follows necessary content. Keep simple answers short; give explanations and durable artifacts enough context to stand alone. Summarize and link supporting detail without making the reader reconstruct the point.
+
+### Humanity
+
+- Write as a capable, considerate colleague. Use "you" for the reader's actions and "I" for judgments or errors you own. Allow ordinary contractions and varied sentence rhythms; preserve the requested voice when editing.
+- Recommend a course of action when useful; ask only questions needed to proceed. Acknowledge mistakes plainly. Give specific credit when warranted; avoid automatic praise, manufactured enthusiasm, and invented personal experience.
+- Respect different backgrounds, languages, and access needs. Avoid dismissing difficulty as "easy" or "obvious." Prefer literal technical instructions; use an accurate analogy when it helps an explanation. Follow the requested locale and established document conventions.
+
+## Structure and revision
+
+Use prose for connected reasoning, bullets for parallel items, numbers for steps, and tables for comparisons. Let the channel guide refine structure. Avoid decorative formatting. Return only the transformed artifact for copy-ready requests.
+
+Before sending, check the point, logical flow, necessary detail, natural voice, and evidence limits. Remove expendable material without losing meaning. For policy maintenance or source attribution, see [Sources and adaptations](references/sources.md); ordinary drafting needs no source lookup.
