@@ -16,13 +16,65 @@ The `make-it-make-sense` skill covers:
 - Wiki and knowledge-base pages, READMEs, runbooks, decision records, code comments, and durable documentation
 - Chat messages, announcements, status updates, and thread replies
 
-The bundled `SessionStart` hook requires Node.js 24 LTS or later, with `node` available on the noninteractive host process’s PATH. No npm install is needed. In Claude Code and Codex, its `startup|resume|clear|compact` matcher loads the canonical policy and agent-response guide for new and resumed sessions and after context is cleared or compacted. Other channel guides remain available on demand and are reused while present in context. The hook reads the policy files on every invocation.
+## Install and activate
+
+The bundled hook requires Node.js 24 or later, with `node` available on the noninteractive host process's PATH. No npm install is needed.
+
+### Codex
+
+Run in a terminal:
+
+```sh
+codex plugin marketplace add letsrokk/agent-plugins
+codex plugin add read-the-room@rokk-club-codex-plugins
+codex plugin list
+```
+
+Confirm Read the Room is installed. In Codex, open `/hooks`, review and trust its hook, then start a fresh session. Installation alone does not trust the hook.
+
+### Claude Code
+
+Run inside Claude Code:
+
+```text
+/plugin marketplace add letsrokk/agent-plugins
+/plugin install read-the-room@rokk-club-claude-plugins
+```
+
+Open `/plugin` and confirm Read the Room is installed and enabled, then restart Claude Code. See the [Claude Code plugin management guide](https://code.claude.com/docs/en/discover-plugins) for installation scopes and controls.
+
+### Verify startup guidance
+
+In a fresh session, without explicitly invoking the skill, ask:
+
+> Summarize this result: lint and unit tests passed; integration tests received HTTP 401 instead of 200; the cause is unknown.
+
+The response should preserve the passes, the failure, and the unknown cause. It should not invent a fix or imply all checks passed. This checks writing behavior; a good response alone does not prove the hook loaded. Check the host's hook execution information for successful loading as well. The hook displays “Loading Read the Room writing guidance...” where status messages are supported; that message alone does not establish success.
+
+If guidance is missing, check that the plugin is enabled, the Codex hook is trusted, and `node` is available to the host. Inspect hook errors and start a fresh session after correcting the problem. If hooks are unavailable, explicitly request “Use the make-it-make-sense skill for this response.” Automatic skill discovery alone remains host-controlled.
+
+## Update or remove
+
+For Codex, refresh the marketplace and reinstall the plugin:
+
+```sh
+codex plugin marketplace upgrade rokk-club-codex-plugins
+codex plugin add read-the-room@rokk-club-codex-plugins
+```
+
+Review the current hook definition in `/hooks` after an update and trust it if required. To uninstall, run `codex plugin remove read-the-room@rokk-club-codex-plugins`.
+
+For Claude Code, use `/plugin` to refresh the marketplace in **Marketplaces** and manage Read the Room in **Installed**. You can update, disable, or uninstall it there. Start a fresh session after updating or removing the plugin; previously loaded guidance remains in an existing conversation.
+
+## How startup works
+
+In Claude Code and Codex, the `SessionStart` hook's `startup|resume|clear|compact` matcher loads the canonical policy and agent-response guide for new and resumed sessions and after context is cleared or compacted. Other channel guides remain available on demand and are reused while present in context. The hook reads the policy files on every invocation.
 
 The hook supplies the absolute skill directory once; all guide links resolve relative to it, independently of the working directory.
 
-In Codex, review and trust the plugin hook through `/hooks` before it can run. Installing the plugin alone does not trust its hooks. After installing or updating, review the current definition and start a fresh session without explicitly invoking the skill. The hook displays “Loading Read the Room writing guidance...” where the host supports status messages. In Claude Code, restart after installation and verify the same fresh-session behavior. See the [Codex hook documentation](https://learn.chatgpt.com/docs/hooks#plugin-bundled-hooks) and [Claude Code SessionStart documentation](https://code.claude.com/docs/en/hooks#sessionstart).
+See the [Codex hook documentation](https://learn.chatgpt.com/docs/hooks#plugin-bundled-hooks) and [Claude Code SessionStart documentation](https://code.claude.com/docs/en/hooks#sessionstart).
 
-For example, ask “Draft a concise pull request description” and the agent has the core writing guidance before responding, then reads the version-control guide as needed. If hooks are disabled or unavailable, invoke `make-it-make-sense` explicitly, or require it in host-level instructions. Automatic skill discovery alone remains host-controlled.
+For example, ask “Draft a concise pull request description” and the agent has the core writing guidance before responding, then reads the version-control guide as needed.
 
 Skills guide the agent's writing; they do not intercept outgoing messages. Drafting an external artifact does not authorize posting it, changing workflow state, or resolving a discussion.
 
