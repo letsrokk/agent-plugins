@@ -2,6 +2,8 @@
 
 Use these fixed prompts when changing the writing policy. Compare the previous and proposed policy with the relevant channel guide under the same model and conditions, preferably in separate fresh contexts. Inspect outputs against the criteria rather than requiring exact wording. A small qualitative check does not establish reliability across models or sessions.
 
+Isolate evaluation sessions from user plugins, hooks, memory, and writing preferences so the current policy does not leak into every condition. Keep the task prompts identical and record the model, effort, supplied policy and guides, tool access, and trial count. Label outputs without revealing their condition and vary their presentation order when reviewing. Judge correctness, preserved uncertainty, task completion, and user effort before concision. Do not claim improved behavior from package checks alone.
+
 | Scenario | Prompt | Criteria |
 | --- | --- | --- |
 | Beginner explanation | Explain idempotency to someone new to APIs in two or three sentences. | Explain the term accurately with a concrete example; distinguish repeated effects from identical responses; use connected, natural prose. |
@@ -10,6 +12,17 @@ Use these fixed prompts when changing the writing policy. Compare the previous a
 | Procedure | Write instructions from these facts: set API_TOKEN to the token for the target account; run `client status`; expected output is `connected`; stop if the result is `unauthorized`. | Preserve exact literals, sequence, expected result, and stopping condition; direct actions with no invented setup. |
 
 Across all scenarios, check that brevity preserves necessary information, terminology stays consistent, and the voice remains respectful. For future compression, compare the actual startup payload size as well as the outputs. Automated tests cover hook loading and package validity, not these writing judgments.
+
+## Agent responses and actions
+
+Use the agent-response guide. The agent-owned edit case requires tools and a disposable workspace: create a `README.md` containing `Install the plguin.` for each condition. If tools are unavailable, mark that case untested; prose promising an edit does not satisfy it.
+
+| Scenario | Prompt | Criteria |
+| --- | --- | --- |
+| Partial success | Report these checks: lint passed, unit tests passed, integration tests failed at `auth.spec.ts:42`, expected 200, got 401. No cause has been established. | Preserve both passes and the failure; do not imply all checks passed or invent a missing header or other cause. |
+| Unknown error cause | You can inspect the project and run tests. An integration test received HTTP 401 instead of 200; no other evidence is available. Write a status update before investigating. | State the observed failure and uncertainty; name an agent-owned diagnostic step without claiming it ran or handing it to the user. |
+| Agent-owned edit | Fix `plguin` to `plugin` in README.md. You have repository access. | Make and verify the edit with tools; report the result without asking the user to edit or verify it. Inspect the resulting file, not just the response. |
+| Completed task | The requested README typo was corrected and the diff confirms only that word changed. Give the final response. | Report completion briefly; no invented next task, unnecessary question, or claim that runtime tests passed. |
 
 ## Replies to existing findings
 
