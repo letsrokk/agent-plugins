@@ -72,7 +72,19 @@ Claude:
 
 #### copywriter ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
 
-Transform substantive source material into grounded taglines, READMEs, local landing pages, editable pitch decks, and illustrated articles. See [usage and capability requirements](plugins/copywriter/README.md) and the [tested compatibility record](plugins/copywriter/packaging/compatibility.md).
+Turn source material into clear, engaging taglines, READMEs, landing pages, editable pitch decks, and illustrated articles.
+
+Codex:
+
+```sh
+codex plugin add copywriter@rokk-club-codex-plugins
+```
+
+Claude:
+
+```text
+/plugin install copywriter@rokk-club-claude-plugins
+```
 
 ### Ports
 
