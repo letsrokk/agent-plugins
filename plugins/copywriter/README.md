@@ -15,7 +15,7 @@ The six skills are `write` (router, brief, research), `tagline`, `readme`, `land
 
 ## Installation and capabilities
 
-Copywriter checks the active host's available skills and plugins for relevant help. When available, it uses a matching design skill to improve visual presentation after revising the copy—for example, Impeccable for a local web page, or a presentation skill for a deck. It preserves source-backed claims, citations, and the requested output format. Optional design plugins are not required: the bundled generators remain available, and Copywriter does not install or enable other plugins. Text-only work stays focused on writing and formatting.
+Copywriter checks the active host's available skills and plugins for relevant help. It searches descriptions for capabilities such as frontend design, typography, visual hierarchy, responsive layout, accessibility, and presentation design, then uses a matching skill to improve visual presentation after revising the copy. It preserves source-backed claims, citations, and the requested output format. Optional design plugins are not required: the bundled generators remain available, and Copywriter does not install or enable other plugins. Text-only work stays focused on writing and formatting.
 
 The source uses one shared skill tree with portable, Codex, and Claude manifests. Release directories contain exactly one target manifest. See [compatibility and release checks](packaging/compatibility.md) before treating any host as supported.
 
