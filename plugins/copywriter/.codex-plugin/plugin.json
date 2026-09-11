@@ -3,14 +3,21 @@
   "version": "0.2.0",
   "description": "Transform source material into grounded product copy, articles, and illustrated pitch decks.",
   "skills": "./skills/",
-  "author": {"name": "Rokk Club"},
+  "author": {
+    "name": "Rokk Club"
+  },
   "interface": {
     "displayName": "Copywriter",
     "shortDescription": "Turn source material into grounded product writing",
     "longDescription": "Create taglines, READMEs, local landing pages, editable pitch decks, and articles from substantive source material.",
     "developerName": "Rokk Club",
     "category": "Productivity",
-    "capabilities": ["Read", "Write"],
-    "defaultPrompt": ["Use Copywriter to create a README for this package."]
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Use Copywriter to create a README for this package."
+    ]
   }
 }

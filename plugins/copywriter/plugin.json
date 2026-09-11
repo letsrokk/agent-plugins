@@ -3,5 +3,11 @@
   "name": "copywriter",
   "version": "0.2.0",
   "description": "Transform source material into grounded product copy, articles, and illustrated pitch decks.",
-  "keywords": ["copywriting", "readme", "landing-page", "pitch-deck", "articles"]
+  "keywords": [
+    "copywriting",
+    "readme",
+    "landing-page",
+    "pitch-deck",
+    "articles"
+  ]
 }
