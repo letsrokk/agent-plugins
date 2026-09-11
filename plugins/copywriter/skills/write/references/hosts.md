@@ -1,0 +1,7 @@
+# Host capabilities and invocation
+
+The shared skills do not assume browsing, filesystem access, image generation, or an office renderer. Discover actual callable capabilities once per run. Text work needs source access and file writing for file deliverables, but no Node/office dependency. Deck fallback generation needs Node.js 24; PDF/slide-image rendering requires a compatible detected renderer. Illustrations need a working image capability; visual verification needs image inspection. Missing capabilities yield the supported files and explicit partial completion. Chat-only copy is appropriate only when its missing file deliverables are identified.
+
+Natural-language invocation is portable: “Use Copywriter to create a README for this package.” Logical requests such as `copywriter article` are semantic prompts, not installed shell commands. Claude Code's plugin namespace uses `/copywriter:readme`, `/copywriter:article`, and `/copywriter:write brief`. Portable v1 defines no slash syntax. For Codex use the entry actually displayed by the installed skill picker; do not promise an unobserved slash command.
+
+See the release [compatibility record](../../../packaging/compatibility.md) for tested host versions, installation/invocation evidence, and limits. Schema validation is not host discovery or behavioral testing. Do not infer support for other Claude products, every portable client, or every office editor. Keep installed package files read-only; all artifacts belong in an authorized user destination.

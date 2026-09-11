@@ -70,6 +70,10 @@ Claude:
 /plugin install read-the-room@rokk-club-claude-plugins
 ```
 
+#### copywriter ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
+
+Transform substantive source material into grounded taglines, READMEs, local landing pages, editable pitch decks, and illustrated articles. See [usage and capability requirements](plugins/copywriter/README.md) and the [tested compatibility record](plugins/copywriter/packaging/compatibility.md).
+
 ### Ports
 
 #### eli5 ![Codex](assets/agent-badges/codex.svg)

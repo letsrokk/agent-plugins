@@ -16,6 +16,10 @@
     {
       "name": "agent-doctor",
       "source": "./plugins/agent-doctor"
+    },
+    {
+      "name": "copywriter",
+      "source": "./plugins/copywriter"
     }
   ]
 }

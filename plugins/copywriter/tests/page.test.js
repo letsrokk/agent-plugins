@@ -1,0 +1,32 @@
+'use strict';
+const {test} = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const {renderPage} = require('../scripts/render-page');
+
+test('page exports escaped copy, honest CTA, responsive HTML and refuses overwrite/unsafe sources', t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'copywriter-page-'));
+  t.after(() => fs.rmSync(root, {recursive:true, force:true}));
+  const input = path.join(root, 'page.json');
+  const page = {title:'Café CLI', description:'Count local lines', audience:'Developers', hero:{heading:'Count <script>alert(1)</script>', body:'Read files locally.'}, cta:{text:'Try it'}, sections:[{id:'example',heading:'First use',body:'node cli.js sample.txt',bullets:['2 lines']}]};
+  const save = () => fs.writeFileSync(input, JSON.stringify(page));
+  save();
+  const out = path.join(root, 'output');
+  renderPage(input, out, root);
+  const html = fs.readFileSync(path.join(out, 'preview/index.html'), 'utf8');
+  assert(html.includes('&lt;script&gt;alert(1)&lt;/script&gt;'));
+  assert(!html.includes('<script>'));
+  assert(html.includes('disabled'));
+  assert(html.includes('width=device-width'));
+  assert(html.includes(':focus-visible'));
+  assert(fs.readFileSync(path.join(out, 'landing-page.md'),'utf8').includes('2 lines'));
+  assert.throws(() => renderPage(input,out,root), /EEXIST/);
+  page.cta.url = 'javascript:alert(1)'; save();
+  assert.throws(() => renderPage(input,path.join(root,'bad')), /HTTP/);
+  delete page.cta.url;
+  fs.symlinkSync(os.tmpdir(), path.join(root, 'escape'));
+  page.sections[0].image = {file:'escape',alt:'x',caption:'x'}; save();
+  assert.throws(() => renderPage(input,path.join(root,'bad')), /escapes/);
+});

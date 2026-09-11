@@ -1,0 +1,21 @@
+{
+  "name": "copywriter",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "node scripts/test.js",
+    "validate": "node scripts/validate.js"
+  },
+  "dependencies": {
+    "image-size": "1.2.1",
+    "pptxgenjs": "4.0.1"
+  },
+  "devDependencies": {
+    "ajv": "8.17.1",
+    "esbuild": "0.28.2"
+  }
+}

@@ -75,8 +75,8 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Install Papercuts build dependencies
-        if: matrix.plugin == 'papercuts'
+      - name: Install plugin build dependencies
+        if: matrix.plugin == 'papercuts' || matrix.plugin == 'copywriter'
         run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Validate plugin

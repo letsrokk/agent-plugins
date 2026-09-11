@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "product": {"name": "Fictional Tracekit", "category": "local request viewer", "stage": "beta", "version": null},
+  "audience": {"description": "Backend developers inspecting local requests", "basis": "inferred"},
+  "goal": "Try the documented local example",
+  "use_case": "Inspect captured local request details",
+  "problem": "Request details are spread across local logs",
+  "current_workaround": "Read separate logs",
+  "capabilities": [{"text": "Displays captured local requests", "claim_ids": ["C1"]}],
+  "benefits": [{"text": "Inspect request details in one view", "claim_ids": ["C1"], "basis": "inferred", "mechanism": "A shared details view"}],
+  "prerequisites": [],
+  "limitations": ["Production suitability is unverified"],
+  "support": null,
+  "differentiators": [],
+  "alternatives": [],
+  "voice": {"traits": ["direct", "practical"], "locale": "en-US", "terminology": ["captured request"]},
+  "approved_assets": [],
+  "assumptions": ["Illustrative fictional product; replace with source-backed facts"],
+  "open_questions": ["Supported operating systems"],
+  "prohibited_claims": ["Numerical time savings without measurement"]
+}
