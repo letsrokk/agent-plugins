@@ -1,22 +1,26 @@
 # Rokk Club Agent Plugins
 
-Rokk Club publishes portable agent plugins for Codex and Claude Code from one repository. Plugins are added one at a time under [`plugins/`](plugins/README.md).
+Give your coding agent more ways to help: review a change, make sense of its settings, explain an unfamiliar topic, or shape an engaging piece of writing.
+
+Rokk Club brings these workflows to Codex and Claude Code as plugins you can install individually. Browse the collection below and choose the ones that fit your work.
 
 ## Marketplaces
 
-Codex reads `.agents/plugins/marketplace.json` and installs packages that follow the [Agent Plugins v1 specification](https://agent-plugins.org/specification).
+Start by adding the marketplace for your client, then install a plugin using its command below. The badges show which clients each plugin targets.
+
+For Codex, run in your terminal:
 
 ```sh
 codex plugin marketplace add letsrokk/agent-plugins
 ```
 
-Claude Code reads `.claude-plugin/marketplace.json`.
+For Claude Code, run inside the app:
 
 ```text
 /plugin marketplace add letsrokk/agent-plugins
 ```
 
-Both catalogs reference the same package directories. Portable components stay shared; client-specific manifests and components live beside them only when required.
+Papercuts and Read the Room require Node.js 24 or later on your client’s `PATH`. In Codex, review and trust their startup hooks in `/hooks`, then start a fresh session. Other requirements and activation steps are documented in each plugin’s README under [`plugins/`](plugins/README.md).
 
 ## Plugins
 
@@ -24,7 +28,7 @@ Both catalogs reference the same package directories. Portable components stay s
 
 #### papercuts ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
 
-Give coding agents a durable local journal for material workflow friction.
+Keep a local record of the tool failures, confusing instructions, and recurring snags your agent encounters, so they are available to review later.
 
 Codex:
 
@@ -40,7 +44,7 @@ Claude:
 
 #### agent-doctor ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
 
-Inspect and troubleshoot Codex and Claude configuration, then review recent sessions to count exact plugin or skill usage and summarize successes, problems, and incomplete calls.
+Make sense of your agent’s settings and see which plugins and skills it actually uses. Inspect configuration and local session history without changing your files.
 
 Codex:
 
@@ -56,7 +60,7 @@ Claude:
 
 #### read-the-room ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
 
-Shape clear communication for human readers across agent sessions, version control, issue trackers, knowledge bases, and chat applications.
+Help your agent write for the person reading: clear updates, useful reviews, readable documentation, and chat messages that get to the point.
 
 Codex:
 
@@ -90,7 +94,7 @@ Claude:
 
 #### eli5 ![Codex](assets/agent-badges/codex.svg)
 
-Explain any topic with a dead-simple visual explainer that uses big pictures and few words.
+Make an unfamiliar topic easier to grasp with big visuals and a few well-chosen words.
 
 Codex:
 
@@ -100,7 +104,7 @@ codex plugin add eli5@rokk-club-codex-plugins
 
 #### pr-review-toolkit ![Codex](assets/agent-badges/codex.svg)
 
-Review pull requests and local changes for code quality, tests, comments, error handling, and type design, then simplify code after the review passes.
+Get actionable reviews of pull requests and local changes, covering bugs, tests, comments, error handling, and types. Reviews are advisory; code simplification needs an explicit request.
 
 Codex:
 
@@ -110,7 +114,7 @@ codex plugin add pr-review-toolkit@rokk-club-codex-plugins
 
 #### code-simplifier ![Codex](assets/agent-badges/codex.svg)
 
-Simplify a precise code scope without changing observable behavior.
+Make the code you choose easier to read and maintain while preserving what it does.
 
 Codex:
 
@@ -118,15 +122,33 @@ Codex:
 codex plugin add code-simplifier@rokk-club-codex-plugins
 ```
 
+## Try a plugin
+
+After installing Agent Doctor, start a fresh session in your project and ask:
+
+```text
+Use the inspect-agent-config skill to audit this project’s settings and instructions.
+```
+
+Expect a report explaining configuration problems, suggested fixes, and anything the agent could not verify. The audit leaves your files unchanged.
+
 ## Add a plugin
 
-Follow the full [plugin development workflow](docs/plugin-development.md).
+Have a workflow to share? Follow the [plugin development workflow](docs/plugin-development.md). Packages use the [Agent Plugins v1 specification](https://agent-plugins.org/specification) as a base, with native client manifests where needed. The Codex and Claude Code catalogs point to the same shared plugin directories.
 
-1. Create `plugins/<plugin-name>/plugin.json` using the Agent Plugins v1 schema.
+1. Create `plugins/<plugin-name>/plugin.json` using the documented manifest rules.
 2. Add the plugin components in their standard locations.
 3. Add the compatibility manifest for each target catalog.
 4. Add a matching entry to one or both marketplace catalogs.
-5. Run the repository validation commands before committing.
+5. With Node.js 24 or later, run the repository checks before committing:
+
+   ```sh
+   npm ci --ignore-scripts --no-audit --no-fund
+   npm test
+   npm run validate
+   ```
+
+The tests should pass and validation should print `Marketplace validation passed.` Scripted plugins also need their own test and validation entrypoints, as described in the development workflow.
 
 ## License
 
