@@ -31,6 +31,15 @@ test('three relocated packages contain one manifest and runnable generators with
     assert.equal(result.status, 1);
     assert.match(result.stderr, /Usage:/);
     assert(!result.stderr.includes('MODULE_NOT_FOUND'));
+    const input = path.join(root, 'slides.json');
+    fs.writeFileSync(input, JSON.stringify({title:'Fixture',claims:[],assets:[],slides:[{id:'intro',title:'Hello',body:'A local deck.',notes:'Source notes.',claim_ids:[],asset_ids:[],layout:'title'}]}));
+    const output = path.join(root, `${target}-deck`);
+    const generated = spawnSync(process.execPath, [path.join(folder,'scripts/render-deck.js'), input, output], {cwd:root, encoding:'utf8', env:{...process.env, PATH:''}});
+    assert.equal(generated.status, 0, generated.stderr);
+    assert(fs.existsSync(path.join(output,'pitch-deck.pptx')));
+    assert.equal(JSON.parse(fs.readFileSync(path.join(output,'render-status.json'),'utf8')).previews, 'generated');
+    assert(!fs.existsSync(path.join(output,'pitch-deck.pdf')));
+    assert.deepEqual(fs.readdirSync(path.join(output,'previews')), ['slide-1.svg']);
   }
   assert.throws(() => packagePlugin(out), /EEXIST/);
 });
