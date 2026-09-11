@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { inflateRawSync } = require('node:zlib');
-const { renderDeck, validate, processOutcome } = require('../vendor/deck.cjs');
+const { renderDeck, validate } = require('../vendor/deck.cjs');
 function zipEntries(file) {
   const bytes = fs.readFileSync(file), entries = {};
   let end = bytes.length - 22;
@@ -28,13 +28,30 @@ test('editable deck contains notes, chart data, images, and rejects escaping or 
   fs.writeFileSync(path.join(base,'data.json'), JSON.stringify({units:'requests',labels:['A','B'],series:[{name:'Observed',values:[2,7]}],source:'Authored fixture',method:'Counted fixture requests'}));
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><title>Flow</title><rect x="5" y="5" width="80" height="30" fill="#ffffff"/><text x="10" y="20">A &amp; B</text></svg>';
   fs.writeFileSync(path.join(base,'diagram.svg'), svg);
-  const slide=(id,layout,more={})=>({id,title:`${id}: Unicode café — Δ`,body:'A source-grounded point.',notes:`Evidence for ${id}.`,claim_ids:['C1'],asset_ids:[],layout,...more});
-  const model={title:'Fixture',fontFace:'Missing-Font-Fixture',language:'fr-FR',claims:[{id:'C1'}],assets:[{id:'A1',file:'pixel.png',alt:'One pixel test image',source_file:'diagram.svg'}],slides:[slide('intro','title'),slide('data','chart',{chart:{file:'data.json',type:'bar',alt:'A has 2 requests; B has 7 requests.'}}),slide('image','image',{asset_ids:['A1']}),slide('columns','two-column',{columns:[{title:'One',body:'First point'},{title:'Two',body:'Second point'}]}),slide('diagram','diagram',{asset_ids:['A1']}),...['statement','closing','sources','appendix'].map(layout=>slide(layout,layout))]};
+  const slide=(id,layout,more={})=>({id,title:`${id}: Unicode café — Δ`,body:'A source-grounded point. <script>alert(1)</script> & text.',notes:`Evidence for ${id}.`,claim_ids:['C1'],asset_ids:[],layout,...more});
+  const model={title:'Fixture',fontFace:'Missing-Font-Fixture',language:'fr-FR',claims:[{id:'C1'}],assets:[{id:'A1',file:'pixel.png',alt:'One pixel test image',source_file:'diagram.svg'}],slides:[slide('intro','title'),slide('data','chart',{chart:{file:'data.json',type:'bar',alt:'A has 2 requests; B has 7 requests.'}}),slide('image','image',{asset_ids:['A1']}),slide('columns','two-column',{columns:[{title:'One',body:'First point'},{title:'Two',body:'Second point'}]}),slide('diagram','diagram',{asset_ids:['A1']}),...['statement','closing','sources','appendix'].map(layout=>slide(layout,layout)),slide('line','chart',{chart:{file:'data.json',type:'line',alt:'A has 2 requests; B has 7 requests.'}})]};
   const input=path.join(base,'input.json');
   fs.writeFileSync(input,JSON.stringify(model));
   const output=path.join(dir,'output');
   const status=await renderDeck(input,output,dir);
   assert.equal(status.pptx,'generated');
+  assert.equal(status.stage, 'render');
+  assert.equal(status.status, 'partial');
+  assert.equal(status.previews, 'generated', status.cause);
+  assert.equal(status.preview_format, 'svg');
+  assert(!fs.existsSync(path.join(output, 'pitch-deck.pdf')));
+  const previewFiles = fs.readdirSync(path.join(output, 'previews'));
+  assert.equal(previewFiles.length, model.slides.length);
+  assert(previewFiles.every(file => file.endsWith('.svg')));
+  const preview = number => fs.readFileSync(path.join(output, `previews/slide-${number}.svg`), 'utf8');
+  assert(preview(1).includes('café'));
+  assert(!preview(1).includes('<script>'));
+  assert(preview(1).includes('&lt;script&gt;'));
+  assert(preview(2).includes('>7</text>'));
+  assert(preview(10).includes('>7</text>'));
+  assert(preview(3).includes('data:image/png;base64,'));
+  assert(!preview(1).includes('foreignObject'));
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(output, 'render-status.json'), 'utf8')), status);
   assert.equal(fs.readFileSync(path.join(output,'diagram.svg'),'utf8'), svg);
   assert.equal(status.visual_review,'not checked');
   const entries=zipEntries(path.join(output,'pitch-deck.pptx'));
@@ -71,13 +88,23 @@ test('editable deck contains notes, chart data, images, and rejects escaping or 
   }
 });
 
-test('render stage records unavailable tools, timeouts, nonzero exits and missing files separately', () => {
-  assert.equal(processOutcome({error:{code:'ENOENT'},status:null},false,'pdftoppm').status,'unavailable');
-  assert.equal(processOutcome({error:{code:'ETIMEDOUT'},status:null,signal:'SIGTERM'},false,'LibreOffice').status,'timed out');
-  const failure=processOutcome({status:7,stderr:'Conversion refused'},false,'LibreOffice');
-  assert.equal(failure.exit_status,7);
-  assert.equal(failure.stderr,'Conversion refused');
-  assert.match(failure.next_action,/retry/);
-  assert.equal(processOutcome({status:0},false,'pdftoppm').status,'missing output');
-  assert.equal(processOutcome({status:0},true,'pdftoppm').status,'generated');
+test('preview write failure preserves the deck and reports partial output', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'copywriter-preview-test-'));
+  t.after(() => fs.rmSync(dir, {recursive:true,force:true}));
+  const input = path.join(dir, 'slides.json');
+  fs.writeFileSync(input, JSON.stringify({title:'Fixture',claims:[],assets:[],slides:[{id:'intro',title:'Hello',body:'A local deck.',notes:'Source notes.',claim_ids:[],asset_ids:[],layout:'title'}]}));
+  const mkdir = fs.mkdirSync;
+  t.mock.method(fs, 'mkdirSync', (file, options) => {
+    if (path.basename(file) === 'previews') throw new Error('Preview directory unavailable');
+    return mkdir(file, options);
+  });
+  const output = path.join(dir, 'output');
+  const status = await renderDeck(input, output, dir);
+  assert.equal(status.status, 'partial');
+  assert.equal(status.pptx, 'generated');
+  assert.equal(status.previews, 'failed');
+  assert.equal(status.cause, 'Preview directory unavailable');
+  assert(fs.existsSync(path.join(output, 'pitch-deck.pptx')));
+  assert(fs.existsSync(path.join(output, 'slides.json')));
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(output, 'render-status.json'), 'utf8')), status);
 });

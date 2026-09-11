@@ -1,7 +1,5 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const os = require('node:os');
-const { spawnSync } = require('node:child_process');
 const PptxGenJS = require('pptxgenjs');
 const imageSize = require('image-size');
 
@@ -120,22 +118,9 @@ function validate(model, base) {
     }
   }
   for (const name of files) {
-    if (['pitch-deck.pptx', 'slides.json', 'speaker-notes.md', 'render-status.json', 'pitch-deck.pdf', 'previews'].includes(path.normalize(name).split(path.sep)[0])) throw new Error('Asset conflicts with generated output');
+    if (['pitch-deck.pptx', 'slides.json', 'speaker-notes.md', 'render-status.json', 'previews'].includes(path.normalize(name).split(path.sep)[0])) throw new Error('Asset conflicts with generated output');
   }
   return { assets, files };
-}
-function processOutcome(result, produced, tool) {
-  const error = result.error?.code;
-  const state = error === 'ENOENT' ? 'unavailable' : error === 'ETIMEDOUT' ? 'timed out' : result.status !== 0 || error ? 'check failed' : !produced ? 'missing output' : 'generated';
-  return {
-    status: state,
-    exit_status: Number.isInteger(result.status) ? result.status : null,
-    error_code: error || null,
-    signal: result.signal || null,
-    stderr: (result.stderr || '').trim().slice(0, 1024),
-    cause: state === 'generated' ? null : state === 'unavailable' ? `${tool} was not found` : state === 'timed out' ? `${tool} exceeded its time limit` : state === 'missing output' ? `${tool} exited successfully without all expected files` : `${tool} failed; inspect exit status and stderr`,
-    next_action: state === 'generated' ? 'Inspect every rendered slide.' : state === 'unavailable' ? `Select an authorized setup path for ${tool}, then rerun the preserved deck.` : `Resolve the reported ${tool} failure and retry rendering the preserved deck.`
-  };
 }
 async function renderDeck(input, output, workspace = process.cwd()) {
   const base = fs.realpathSync(path.dirname(path.resolve(input)));
@@ -190,31 +175,29 @@ async function renderDeck(input, output, workspace = process.cwd()) {
   }
   fs.writeFileSync(path.join(out, 'slides.json'), JSON.stringify(model, null, 2) + '\n');
   fs.writeFileSync(path.join(out, 'speaker-notes.md'), notes.join('\n'));
-  const status = { stage: 'render', status: 'partial', pptx: 'generated', office: null, pdf: 'not checked', previews: 'not checked', visual_review: 'not checked', accessibility_checker: 'not checked' };
-  const probes = ['soffice', '/Applications/LibreOffice.app/Contents/MacOS/soffice'].map(name => ({ name, result: spawnSync(name, ['--version'], { encoding: 'utf8', timeout: 10000 }) }));
-  const office = probes.find(probe => probe.result.status === 0);
-  status.office_detection = probes.map(probe => ({ tool: path.basename(probe.name), ...processOutcome(probe.result, probe.result.status === 0, 'LibreOffice') }));
-  if (office) {
-    status.office = office.result.stdout.trim().slice(0, 300);
-    const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'copywriter-office-'));
-    try {
-      const result = spawnSync(office.name, [`-env:UserInstallation=${require('node:url').pathToFileURL(profile).href}`, '--headless', '--convert-to', 'pdf', '--outdir', out, path.join(out, 'pitch-deck.pptx')], { encoding: 'utf8', timeout: 120000 });
-      status.pdf_result = processOutcome(result, fs.existsSync(path.join(out, 'pitch-deck.pdf')), 'LibreOffice');
-      status.pdf = status.pdf_result.status;
-      if (status.pdf === 'generated') {
-        const previews = path.join(out, 'previews');
-        fs.mkdirSync(previews);
-        const preview = spawnSync('pdftoppm', ['-scale-to', '1600', '-png', path.join(out, 'pitch-deck.pdf'), path.join(previews, 'slide')], { encoding: 'utf8', timeout: 120000 });
-        const count = fs.readdirSync(previews).filter(name => /^slide-\d+\.png$/.test(name)).length;
-        status.preview_result = processOutcome(preview, count === model.slides.length, 'pdftoppm');
-        status.previews = status.preview_result.status;
-      }
-    } finally { fs.rmSync(profile, { recursive: true, force: true }); }
-  } else {
-    status.pdf = 'unavailable';
-    status.next_action = 'Select an authorized LibreOffice setup path, then render and visually inspect the preserved PPTX.';
+  const status = { stage: 'render', status: 'partial', pptx: 'generated', previews: 'not checked', preview_format: 'svg', renderer: '@office-kit/pptx-preview 0.9.1', visual_review: 'not checked', accessibility_checker: 'not checked' };
+  try {
+    const { loadPresentation, getSlides } = await import('@office-kit/pptx');
+    const { renderSlideToSvg, defaultMeasurer } = await import('@office-kit/pptx-preview');
+    const presentation = await loadPresentation(fs.readFileSync(path.join(out, 'pitch-deck.pptx')));
+    const slides = getSlides(presentation);
+    if (slides.length !== model.slides.length) throw new Error('Preview slide count differs from generated deck');
+    const previews = path.join(out, 'previews');
+    fs.mkdirSync(previews);
+    for (const [i, slide] of slides.entries()) {
+      // ponytail: estimated font metrics; add measured fonts if exact text wrapping is required.
+      const svg = renderSlideToSvg(presentation, slide, { textLayout: 'svg', measureText: defaultMeasurer });
+      if ((/<g\b[^>]*\sdata-pptx-fallback=/).test(svg)) throw new Error(`Slide ${i + 1} contains unsupported preview content`);
+      fs.writeFileSync(path.join(previews, `slide-${i + 1}.svg`), svg);
+    }
+    status.previews = 'generated';
+    status.next_action = 'Inspect every SVG preview; font metrics are approximate and do not establish PowerPoint layout compatibility.';
+  } catch (error) {
+    status.previews = 'failed';
+    status.cause = error.message;
+    status.next_action = 'Resolve the preview failure and retry using the preserved slide source and PPTX.';
   }
   fs.writeFileSync(path.join(out, 'render-status.json'), JSON.stringify(status, null, 2) + '\n');
   return status;
 }
-module.exports = { renderDeck, validate, processOutcome };
+module.exports = { renderDeck, validate };
