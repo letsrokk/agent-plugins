@@ -2,7 +2,7 @@
 
 ## Scope and source gate
 
-Identify the requested artifact, target package, reader, goal, and existing authorization. Inspect supplied context before asking questions. Ask one focused question when an essential source or scope is missing; continue independent work. State reasonable assumptions for optional choices.
+Identify the requested artifact, target package, reader, goal, and existing authorization. Default to a general-public audience and an engaging voice with moderate marketing language, as described in [editorial guidance](editorial.md); use a specialist audience when the user specifies one or the task requires it. Inspect supplied context before asking questions. Ask one focused question when an essential source or scope is missing; continue independent work. State reasonable assumptions for optional choices.
 
 | Medium | Minimum substantive source |
 | --- | --- |
@@ -36,12 +36,12 @@ Channel options are listed in their skills. Explicit audience, brand, locale, co
 
 ## Inspect and draft
 
-1. Discover applicable project instructions and actual callable capabilities once. Record read/write, browse, execution, presentation export/rendering, image generation, and image inspection availability. Use the host's working capabilities without hardcoded tool names or presumed optional plugins.
+1. Discover applicable project instructions, available installed skills/plugins, and actual callable capabilities once using [host discovery](hosts.md#installed-skills-and-design-help). Record relevant writing/design helpers and read/write, browse, execution, presentation export/rendering, image generation, and image inspection availability. Use the host's working capabilities without hardcoded tool names or presumed optional plugins.
 2. Select the actual requested checkout/package. Record its path privately, commit/version when available, and relevant working-tree changes. Do not substitute the latest release or default branch.
 3. Inspect the hosting platform's surfaced README: on GitHub check `.github/README`, root README, then `docs/README`, including supported extensions. Read relevant metadata, actual license, quickstarts, examples/tests, public entry points, commands, and relevant implementation. A dependency or test fixture alone does not prove a public feature. Keep monorepo capabilities within the selected package.
 4. Inspect approved visuals and supplied brand/customer research. Search selectively; omit dependency/build directories, complete lockfiles, credentials, `.env` contents, customer exports, and unrelated private files. For concepts, use future tense and an explicit concept brief.
-5. Write a compact brief and claim ledger. Research enabled material gaps using [research](research.md). Choose the medium structure and key message, draft, and generate useful assets using [visuals](visuals.md).
-6. Verify claims, examples, links, files, and applicable renders; revise concrete defects. Review commands before running safe local examples. Do not execute deployment, destructive actions, dependency lifecycle scripts, or live customer actions just to validate documentation.
+5. Write a compact brief and claim ledger. Research enabled material gaps using [research](research.md). Choose the key message and medium structure, then draft and revise for writing quality and text formatting using [editorial guidance](editorial.md). For presentation work, apply a relevant available design skill through [host discovery](hosts.md#installed-skills-and-design-help), and generate useful or requested assets using [visuals](visuals.md).
+6. Verify claims, examples, links, files, and applicable renders; recheck the final text after design changes and revise concrete defects. Review commands before running safe local examples. Do not execute deployment, destructive actions, dependency lifecycle scripts, or live customer actions just to validate documentation.
 
 ## Private records and public artifacts
 

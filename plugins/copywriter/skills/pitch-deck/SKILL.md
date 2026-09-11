@@ -5,7 +5,7 @@ description: Use when transforming repository evidence or supplied pitch notes i
 
 # Pitch deck
 
-Read the shared [workflow and source gate](../write/references/workflow.md), [editorial guidance](../write/references/editorial.md), [deck guide](references/decks.md), and [visuals](../write/references/visuals.md) when assets are used.
+Read the shared [workflow and source gate](../write/references/workflow.md), [editorial guidance](../write/references/editorial.md), and [deck guide](references/decks.md). Read [visuals](../write/references/visuals.md) when assets are used. Revise the narrative, slide text, and notes before applying [available presentation design help](../write/references/hosts.md#installed-skills-and-design-help); preserve editable output and the verification contract below.
 
 Accept `--purpose adopter|investor|sales|sponsor`, `--delivery live|send-ahead`, `--slides N`, and `--minutes N` plus shared options. Default to adopter and send-ahead unless context indicates otherwise; state assumptions. Target roughly 8–12 substantive slides, but let source substance determine count. A slide target never authorizes fabricated commercial facts or padding.
 

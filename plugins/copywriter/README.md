@@ -1,6 +1,8 @@
 # Copywriter
 
-Transform verified product material into taglines, READMEs, landing pages, editable pitch decks, and illustrated articles. Articles require your draft, outline, or substantive notes; a topic alone is insufficient.
+Turn verified product material into clear, well-structured taglines, READMEs, landing pages, editable pitch decks, and articles. Copywriter prioritizes the argument, wording, voice, and text formatting, with illustrations, diagrams, charts, and deck graphics to support the message. Articles require your draft, outline, or substantive notes; a topic alone is insufficient.
+
+The default voice is warm, engaging, and accessible to the general public, with marketing language used in moderation. Copywriter explains why the subject matters, keeps promises grounded, and adapts to specialist audiences when the task calls for it.
 
 Ask your agent: “Use Copywriter to create a README for this package.” Other examples:
 
@@ -12,6 +14,8 @@ Ask your agent: “Use Copywriter to create a README for this package.” Other 
 The six skills are `write` (router, brief, research), `tagline`, `readme`, `landing-page`, `pitch-deck`, and `article`. Claude Code documents namespaced invocation such as `/copywriter:readme` and `/copywriter:write brief`. Codex picker syntax has not yet been verified; use natural language. These are agent requests, not shell commands.
 
 ## Installation and capabilities
+
+Copywriter checks the active host's available skills and plugins for relevant help. When available, it uses a matching design skill to improve visual presentation after revising the copy—for example, Impeccable for a local web page, or a presentation skill for a deck. It preserves source-backed claims, citations, and the requested output format. Optional design plugins are not required: the bundled generators remain available, and Copywriter does not install or enable other plugins. Text-only work stays focused on writing and formatting.
 
 The source uses one shared skill tree with portable, Codex, and Claude manifests. Release directories contain exactly one target manifest. See [compatibility and release checks](packaging/compatibility.md) before treating any host as supported.
 
