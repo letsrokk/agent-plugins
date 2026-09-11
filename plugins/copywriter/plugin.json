@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "copywriter",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Transform source material into grounded product copy, articles, and illustrated pitch decks.",
   "keywords": [
     "copywriting",

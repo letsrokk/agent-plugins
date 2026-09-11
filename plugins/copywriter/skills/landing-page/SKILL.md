@@ -5,13 +5,13 @@ description: Use when transforming product source into persuasive landing-page c
 
 # Landing page
 
-Read the shared [workflow and source gate](../write/references/workflow.md), [editorial guidance](../write/references/editorial.md), and [visuals](../write/references/visuals.md) when assets are useful.
+Read the shared [workflow and source gate](../write/references/workflow.md) and [editorial guidance](../write/references/editorial.md). Read [visuals](../write/references/visuals.md) when assets are useful. For HTML presentation, apply [available design help](../write/references/hosts.md#installed-skills-and-design-help) after revising the copy, including pages without images.
 
 Accept `--format copy|html|both` (default both), `--cta TEXT`, and `--cta-url URL` plus shared options. Infer an action only when product context supports it; ask for essential missing offer/audience facts after inspection.
 
 Build the argument from reader and action: a hero identifying category/useful outcome/audience; mechanism; actual example/screenshot/result or approved customer proof; prerequisites/limitations/fit/objections; suitable closing action. This is a starting structure, not a required funnel. Do not manufacture anxiety, urgency, guarantees, logos, testimonials, or numbers.
 
-Deliver `landing-page.md` and `preview/index.html` by default, selected actual assets, and private review records. For HTML, prefer authorized existing project styles or the packaged plain static renderer at [render-page.js](../../scripts/render-page.js). Resolve that script relative to this installed skill; invoke Node with argument arrays using `page.json` and a new authorized output directory whose parent exists. Inputs and relative assets stay under the source directory, including resolved symlink targets. The renderer writes both copy and HTML; for a single-format request deliver only the selected finished format. Its input is:
+Deliver `landing-page.md` and `preview/index.html` by default, selected actual assets, and private review records. Preserve authorized existing project styles; use a matching installed design skill to improve the local presentation. Without one, use the packaged plain static renderer at [render-page.js](../../scripts/render-page.js). Design assistance may refine the generated HTML; keep its final copy synchronized with `landing-page.md` and preserve the static-preview and accessibility requirements below. Resolve the script relative to this installed skill; invoke Node with argument arrays using `page.json` and a new authorized output directory whose parent exists. Inputs and relative assets stay under the source directory, including resolved symlink targets. The renderer writes both copy and HTML; for a single-format request deliver only the selected finished format. Its input is:
 
 ```json
 {

@@ -1,8 +1,10 @@
 # Purposeful visuals
 
+Start from the revised copy and the reader's task. For visual presentation, use [available design helpers](hosts.md#installed-skills-and-design-help) when they fit the medium. Design assistance supplements the image, diagram, chart, and deck capabilities below; it is not a prerequisite for them. `--visuals none` omits visual assets, not readable typography or layout in a requested HTML page or deck.
+
 Choose a visual for a concrete communicative job. Real product behavior uses an authorized actual screenshot; flow/architecture/relationships use a source-verified deterministic diagram; quantities use attributable local data with units; an article concept may use a generated or licensed illustration. Omit decoration without a useful role. A concept mockup is labeled concept, never a shipped UI. Do not change chart scales, omit meaningful warnings, or let generated graphics imply evidence.
 
-`auto` permits useful generation using available capabilities within the user's/host's budget. `none` omits visuals. `required` or an explicitly requested illustration requires actual files when capability exists; prompts alone are incomplete. One article lead image and one explanatory diagram may be useful, but are not a quota. Discover tools once rather than assuming a particular provider/plugin.
+`auto` permits useful generation using available capabilities within the user's/host's budget. `none` omits visual assets. `required` or an explicitly requested illustration requires actual files when capability exists; prompts alone are incomplete. One article lead image and one explanatory diagram may be useful, but are not a quota. Discover tools once rather than assuming a particular provider/plugin.
 
 Write a visual brief recording purpose, source passage, placement, audience, aspect ratio, composition, style, palette, prohibited implications, and alt draft. Keep a related set consistent. Use public-safe descriptions in external prompts; readable local private material is not automatically authorized for transmission. Prefer host image generation. Optional services require explicit setup and callable capabilities; never put credentials in output, archives, or prompt logs.
 
