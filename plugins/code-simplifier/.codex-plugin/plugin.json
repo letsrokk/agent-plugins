@@ -1,6 +1,6 @@
 {
   "name": "code-simplifier",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Make the code you choose easier to read and maintain while preserving its behavior.",
   "author": {
     "name": "Rokk Club",

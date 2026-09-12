@@ -1,6 +1,6 @@
 {
   "name": "pr-review-toolkit",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Review pull requests and local changes for bugs, gaps in test coverage, unclear comments, and error-handling and type issues.",
   "author": {
     "name": "Rokk Club",

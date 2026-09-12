@@ -1,6 +1,6 @@
 {
   "name": "papercuts",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Keep a local record of tool failures, confusing instructions, and recurring workflow problems for later review.",
   "author": {
     "name": "Rokk Club",
