@@ -76,7 +76,7 @@ Claude:
 
 #### copywriter ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
 
-Turn source material into clear, engaging taglines, READMEs, landing pages, editable pitch decks, and illustrated articles.
+Turn source material into clear, engaging taglines, READMEs, landing pages, editable pitch decks, illustrated articles, and social posts.
 
 Codex:
 

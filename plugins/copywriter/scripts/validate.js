@@ -50,7 +50,7 @@ for (const file of files) {
     }
   }
 }
-assert.deepEqual(fs.readdirSync(path.join(root, 'skills')).sort(), ['article','landing-page','pitch-deck','readme','tagline','write']);
+assert.deepEqual(fs.readdirSync(path.join(root, 'skills')).sort(), ['article','blog-post','landing-page','pitch-deck','readme','tagline','write']);
 const build = spawnSync(process.execPath, ['scripts/build.js', '--check'], {cwd:root, stdio:'inherit'});
 assert.equal(build.status, 0, 'Committed renderer bundle differs from locked build');
 console.log('Copywriter manifests, skills, references, JSON and JavaScript validated.');

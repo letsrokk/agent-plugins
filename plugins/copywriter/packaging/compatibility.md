@@ -22,7 +22,7 @@ Record exact host/model versions and actual results in `tests/evaluation.md` in 
 
 ## Release gates
 
-Run all six skills in each tested host from relocated packages, including offline research and unavailable-image cases. Check that outputs stay outside the installed package. Record absence of browsing for `--research off`; do not infer it from prose. If claiming editor compatibility, open a generated deck in the named editor and inspect every slide; this is separate from Node-only generation checks. Check notes, chart values, titles, alt text, reading order, and sources. Run the application's accessibility checker where available; do not claim tagged PDF accessibility from image previews.
+Run all seven skills in each tested host from relocated packages, including offline research and unavailable-image cases. Check that outputs stay outside the installed package. Record absence of browsing for `--research off`; do not infer it from prose. If claiming editor compatibility, open a generated deck in the named editor and inspect every slide; this is separate from Node-only generation checks. Check notes, chart values, titles, alt text, reading order, and sources. Run the application's accessibility checker where available; do not claim tagged PDF accessibility from image previews.
 
 Use the documented Claude development commands only when that CLI is installed: `claude plugin validate /path/to/copywriter` and `claude --plugin-dir /path/to/copywriter`. These commands are documented upstream, not tested here. For Codex, use an isolated test home and marketplace rather than changing a user's normal installation. Never infer picker syntax from the portable specification.
 
