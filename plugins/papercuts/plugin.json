@@ -1,7 +1,7 @@
 {
   "name": "papercuts",
   "version": "0.4.4",
-  "description": "Give coding agents a durable complaint journal for workflow friction.",
+  "description": "Keep a local record of tool failures, confusing instructions, and recurring workflow problems for later review.",
   "author": {
     "name": "Rokk Club",
     "url": "https://github.com/letsrokk"

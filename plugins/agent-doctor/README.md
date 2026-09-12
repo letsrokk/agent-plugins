@@ -1,6 +1,6 @@
 # Agent Doctor
 
-Inspect Codex and Claude Code configuration and see how often your plugins and skills are used.
+Understand your agent's settings and see which plugins and skills it uses in local Codex and Claude Code sessions.
 
 ```text
 $inspect-agent-config audit this project's settings and instructions

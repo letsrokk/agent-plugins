@@ -1,6 +1,6 @@
 # PR Review Toolkit
 
-Review pull requests and local changes for bugs, test coverage, comments, error handling, and type invariants.
+Review pull requests and local changes for bugs, gaps in test coverage, unclear comments, and error-handling and type issues.
 
 ```text
 $pr-review-toolkit review my local changes

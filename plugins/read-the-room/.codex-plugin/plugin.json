@@ -1,7 +1,7 @@
 {
   "name": "read-the-room",
   "version": "0.3.0",
-  "description": "Help Codex shape clear communication for the human and channel in front of it.",
+  "description": "Help your agent write clear updates, reviews, documentation, and chat messages suited to the reader.",
   "author": {
     "name": "Rokk Club",
     "url": "https://github.com/letsrokk"
@@ -19,8 +19,8 @@
   "hooks": "./hooks/hooks.json",
   "interface": {
     "displayName": "Read the Room",
-    "shortDescription": "Clear communication shaped for the channel",
-    "longDescription": "Help agents write direct, useful responses and artifacts for human readers across agent sessions, version control, issue trackers, knowledge bases, and chat applications.",
+    "shortDescription": "Write clearly for the reader and channel",
+    "longDescription": "Help your agent adapt its writing to the reader and channel, from session updates and pull requests to issue trackers, documentation, and chat. Preserve facts, uncertainty, and the detail readers need.",
     "developerName": "Rokk Club",
     "category": "Productivity",
     "capabilities": [

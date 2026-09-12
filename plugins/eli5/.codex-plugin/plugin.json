@@ -1,7 +1,7 @@
 {
   "name": "eli5",
   "version": "0.1.2",
-  "description": "Explain any topic like I'm 5: a dead-simple visual explainer with big pictures and few words.",
+  "description": "Make unfamiliar topics easier to understand with a concrete analogy, simple visuals, and few words.",
   "author": {
     "name": "Thariq Shihipar"
   },
@@ -18,8 +18,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "ELI5",
-    "shortDescription": "Explain topics with big pictures and few words",
-    "longDescription": "Turn an unfamiliar topic into a dead-simple visual explainer for someone who knows nothing about it.",
+    "shortDescription": "Understand topics through simple visuals",
+    "longDescription": "Get a beginner-friendly explanation built around one concrete analogy, a simple visual, and a few well-chosen words. Essential terms are explained and the underlying mechanism stays accurate.",
     "developerName": "Rokk Club",
     "category": "Education",
     "capabilities": [

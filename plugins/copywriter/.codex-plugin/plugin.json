@@ -1,15 +1,15 @@
 {
   "name": "copywriter",
   "version": "0.3.0",
-  "description": "Transform source material into grounded product copy, articles, social posts, and illustrated pitch decks.",
+  "description": "Turn your source material into clear product copy, editable pitch decks, articles, and social posts.",
   "skills": "./skills/",
   "author": {
     "name": "Rokk Club"
   },
   "interface": {
     "displayName": "Copywriter",
-    "shortDescription": "Turn source material into grounded product writing",
-    "longDescription": "Create taglines, READMEs, local landing pages, editable pitch decks, articles, and social posts from substantive source material.",
+    "shortDescription": "Shape source material into engaging writing",
+    "longDescription": "Create taglines, READMEs, local landing pages, editable pitch decks, articles, and social posts from source material. Keep claims supported and use your draft, outline, or notes as the basis for articles and social writing.",
     "developerName": "Rokk Club",
     "category": "Productivity",
     "capabilities": [

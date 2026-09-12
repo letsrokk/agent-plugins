@@ -28,7 +28,7 @@ Papercuts and Read the Room require Node.js 24 or later on your client’s `PATH
 
 #### papercuts ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
 
-Keep a local record of the tool failures, confusing instructions, and recurring snags your agent encounters, so they are available to review later.
+Keep a local record of tool failures, confusing instructions, and recurring workflow problems. Review what keeps getting in the way and track which issues have been resolved.
 
 Codex:
 
@@ -44,7 +44,7 @@ Claude:
 
 #### agent-doctor ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
 
-Make sense of your agent’s settings and see which plugins and skills it actually uses. Inspect configuration and local session history without changing your files.
+Understand your agent’s settings and inspect plugin and skill usage in local Codex and Claude Code sessions. Get a report with suggested fixes without changing your files.
 
 Codex:
 
@@ -60,7 +60,7 @@ Claude:
 
 #### read-the-room ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
 
-Help your agent write for the person reading: clear updates, useful reviews, readable documentation, and chat messages that get to the point.
+Help your agent write clear updates, reviews, documentation, and chat messages suited to the reader. Preserve the facts, uncertainty, and detail people need.
 
 Codex:
 
@@ -76,7 +76,7 @@ Claude:
 
 #### copywriter ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
 
-Turn source material into clear, engaging taglines, READMEs, landing pages, editable pitch decks, illustrated articles, and social posts.
+Turn your source material into clear, engaging product copy, editable pitch decks, articles, and social posts. Articles and social posts start from your draft, outline, or notes.
 
 Codex:
 
@@ -94,7 +94,7 @@ Claude:
 
 #### eli5 ![Codex](assets/agent-badges/codex.svg)
 
-Make an unfamiliar topic easier to grasp with big visuals and a few well-chosen words.
+Make unfamiliar topics easier to understand with a concrete analogy, simple visuals, and few words.
 
 Codex:
 
@@ -104,7 +104,7 @@ codex plugin add eli5@rokk-club-codex-plugins
 
 #### pr-review-toolkit ![Codex](assets/agent-badges/codex.svg)
 
-Get actionable reviews of pull requests and local changes, covering bugs, tests, comments, error handling, and types. Reviews are advisory; code simplification needs an explicit request.
+Review pull requests and local changes for bugs, gaps in test coverage, unclear comments, and error-handling and type issues. Get actionable findings; code simplification requires an explicit request.
 
 Codex:
 
@@ -114,7 +114,7 @@ codex plugin add pr-review-toolkit@rokk-club-codex-plugins
 
 #### code-simplifier ![Codex](assets/agent-badges/codex.svg)
 
-Make the code you choose easier to read and maintain while preserving what it does.
+Make the code you choose easier to read and maintain while preserving its behavior.
 
 Codex:
 

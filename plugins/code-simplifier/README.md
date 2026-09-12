@@ -1,6 +1,6 @@
 # Code Simplifier
 
-Simplify existing code for clarity while preserving its behavior.
+Make the code you choose easier to read and maintain while preserving its behavior.
 
 ```text
 $code-simplifier simplify my local changes

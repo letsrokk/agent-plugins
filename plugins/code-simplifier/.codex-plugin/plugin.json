@@ -1,7 +1,7 @@
 {
   "name": "code-simplifier",
   "version": "0.1.4",
-  "description": "Simplify a precise code scope without changing observable behavior.",
+  "description": "Make the code you choose easier to read and maintain while preserving its behavior.",
   "author": {
     "name": "Rokk Club",
     "url": "https://github.com/letsrokk"
@@ -19,7 +19,7 @@
   "interface": {
     "displayName": "Code Simplifier",
     "shortDescription": "Simplify code without changing behavior",
-    "longDescription": "Resolve a precise code scope, simplify it for clarity and maintainability, and preserve its observable behavior.",
+    "longDescription": "Simplify the files or changes you specify for clearer, more maintainable code while preserving observable behavior. Get a summary of the edits and verification results.",
     "developerName": "Rokk Club",
     "category": "Developer Tools",
     "capabilities": [

@@ -1,6 +1,6 @@
 # Copywriter
 
-Turn substantive source material into clear, well-structured taglines, READMEs, landing pages, editable pitch decks, articles, and social posts. Copywriter prioritizes the argument, wording, voice, and text formatting, with illustrations, diagrams, charts, and deck graphics to support the message. Articles and social posts require your draft, outline, or substantive notes; a topic alone is insufficient.
+Turn your source material into clear, engaging taglines, READMEs, landing pages, editable pitch decks, articles, and social posts. Copywriter shapes the argument, wording, and voice, with visuals to support the message. Articles and social posts start from your draft, outline, or substantive notes; a topic alone is not enough.
 
 The default voice is warm, engaging, and accessible to the general public, with marketing language used in moderation. Copywriter explains why the subject matters, keeps promises grounded, and adapts to specialist audiences when the task calls for it. All writing skills prefer natural punctuation and avoid em dashes and formulaic agent-style formatting while preserving quotations, code, and explicit author choices.
 
