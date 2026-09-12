@@ -2,7 +2,7 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "pr-review-toolkit",
   "version": "0.1.2",
-  "description": "Review pull requests and local changes with focused specialist guidance.",
+  "description": "Review pull requests and local changes for bugs, gaps in test coverage, unclear comments, and error-handling and type issues.",
   "author": {
     "name": "Rokk Club",
     "url": "https://github.com/letsrokk"

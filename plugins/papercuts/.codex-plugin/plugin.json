@@ -1,7 +1,7 @@
 {
   "name": "papercuts",
   "version": "0.4.4",
-  "description": "Give Codex a durable complaint journal for workflow friction.",
+  "description": "Keep a local record of tool failures, confusing instructions, and recurring workflow problems for later review.",
   "author": {
     "name": "Rokk Club",
     "url": "https://github.com/letsrokk"
@@ -27,8 +27,8 @@
   },
   "interface": {
     "displayName": "Papercuts",
-    "shortDescription": "Track and resolve workflow friction",
-    "longDescription": "Record material engineering friction in a durable local journal, then review, resolve, reopen, and explicitly prune it.",
+    "shortDescription": "Track recurring workflow problems locally",
+    "longDescription": "Record tool failures, confusing instructions, and other workflow problems in a local journal. Review recurring issues and track which ones have been resolved.",
     "developerName": "Rokk Club",
     "category": "Developer Tools",
     "capabilities": [

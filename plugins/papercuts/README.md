@@ -1,6 +1,6 @@
 # Papercuts
 
-Papercuts gives Codex and Claude Code a durable local journal for material engineering friction. During an engineering task, the shared skill searches open complaints in the active project, votes for a clear match, or lodges a concise new complaint. It then continues the task without announcing routine logging.
+Keep a local record of tool failures, confusing instructions, and recurring workflow problems in Codex and Claude Code. During a task, Papercuts records a new issue or adds an encounter to an existing one, then continues without announcing routine logging. Review the journal later to see what keeps getting in the way.
 
 The skill records dead-end tool calls, misleading documentation, missing helpers, repeated recovery work, configuration footguns, unclear repository instructions, and failures that consume meaningful time. It excludes expected validation failures, corrected typing mistakes, and ordinary unsuccessful searches unless an interface made the failure predictably misleading.
 

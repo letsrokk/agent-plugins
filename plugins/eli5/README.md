@@ -1,6 +1,6 @@
 # eli5
 
-Explain any topic like I'm 5.
+Make unfamiliar topics easier to understand with a concrete analogy, simple visuals, and few words.
 
 ```text
 $eli5 how does DNS work

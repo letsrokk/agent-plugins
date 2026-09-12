@@ -1,6 +1,6 @@
 # Read the Room
 
-Help agents shape clear communication for the human and channel in front of them.
+Help your agent write clear updates, reviews, documentation, and chat messages suited to the reader.
 
 Read the Room packages a shared human-facing communication contract as one portable skill. [`skills/make-it-make-sense/SKILL.md`](skills/make-it-make-sense/SKILL.md) is the canonical policy. Channel references contain only the rules specific to each artifact.
 

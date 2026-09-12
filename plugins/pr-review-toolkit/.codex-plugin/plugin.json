@@ -1,7 +1,7 @@
 {
   "name": "pr-review-toolkit",
   "version": "0.1.2",
-  "description": "Review pull requests and local changes with focused specialist guidance.",
+  "description": "Review pull requests and local changes for bugs, gaps in test coverage, unclear comments, and error-handling and type issues.",
   "author": {
     "name": "Rokk Club",
     "url": "https://github.com/letsrokk"
@@ -19,8 +19,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "PR Review Toolkit",
-    "shortDescription": "Review changes with focused specialists",
-    "longDescription": "Review a pull request or local change set for bugs, test coverage, comments, error handling, and type invariants. Simplify code only when requested.",
+    "shortDescription": "Find bugs and coverage gaps in code changes",
+    "longDescription": "Get actionable findings with file locations and suggested corrections across code, tests, comments, error handling, and type invariants. Reviews are advisory; code simplification requires an explicit request.",
     "developerName": "Rokk Club",
     "category": "Developer Tools",
     "capabilities": [
