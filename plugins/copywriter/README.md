@@ -1,17 +1,19 @@
 # Copywriter
 
-Turn verified product material into clear, well-structured taglines, READMEs, landing pages, editable pitch decks, and articles. Copywriter prioritizes the argument, wording, voice, and text formatting, with illustrations, diagrams, charts, and deck graphics to support the message. Articles require your draft, outline, or substantive notes; a topic alone is insufficient.
+Turn substantive source material into clear, well-structured taglines, READMEs, landing pages, editable pitch decks, articles, and social posts. Copywriter prioritizes the argument, wording, voice, and text formatting, with illustrations, diagrams, charts, and deck graphics to support the message. Articles and social posts require your draft, outline, or substantive notes; a topic alone is insufficient.
 
-The default voice is warm, engaging, and accessible to the general public, with marketing language used in moderation. Copywriter explains why the subject matters, keeps promises grounded, and adapts to specialist audiences when the task calls for it.
+The default voice is warm, engaging, and accessible to the general public, with marketing language used in moderation. Copywriter explains why the subject matters, keeps promises grounded, and adapts to specialist audiences when the task calls for it. All writing skills prefer natural punctuation and avoid em dashes and formulaic agent-style formatting while preserving quotations, code, and explicit author choices.
 
 Ask your agent: “Use Copywriter to create a README for this package.” Other examples:
 
 - “Use Copywriter to rewrite these article notes, preserving the uncertainty, with a lead illustration.”
+- “Use Copywriter to adapt these notes into an X post and a longer LinkedIn post.”
+- “Use Copywriter to turn this personal draft into a blog reflection without inventing experiences.”
 - “Use Copywriter to make an adopter pitch deck from this repository.”
 - “Use Copywriter to draft a landing page with a local HTML preview.”
 - “Use Copywriter to build a product brief without channel copy.”
 
-The six skills are `write` (router, brief, research), `tagline`, `readme`, `landing-page`, `pitch-deck`, and `article`. Claude Code documents namespaced invocation such as `/copywriter:readme` and `/copywriter:write brief`. Codex picker syntax has not yet been verified; use natural language. These are agent requests, not shell commands.
+The seven skills are `write` (router, brief, research), `tagline`, `readme`, `landing-page`, `pitch-deck`, `article`, and `blog-post`. Claude Code documents namespaced invocation such as `/copywriter:readme` and `/copywriter:write brief`. Codex picker syntax has not yet been verified; use natural language. These are agent requests, not shell commands.
 
 ## Installation and capabilities
 
@@ -49,3 +51,5 @@ node scripts/package.js /existing/parent/new-release-directory
 Packaging copies shared files into `copywriter-portable/copywriter`, `copywriter-codex/copywriter`, and `copywriter-claude/copywriter`. No external symlinks or development dependencies are required at runtime. The committed native manifests are the release inputs; keep all three versions synchronized. The portable manifest is validated against the official pinned v1 schema. Native ingestion and behavioral tests are separate checks.
 
 The repository's MIT license applies to this new plugin. Bundled dependencies retain their own notices. The [source bibliography](skills/write/references/sources.md) attributes editorial guidance; it provides no evidence for product or marketing performance claims.
+
+The [social writing research](skills/blog-post/references/research.md) covers short posts, threads, LinkedIn, personal blogs, accessibility, and the limits of engagement advice. The [blog-post skill](skills/blog-post/SKILL.md) turns that research into a source-based drafting workflow.

@@ -214,6 +214,35 @@
       ],
       "verification": "Agent execution and evidence review; deterministic checks alone cannot establish source fidelity.",
       "status": "not-run"
+    },
+    {
+      "id": "social-source-gate",
+      "title": "Social topic without author substance",
+      "fixture": "fixtures/article-topic-only.md",
+      "prompt": "Write a viral LinkedIn post about the future of remote work. I have no notes. --research off --visuals none",
+      "expected": [
+        "Returns needs-source and a focused request for author substance",
+        "No finished post, invented author opinion, or browsing"
+      ],
+      "verification": "Agent execution and evidence review; deterministic checks alone cannot establish source fidelity.",
+      "status": "manual-demonstration",
+      "evidence": "evaluation.md: 2026-09-12 independent source-tree blog-post evaluation; not an installed-host test"
+    },
+    {
+      "id": "social-format-fidelity",
+      "title": "Adapt one source across short and long formats",
+      "fixture": "fixtures/social-notes.md",
+      "prompt": "Adapt my notes into one X post under 280 characters, a LinkedIn feed post, and a 600-word personal blog reflection. Keep my voice and uncertainty. --research off --visuals none",
+      "expected": [
+        "Keeps the five-of-eight preparation report distinct from unmeasured participation",
+        "No invented first-person experience or padding to reach the word target",
+        "Final posts fit stated limits with recorded count method",
+        "Natural punctuation and connected prose, with private notes outside reusable copy",
+        "Shorter longform carries an honest length limitation"
+      ],
+      "verification": "Agent execution, final text counts, and source-to-output review.",
+      "status": "manual-demonstration",
+      "evidence": "evaluation.md: 2026-09-12 independent source-tree blog-post evaluation; not an installed-host test"
     }
   ]
 }

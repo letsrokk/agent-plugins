@@ -1,5 +1,5 @@
 {
   "name": "copywriter",
-  "version": "0.2.0",
-  "description": "Transform source material into grounded product copy, articles, and illustrated pitch decks."
+  "version": "0.3.0",
+  "description": "Transform source material into grounded product copy, articles, social posts, and illustrated pitch decks."
 }

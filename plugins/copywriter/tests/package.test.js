@@ -17,7 +17,7 @@ test('three relocated packages contain one manifest and runnable generators with
     assert(!fs.existsSync(path.join(folder,'node_modules')));
     assert(!fs.existsSync(path.join(folder,'tests')));
     const skills = fs.readdirSync(path.join(folder,'skills'));
-    assert.equal(skills.length, 6);
+    assert.deepEqual(skills.sort(), ['article','blog-post','landing-page','pitch-deck','readme','tagline','write']);
     for (const skill of skills) {
       const file = path.join(folder,'skills',skill,'SKILL.md');
       for (const match of fs.readFileSync(file,'utf8').matchAll(/\[[^\]]*\]\(([^\s)]+)\)/g)) {

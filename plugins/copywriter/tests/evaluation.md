@@ -1,6 +1,6 @@
 # Copywriter evaluation
 
-Release readiness is **partial**. The text demonstrations below exercise the authored skill instructions with real files and command output. They do not establish installed-host invocation reliability, human editorial acceptance, or persuasive effectiveness. The 16 cases in [cases.json](cases.json) are acceptance scenarios, not automated tests or passing assertions about prose.
+Release readiness is **partial**. The text demonstrations below exercise the authored skill instructions with real files and command output. They do not establish installed-host invocation reliability, human editorial acceptance, or persuasive effectiveness. The cases in [cases.json](cases.json) are acceptance scenarios, not automated tests or passing assertions about prose.
 
 ## Environment and method
 
@@ -72,3 +72,14 @@ For the illustration scenario, image generation and provider fallbacks were deli
 ### Deterministic suite handoff
 
 The parent implementation run owns the four Node plugin tests, generation checks, and package validation. This evaluator has not independently run that suite and does not infer a pass from anticipated results. Record its actual command/output in the implementation handoff or release record; do not treat the manual demonstrations above as replacement evidence.
+
+
+## Social writing addition, 12 September 2026
+
+An independent Codex subagent loaded the new `blog-post` skill and shared references from the source tree, with research off and visuals none. It exercised a topic-only LinkedIn request and the synthetic book-club notes preserved in [social-notes.md](fixtures/social-notes.md), adapted to X, LinkedIn, and a requested 600-word personal blog reflection. These are bounded model demonstrations, not human editorial ratings, installed-host tests, or engagement measurements.
+
+The topic-only request returned `needs-source`, a focused request for the author's point and supporting facts, and no finished post. The source-based request produced separate copy-ready files: a 230-character X post, a 357-character LinkedIn post, and a 99-word blog body. The X text is ASCII with no URLs, so direct counting verifies its weighted fit. Both short-post counts cover the entire saved body, including any paragraph line breaks. The blog was marked `partial` because the source did not support 600 words without padding or invented experience.
+
+All three versions preserved the five-of-eight preparation report, the unknown effect on participation, and the author's intended next step. The X post omitted the prior meeting-start timing baseline without reversing the claim. JSON records parsed and the evaluator checked punctuation and source mappings. A minor weakness remained: the blog repeated its next-step takeaway in its final two paragraphs. Existing guidance already calls for removing repetition; this observation did not justify adding another rule.
+
+Session artifacts were written to `/private/tmp/copywriter-social-eval-949f3h6k/`, including `evaluation.md` and `case-2/counts.json`. This temporary path is not durable release evidence; rerun the acceptance scenarios for future releases. No browsing or publication occurred. Parent verification used Node.js v26.8.2: all 36 repository tests and four Copywriter tests passed, along with repository and plugin validation and the skill-creator frontmatter validator. The package test checks all seven skills after relocation for each target. Node.js 24 itself and installed-client invocation were not exercised in this run.
