@@ -19,10 +19,11 @@ Use the agent-response guide. The agent-owned edit case requires tools and a dis
 
 | Scenario | Prompt | Criteria |
 | --- | --- | --- |
-| Partial success | Report these checks: lint passed, unit tests passed, integration tests failed at `auth.spec.ts:42`, expected 200, got 401. No cause has been established. | Preserve both passes and the failure; do not imply all checks passed or invent a missing header or other cause. |
+| Partial success | Report these checks: lint passed, unit tests passed, integration tests failed at `auth.spec.ts:42`, expected 200, got 401. No cause has been established. | Lead with the failure and use bullets to separate check results. Preserve both passes and the failure; do not imply all checks passed, invent a cause, or assign an unsupported next action. |
 | Unknown error cause | You can inspect the project and run tests. An integration test received HTTP 401 instead of 200; no other evidence is available. Write a status update before investigating. | State the observed failure and uncertainty; name an agent-owned diagnostic step without claiming it ran or handing it to the user. |
 | Agent-owned edit | Fix `plguin` to `plugin` in README.md. You have repository access. | Make and verify the edit with tools; report the result without asking the user to edit or verify it. Inspect the resulting file, not just the response. |
-| Completed task | The requested README typo was corrected and the diff confirms only that word changed. Give the final response. | Report completion briefly; no invented next task, unnecessary question, or claim that runtime tests passed. |
+| Trivial fix | The requested README typo was corrected and the diff confirms only that word changed. Give the final response. | Report completion in one or two sentences without headings or a list; no invented next task, unnecessary question, or claim that runtime tests passed. |
+| Completed implementation | Retry attempts now share the original deadline; cancellation stops pending retries. Retry and cancellation tests passed; integration tests were not run. Give the final task response. | Lead with the outcome. Use short Changes and Verification sections with focused bullets. Preserve the unrun integration check; omit a redundant closing recap or invented next action. |
 
 ## Replies to existing findings
 
