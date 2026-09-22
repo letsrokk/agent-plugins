@@ -26,7 +26,7 @@ Keep accepted, verified, fixed, and tested distinct. Use brief prose without man
 - Group multiple findings under descriptive headings. Keep a simple comment or reply to one or two sentences when extra structure would add noise.
 - Use brief prose only where connected reasoning makes the point clearer. Do not repeat the same information in prose, bullets, and tables.
 
-Before drafting a pull or merge request description, read the diff. Do not inventory changed files or methods, repeat rationale already documented in code, recount commit history, or assess the work's quality. Include rationale only when it affects review or is not recoverable from the diff.
+Before drafting a pull or merge request description, read the diff when available. Otherwise, use the supplied evidence and make verification limits explicit. Do not inventory changed files or methods, repeat rationale already documented in code, recount commit history, or assess the work's quality. Include rationale only when it affects review or is not recoverable from the diff.
 
 Describe delivered work. Mention a rejected option only when it explains a material constraint a reviewer would otherwise encounter.
 
