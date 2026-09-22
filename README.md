@@ -44,7 +44,7 @@ Claude:
 
 #### agent-doctor ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
 
-Understand your agent’s settings and inspect plugin and skill usage in local Codex and Claude Code sessions. Get a report with suggested fixes without changing your files.
+Inspect agent settings, plugin structure and prompts, and plugin and skill usage in local Codex and Claude Code sessions. Use `$inspect-plugin-config` to review a plugin package against official guidance. Get suggested fixes without changing your files.
 
 Codex:
 

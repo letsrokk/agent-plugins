@@ -22,6 +22,8 @@ Read the current client's reference once, reusing it while it remains in context
 - Codex: [references/codex.md](references/codex.md)
 - Claude Code: [references/claude.md](references/claude.md)
 
+For instruction review or model-specific prompting advice, also read the current client's shared prompting reference: [Codex](../../references/prompting/codex.md) or [Claude](../../references/prompting/claude.md). Skip it for settings-only questions. These bundled references guide the audit; their location does not expand the target-file scope above.
+
 ## Audit
 
 1. Fetch only the approved sources and permitted one-hop derived sources needed for the requested question, as routed by the provider reference. Open URLs directly; do not search or follow unrelated links. Follow redirects only within the listed domains. Reuse pages retrieved during this audit and record the retrieval date.
@@ -37,4 +39,4 @@ If an approved page is unavailable, finish the local structural audit, mark fres
 
 Lead with findings, separating confirmed problems, provider-supported recommendations, and workload experiments. Include scope, inspected files, relevant precedence, visibility gaps, sources, and retrieval date. Label linked detail pages as derived sources and cite each alongside the approved page that pointed to it. Omit empty categories and unrelated settings. For a full audit, summarize the resolved layers in a table; for a narrow question, explain only the relevant chain. Experiments need a tradeoff and an observable way to evaluate them.
 
-For instructions, call out excessive length, vague universal rules, duplicated or conflicting guidance, misplaced one-off workflows, and model-specific prompting that conflicts with the current provider guidance. Quote only the minimum local text needed to identify a problem, and never quote a secret-like value.
+For instructions, apply the shared prompting reference and quote only the minimum local text needed to identify a problem. Never quote a secret-like value.
