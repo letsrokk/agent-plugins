@@ -31,18 +31,14 @@ Open these pages directly. Fetch only relevant sections; reuse retrieved content
 3. Model and effort configuration: https://code.claude.com/docs/en/model-config
 4. Configuration troubleshooting: https://code.claude.com/docs/en/debug-your-config
 5. Current model overview: https://platform.claude.com/docs/en/about-claude/models/overview
-6. Prompt-engineering overview: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview
-7. Current prompting practices: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
-8. Setting keys, types, and scope restrictions: https://code.claude.com/docs/en/settings-reference
+6. Setting keys, types, and scope restrictions: https://code.claude.com/docs/en/settings-reference
 
 Allowed domains for derived sources and redirects: `code.claude.com`, `platform.claude.com`, and `docs.anthropic.com`. Follow redirects only within these domains.
 
-For settings or precedence, fetch source 1 and source 8 for the keys under review. For instructions, fetch source 2. For model or effort advice, fetch source 3 and add source 5 for model comparisons. For prompting, use source 7; source 6 is only for deciding whether prompting addresses the problem. Fetch source 4 for ignored settings, load failures, or disputed runtime behavior. A full audit uses all applicable routes. Distinguish Claude Code model support from API availability and account access.
+For settings or precedence, fetch source 1 and source 6 for the keys under review. For instruction discovery, fetch source 2. For model or effort advice, fetch source 3 and add source 5 for model comparisons. For prompt content, use the shared prompting reference linked from SKILL.md. Fetch source 4 for ignored settings, load failures, or disputed runtime behavior. A full audit uses all applicable routes. Distinguish Claude Code model support from API availability and account access.
 
 ## Analysis boundaries
 
 - Settings files are strict JSON. Distinguish a whole-file parse error from an invalid entry that the client can skip.
 - Managed policy, flags, environment variables, account availability, and session choices can change the effective model or effort.
 - Evaluate model and effort together. The documented default is the baseline; maximum effort is an experiment with cost and overthinking tradeoffs unless the workload proves a benefit.
-- Prefer concise, specific instructions. Use the provider's current size guidance and recommend scoped rules for instructions that need not load in every session.
-- Imports can improve organization without reducing startup context. Do not claim that splitting a file alone saves tokens.

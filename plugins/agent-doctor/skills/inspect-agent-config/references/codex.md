@@ -29,11 +29,10 @@ Open these pages directly. Fetch only relevant sections; reuse retrieved content
 2. Config keys and status: https://learn.chatgpt.com/docs/config-file/config-reference
 3. Instruction discovery: https://learn.chatgpt.com/docs/agent-configuration/agents-md
 4. Agent model availability and selection: https://learn.chatgpt.com/docs/models
-5. Model prompting and migration guidance: https://developers.openai.com/api/docs/guides/latest-model
 
 Allowed domains for derived sources and redirects: `learn.chatgpt.com`, `developers.openai.com`, and `platform.openai.com`. Follow redirects only within these domains.
 
-For settings or precedence, fetch sources 1 and 2. For instruction discovery, add source 3. For model or effort recommendations, add source 4; fetch source 5 only for model-specific prompting or migration advice. A full audit uses all applicable routes. API model guidance does not prove agent-client or account availability, and a newer model alone does not make an existing selection invalid.
+For settings or precedence, fetch sources 1 and 2. For instruction discovery, add source 3. For model or effort recommendations, add source 4. For prompt content or model-specific prompting advice, use the shared prompting reference linked from SKILL.md. A full audit uses all applicable routes. API model guidance does not prove agent-client or account availability, and a newer model alone does not make an existing selection invalid.
 
 ## Analysis boundaries
 
@@ -41,4 +40,3 @@ For settings or precedence, fetch sources 1 and 2. For instruction discovery, ad
 - Check key-specific scope restrictions in source 2 before applying the general precedence order; some keys are ignored in project configuration even when trusted.
 - A model or effort value can be syntactically valid but unavailable to the account or overridden for the session.
 - Evaluate model and effort together. Provider defaults are the baseline; higher effort is an experiment unless current guidance makes it necessary for the workload.
-- Current frontier models can be more sensitive to instructions. Flag conflicting, redundant, universal, or outdated model-specific guidance, but preserve durable project constraints.
