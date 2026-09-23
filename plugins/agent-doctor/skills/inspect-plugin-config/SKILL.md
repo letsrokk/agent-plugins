@@ -27,7 +27,7 @@ Read only the references relevant to the selected targets and components, reusin
 
 For prompt review, also read the selected targets' shared prompting references: [Codex](../../references/prompting/codex.md) and/or [Claude](../../references/prompting/claude.md). Skip these for structure-only requests. For prompts-only requests, use setup references only as needed to establish loading. These bundled references guide the audit; their location does not expand the target-file scope above.
 
-Fetch the needed official pages for each audit; record retrieval dates and applicable versions. Follow official detail links when needed. If a page moved or newer guidance is needed, search only the reference's approved domains using generic documentation terms. Fetch the resulting page before relying on it. Keep redirects within those domains. Use an official Markdown representation when offered.
+Fetch the needed official pages and explicitly permitted supplemental sources for each audit; record retrieval dates and applicable versions. Follow official detail links when needed. If a page moved or newer guidance is needed, search only the reference's approved domains using generic documentation terms. Apply any narrower discovery and claim filters in that reference. Fetch the resulting page before relying on it. Keep redirects within those domains. Use an official Markdown representation when offered.
 
 If retrieval fails, finish checks supported by local evidence and available sources. Mark freshness unverified for affected claims; do not present remembered guidance as current. Distinguish normative requirements, provider advice, repository conventions, and inference. Resolve contradictory sources by their scope and version; disclose unresolved differences.
 

@@ -26,7 +26,7 @@ For instruction review or model-specific prompting advice, also read the current
 
 ## Audit
 
-1. Fetch only the approved sources and permitted one-hop derived sources needed for the requested question, as routed by the provider reference. Open URLs directly; do not search or follow unrelated links. Follow redirects only within the listed domains. Reuse pages retrieved during this audit and record the retrieval date.
+1. Fetch only the approved sources and permitted one-hop derived sources needed for the requested question, as routed by the provider reference. Open URLs directly; search only where a provider reference explicitly permits it, and do not follow unrelated links. Follow redirects only within the listed domains. Reuse pages retrieved during this audit and record the retrieval date.
 2. Discover in-scope files relevant to the question using the reference and retrieved guidance. A settings-only question need not read instruction bodies; a full audit covers both. Parse configuration before resolving configurable instruction filenames. Inspect installed client version when available; distinguish current documentation from support in that version.
 3. Parse TOML or JSON locally and redact secret-like values before returning tool output. Include key names and sanitized values needed for the audit, not whole configuration dumps. Report syntax errors by location without echoing secret-like source lines or guessing intended values.
 4. Reconstruct precedence. Label layers as active, shadowed, ignored, or indeterminate with evidence. Missing CLI flags, environment overrides, trust, policy, or runtime state limit claims about effective values; project-only audits cannot establish unseen user defaults.
