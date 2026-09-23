@@ -39,6 +39,8 @@ For settings or precedence, fetch source 1 and source 6 for the keys under revie
 
 ## Analysis boundaries
 
+For harness setup or context-engineering advice, also use the [Claude blog guidance](../../../references/claude-blog.md). Its scoped `claude.dev/blog/` search is an exception to the documentation-only discovery rules above. For prompting advice, use the shared prompting reference; both routes apply the same claim-level blog filters.
+
 - Settings files are strict JSON. Distinguish a whole-file parse error from an invalid entry that the client can skip.
 - Managed policy, flags, environment variables, account availability, and session choices can change the effective model or effort.
 - Evaluate model and effort together. The documented default is the baseline; maximum effort is an experiment with cost and overthinking tradeoffs unless the workload proves a benefit.

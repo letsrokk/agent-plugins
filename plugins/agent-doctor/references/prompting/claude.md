@@ -12,6 +12,8 @@ Approved domains: `code.claude.com`, `platform.claude.com`, and `docs.anthropic.
 
 ## Review guidance
 
+For model-specific prompting or context-engineering advice, also use the [Claude blog guidance](../claude-blog.md). It permits scoped `claude.dev/blog/` searches and filters mixed articles for prompt review; it does not expand package-structure sources.
+
 - Prefer concise, task-specific instructions. Identify concrete conflicts, duplication, vague universal rules, misplaced one-off workflows, and outdated model-specific guidance while preserving deliberate constraints.
 - Use current size guidance in its intended context. Recommend scoped instructions when they need not load for every task. Imports can improve organization without reducing startup context; splitting a file alone does not establish a token saving.
 - For skills, evaluate meaningful descriptions, reference depth, and the amount of context loaded for the task. Treat authoring recommendations as guidance unless the host defines a hard requirement; do not insist on examples, XML tags, or a fixed template for every prompt.
