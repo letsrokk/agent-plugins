@@ -3,23 +3,35 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import {spawn} from 'node:child_process';
+import {spawn,spawnSync} from 'node:child_process';
 import readline from 'node:readline';
 import {fileURLToPath} from 'node:url';
 const root = fileURLToPath(new URL('../',import.meta.url));
 
+test('bundled MCP leaves the inherited working directory at startup',t => {
+  const temporary = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'papercuts-cwd-')));
+  t.after(() => fs.rmSync(temporary,{recursive:true,force:true}));
+  const home = path.join(temporary,'home'),project = path.join(temporary,'project');
+  fs.mkdirSync(home); fs.mkdirSync(project);
+  const probe = 'process.on("exit", () => console.log(JSON.stringify(process.cwd())))';
+  const result = spawnSync(process.execPath,['--import',`data:text/javascript,${encodeURIComponent(probe)}`,path.join(root,'dist/mcp_server.js')],{
+    cwd:project,env:{...process.env,HOME:home,USERPROFILE:home},input:'',encoding:'utf8'
+  });
+  assert.equal(result.status,0,result.stderr);
+  assert.equal(JSON.parse(result.stdout),home);
+});
+
 async function connection(t,client) {
   const temporary = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'papercuts-offline-')));
-  t.after(() => fs.rmSync(temporary,{recursive:true,force:true}));
   const installation = path.join(temporary,'plugin with spaces'),home = path.join(temporary,'home'),project = path.join(temporary,'project');
   fs.mkdirSync(installation); fs.mkdirSync(home,{mode:0o700}); fs.mkdirSync(project);
   for (const name of ['dist','package.json','plugin.json']) fs.cpSync(path.join(root,name),path.join(installation,name),{recursive:true});
   assert.ok(!fs.existsSync(path.join(installation,'node_modules')));
   // No Python, npm, Git, or downloader is available to the packaged process.
-  const child = spawn(process.execPath,[path.join(installation,'dist/mcp_server.js')],{cwd:project,env:{HOME:home,PATH:installation,PAPERCUTS_CLIENT:client},stdio:['pipe','pipe','pipe']});
+  const child = spawn(process.execPath,[path.join(installation,'dist/mcp_server.js')],{cwd:project,env:{HOME:home,USERPROFILE:home,PATH:installation,PAPERCUTS_CLIENT:client},stdio:['pipe','pipe','pipe']});
   const pending = new Map(); let seq = 0,stderr = '';
   const closed = new Promise(resolve => child.once('close',resolve));
-  t.after(async () => { child.stdin.end(); const timer = setTimeout(() => child.kill(),1000); await closed; clearTimeout(timer); });
+  t.after(async () => { child.stdin.end(); const timer = setTimeout(() => child.kill(),1000); await closed; clearTimeout(timer); fs.rmSync(temporary,{recursive:true,force:true}); });
   child.stderr.on('data',chunk => {stderr+=chunk;});
   child.on('error',error => {for (const waiter of pending.values()) waiter.reject(error); pending.clear();});
   child.on('exit',code => {for (const waiter of pending.values()) waiter.reject(new Error(`MCP exited ${code}: ${stderr}`)); pending.clear();});
@@ -83,5 +95,7 @@ for (const client of ['codex','claude']) test(`offline bundled MCP ${client} ini
   assert.equal((await call('list_complaints',{status:'all'})).count,0);
   assert.equal((await call('get_complaint',{complaint_id:'missing'})).error.code,'not_found');
   assert.equal((await call('inspect_storage',{project_root:'relative'})).error.code,'invalid_input');
+  fs.rmdirSync(connection_.project);
+  assert.equal((await call('lodge_complaint',{project_root:home,text:'After leaving the worktree',dry_run:true})).preview.project.name,'home');
   assert.equal(connection_.stderr(),'');
 });
