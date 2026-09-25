@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -66,5 +67,11 @@ export function createServer({client = resolveClient()} = {}) {
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (Number(process.versions.node.split('.')[0]) < 24) { console.error('Papercuts requires Node.js 24 or later on PATH.'); process.exitCode = 78; }
-  else { try { await createServer().connect(new StdioServerTransport()); } catch (error) { console.error(JSON.stringify(errorResult(error))); process.exitCode = 78; } }
+  else {
+    try {
+      // Release the inherited worktree directory so Windows can delete it.
+      process.chdir(os.homedir());
+      await createServer().connect(new StdioServerTransport());
+    } catch (error) { console.error(JSON.stringify(errorResult(error))); process.exitCode = 78; }
+  }
 }

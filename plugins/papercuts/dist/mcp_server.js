@@ -7200,6 +7200,7 @@ var require_dist = __commonJS({
 
 // src/mcp_server.js
 import fs4 from "node:fs";
+import os3 from "node:os";
 import path3 from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -36437,6 +36438,7 @@ if (process.argv[1] && path3.resolve(process.argv[1]) === fileURLToPath(import.m
     process.exitCode = 78;
   } else {
     try {
+      process.chdir(os3.homedir());
       await createServer().connect(new StdioServerTransport());
     } catch (error61) {
       console.error(JSON.stringify(errorResult(error61)));
