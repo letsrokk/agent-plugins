@@ -15,7 +15,7 @@ try {
   if (!body || !guide) throw new Error('Writing policy and agent-response guide must not be empty');
   console.log(JSON.stringify({ hookSpecificOutput: {
     hookEventName: 'SessionStart',
-    additionalContext: `Resolve relative references against this skill directory: <${skill}>\n\n${body}\n\n${guide}`,
+    additionalContext: `Resolve relative references against this skill directory: <${skill}>\n\nThis startup block includes only the writing policy and agent-response guide. Read the matching channel reference before drafting or editing other artifacts unless already in active context.\n\n${body}\n\n${guide}`,
   } }));
 } catch (error) {
   console.error(`read-the-room could not load its writing policy: ${error.message}`);

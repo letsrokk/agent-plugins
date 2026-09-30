@@ -13,6 +13,19 @@ Isolate evaluation sessions from user plugins, hooks, memory, and writing prefer
 
 Across all scenarios, check that brevity preserves necessary information, terminology stays consistent, and the voice remains respectful. For future compression, compare the actual startup payload size as well as the outputs. Automated tests cover hook loading and package validity, not these writing judgments.
 
+## Guide routing across prompts
+
+Compare the previous plugin with the proposed plugin in separate fresh sessions of each available client, keeping model, effort, repository instructions, and tool access identical. Enable only the plugin under test. Record client versions, hook execution, guide-read tool calls, outputs, and checks that could not run. Do not commit or post artifacts for these scenarios.
+
+| Scenario | Prompt | Criteria |
+| --- | --- | --- |
+| Commit drafting | Draft a commit message for this change: the retry loop now shares the original deadline. | Read the version-control guide before drafting unless already in active context. Use a conventional subject; do not invent a ticket or verification result. |
+| Pull and merge request drafting | Draft a pull request title and description: retries now share the original deadline; the focused regression test passed; integration tests were not run. | Read the version-control guide before drafting. Include Summary and Verification, preserve the unrun checks, and include Risks only for material concerns. Repeat with “merge request” under otherwise identical conditions. |
+| Guide reuse | Follow up: Make that description shorter. | Reuse the version-control guide while its contents remain in context; preserve facts and verification limits. |
+| Category switch | Follow up: Write a team chat update about that change. | Read the chat guide before drafting unless already in context; adapt the output to chat without inventing posting authorization. |
+
+Successful hook execution and a guide read demonstrate loading for the observed trial, not reliability across sessions. Compare routing compliance and artifact quality separately, and report unavailable client trials as unverified.
+
 ## Agent responses and actions
 
 Use the agent-response guide. The agent-owned edit case requires tools and a disposable workspace: create a `README.md` containing `Install the plguin.` for each condition. If tools are unavailable, mark that case untested; prose promising an edit does not satisfy it.

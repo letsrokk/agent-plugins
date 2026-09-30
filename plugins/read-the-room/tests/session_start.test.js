@@ -40,6 +40,7 @@ test('packaged hook loads current guidance from any directory for each configure
     assert.equal(context.split(skill).length - 1, 1);
     assert.ok(context.includes('# Make It Make Sense'));
     assert.ok(context.includes('Drafting does not authorize posting'));
+    assert.ok(context.includes('This startup block includes only the writing policy and agent-response guide.'));
     assert.ok(!context.includes('name: make-it-make-sense'));
     for (const name of ['agent-responses', 'version-control', 'issue-trackers', 'knowledge-bases', 'chat', 'sources']) {
       const path = resolve(skill, `references/${name}.md`);
@@ -47,6 +48,39 @@ test('packaged hook loads current guidance from any directory for each configure
       assert.equal(context.includes(readFileSync(path, 'utf8').trim()), name === 'agent-responses');
     }
     if (source === 'compact') assert.ok(context.includes('Fresh policy after compaction.'));
+  }
+});
+
+test('packaged prompt hook repeats a short reminder with all channel references', (t) => {
+  const { root, plugin, skill } = fixture(t);
+  const config = JSON.parse(readFileSync(resolve(plugin, 'hooks/hooks.json'), 'utf8'));
+  const group = config.hooks.UserPromptSubmit[0];
+  assert.equal(group.matcher, undefined);
+  assert.equal(group.hooks[0].timeout, 5);
+  assert.equal(group.hooks[0].async, undefined);
+  let previous;
+  for (const prompt of ['Draft a pull request description.', 'Now write a chat reply.']) {
+    const result = spawnSync(group.hooks[0].command, {
+      shell: true, cwd: root, env: { ...process.env, CLAUDE_PLUGIN_ROOT: plugin },
+      input: JSON.stringify({ hook_event_name: 'UserPromptSubmit', prompt }), encoding: 'utf8',
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stderr, '');
+    const output = JSON.parse(result.stdout).hookSpecificOutput;
+    assert.equal(output.hookEventName, 'UserPromptSubmit');
+    const context = output.additionalContext;
+    assert.ok(context.includes(resolve(skill, 'references')));
+    assert.ok(context.includes('Before drafting or editing'));
+    assert.ok(context.includes('already in active context'));
+    assert.ok(context.includes('pull requests and merge requests (PRs/MRs)'));
+    assert.ok(context.length < 1200);
+    for (const name of ['agent-responses', 'version-control', 'issue-trackers', 'knowledge-bases', 'chat']) {
+      assert.ok(context.includes(`${name}.md`));
+      assert.ok(!context.includes(readFileSync(resolve(skill, `references/${name}.md`), 'utf8').trim()));
+    }
+    assert.ok(!context.includes('sources.md'));
+    if (previous) assert.equal(context, previous);
+    previous = context;
   }
 });
 
