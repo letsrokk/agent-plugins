@@ -12,6 +12,18 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/user_prompt_submit.js\"",
+            "timeout": 5,
+            "statusMessage": "Refreshing Read the Room guide reminder..."
+          }
+        ]
+      }
     ]
   }
 }

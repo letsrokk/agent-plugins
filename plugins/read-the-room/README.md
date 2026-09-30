@@ -18,7 +18,7 @@ The `make-it-make-sense` skill covers:
 
 ## Install and activate
 
-The bundled hook requires Node.js 24 or later, with `node` available on the noninteractive host process's PATH. No npm install is needed.
+The bundled hooks require Node.js 24 or later, with `node` available on the noninteractive host process's PATH. No npm install is needed.
 
 ### Codex
 
@@ -30,7 +30,7 @@ codex plugin add read-the-room@rokk-club-codex-plugins
 codex plugin list
 ```
 
-Confirm Read the Room is installed. In Codex, open `/hooks`, review and trust its hook, then start a fresh session. Installation alone does not trust the hook.
+Confirm Read the Room is installed. In Codex, open `/hooks`, review and trust its SessionStart and UserPromptSubmit hooks, then start a fresh session. Installation alone does not trust the hooks.
 
 ### Claude Code
 
@@ -41,7 +41,7 @@ Run inside Claude Code:
 /plugin install read-the-room@rokk-club-claude-plugins
 ```
 
-Open `/plugin` and confirm Read the Room is installed and enabled, then restart Claude Code. See the [Claude Code plugin management guide](https://code.claude.com/docs/en/discover-plugins) for installation scopes and controls.
+Open `/plugin` and confirm Read the Room is installed and enabled, then restart Claude Code. Verify both SessionStart and UserPromptSubmit executions in the host's hook information. See the [Claude Code plugin management guide](https://code.claude.com/docs/en/discover-plugins) for installation scopes and controls.
 
 ### Verify startup guidance
 
@@ -62,7 +62,7 @@ codex plugin marketplace upgrade rokk-club-codex-plugins
 codex plugin add read-the-room@rokk-club-codex-plugins
 ```
 
-Review the current hook definition in `/hooks` after an update and trust it if required. To uninstall, run `codex plugin remove read-the-room@rokk-club-codex-plugins`.
+Review the current hook definitions in `/hooks` after an update and trust them if required. Version 0.5 adds UserPromptSubmit; review the new hook as well as SessionStart. To uninstall, run `codex plugin remove read-the-room@rokk-club-codex-plugins`.
 
 For Claude Code, use `/plugin` to refresh the marketplace in **Marketplaces** and manage Read the Room in **Installed**. You can update, disable, or uninstall it there. Start a fresh session after updating or removing the plugin; previously loaded guidance remains in an existing conversation.
 
@@ -70,11 +70,13 @@ For Claude Code, use `/plugin` to refresh the marketplace in **Marketplaces** an
 
 In Claude Code and Codex, the `SessionStart` hook's `startup|resume|clear|compact` matcher loads the canonical policy and agent-response guide for new and resumed sessions and after context is cleared or compacted. Other channel guides remain available on demand and are reused while present in context. The hook reads the policy files on every invocation.
 
-The hook supplies the absolute skill directory once; all guide links resolve relative to it, independently of the working directory.
+The startup block states which guidance it includes. Before every submitted user prompt, `UserPromptSubmit` supplies a short reminder to read and apply the matching guide before drafting or editing. It lists all five writing categories and their reference files, without injecting the full guides. The reminder does not inspect prompts, track loaded guides, or block submissions.
 
-See the [Codex hook documentation](https://learn.chatgpt.com/docs/hooks#plugin-bundled-hooks) and [Claude Code SessionStart documentation](https://code.claude.com/docs/en/hooks#sessionstart).
+Startup supplies the absolute skill directory; the per-prompt reminder supplies the absolute reference directory. Both resolve independently of the working directory.
 
-For example, ask “Draft a concise pull request description” and the agent has the core writing guidance before responding, then reads the version-control guide as needed.
+See the [Codex hook documentation](https://learn.chatgpt.com/docs/hooks#plugin-bundled-hooks) and [Claude Code hook documentation](https://code.claude.com/docs/en/hooks#userpromptsubmit). These events are documented by both clients; older client versions may differ.
+
+For example, ask “Draft a concise pull request description” and the reminder directs the agent to read the version-control guide before drafting. Confirm the guide read in the session's tool history and successful UserPromptSubmit execution in its hook information. On a follow-up, the agent should reuse the guide while its contents remain in context. Hooks supply guidance; they do not guarantee that the agent follows it.
 
 Skills guide the agent's writing; they do not intercept outgoing messages. Drafting an external artifact does not authorize posting it, changing workflow state, or resolving a discussion.
 

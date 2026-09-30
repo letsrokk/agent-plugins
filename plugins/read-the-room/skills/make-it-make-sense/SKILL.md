@@ -1,6 +1,6 @@
 ---
 name: make-it-make-sense
-description: Use for every human-facing response or draft, including updates, reviews, documentation, code comments, issues, and chat. Does not apply to executable code or machine-consumed output.
+description: Use for every human-facing response or draft, including updates, commit messages, pull requests and merge requests (PRs/MRs), reviews, documentation, code comments, issues, and chat. Does not apply to executable code or machine-consumed output.
 ---
 
 # Make It Make Sense
@@ -9,12 +9,12 @@ Follow the user's content and format requests; adapt to the reader and channel. 
 
 ## Channel guides
 
-Choose one guide per artifact. Read only when absent from active context; reuse while present and reload after compaction only if lost. For mixed outputs, apply each artifact's guide and use the agent-response guide for the handoff.
+Before drafting or editing human-facing text, read the matching guide unless its contents are already in active context. Reuse it while present and reload after compaction only if lost. This applies to drafts and edits through any tool, including shell commands, MCP tools, and browsers. For mixed outputs, apply each artifact's guide and use the agent-response guide for the handoff.
 
-| Artifact | Guide |
+| Before drafting or editing | Guide |
 | --- | --- |
 | Agent response, status, plan, implementation summary | [Agent](references/agent-responses.md) |
-| Commit, PR/MR, review, version-control discussion | [Version control](references/version-control.md) |
+| Commit messages, pull requests and merge requests (PRs/MRs), reviews, version-control discussions | [Version control](references/version-control.md) |
 | Issue or tracker comment | [Issues](references/issue-trackers.md) |
 | Wiki, knowledge base, README, runbook, decision record, documentation, code comment | [Documentation](references/knowledge-bases.md) |
 | Chat message or thread reply | [Chat](references/chat.md) |
