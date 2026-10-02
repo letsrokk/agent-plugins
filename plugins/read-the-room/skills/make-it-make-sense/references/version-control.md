@@ -8,6 +8,16 @@ Use the contract for the requested artifact:
 - **New review finding:** Lead with the finding or requested change and whether it blocks. For findings needing explanation, use concise bullets for evidence, impact, and the requested action rather than several prose paragraphs. Use a plain approval when there is no finding.
 - **Discussion reply:** Follow the thread-reply guidance below.
 
+## Posting new findings
+
+Apply these rules when posting review findings is authorized. Drafting does not authorize posting or changing review status. Use the supplied severity classifications.
+
+- Count blocking, critical, and important findings together; exclude suggestions.
+- For 1–10 findings, post each as a separate comment in a new open thread when the VCS supports threads. Attach each to the relevant code line when possible.
+- For 11 or more findings, post one new open thread per populated severity category: blocking, critical, and important. Code-line attachment is optional.
+- Combine all suggestions into one explicitly non-blocking comment.
+- When any blocking, critical, or important findings exist, attempt to set the PR/MR review status to **Request changes** when the VCS supports it. Report unsupported or failed thread or status actions without claiming success.
+
 ## Thread replies
 
 Treat the parent comment as shared context. Add acknowledgment and only new information, usually in one or two natural sentences. Do not quote or paraphrase the finding merely to confirm it. Repeat only the fragment needed to distinguish multiple findings, correct a misunderstanding, or explain a partial fix.
