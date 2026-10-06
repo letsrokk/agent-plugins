@@ -1,14 +1,26 @@
 # Knowledge bases and documentation
 
-Write durable documentation that helps its intended reader complete or maintain a task without access to the original conversation. Do not invent commands, behavior, prerequisites, support claims, or operational guarantees.
+Write durable documentation that helps its intended reader understand a project or complete a task without access to the original conversation. Do not invent commands, behavior, prerequisites, support claims, or operational guarantees.
 
 1. State the document's purpose or the reader's intended outcome first.
 2. Put prerequisites, constraints, and warnings before the instructions they govern.
 3. Explain current behavior in present tense with consistent technical terms.
-4. Give numbered steps with direct instructions and one action per step; keep simultaneous actions together. Explain placeholders and distinguish illustrative output from observed results. Keep required actions in steps, not notes.
-5. State how the reader verifies the result and what a material failure means when that information is known.
+4. When teaching a task, give numbered steps with direct instructions and one action per step; keep simultaneous actions together. Explain placeholders and distinguish illustrative output from observed results. Keep required actions in steps, not notes.
+5. When teaching a task, state how the reader verifies the result and what a material failure means when that information is known.
 
-For a README, optimize for using and maintaining the component. For a runbook, make conditions, actions, checks, and stopping points explicit. For a decision record, state the decision, its relevant context, and its consequences; include status, date, owner, or alternatives only when the source supplies them. For reference material, organize by the questions readers need to answer rather than by the order in which the information was discovered.
+## READMEs
+
+For a root project README, write for someone encountering the project for the first time. Explain what the project does, who it is for, why it is useful, and its main capabilities. Include a short example or quick start when useful, then link to deeper documentation.
+
+Keep detail only when it helps the reader understand the project, decide whether to use it, or get started. Put detailed configuration, verification procedures, troubleshooting, contributor workflows, architecture, and implementation notes in dedicated documentation. Link to existing documents; do not invent documentation paths or expand the task to create them without authorization.
+
+Preserve prerequisites, limitations, and safety information needed for an informed choice or successful first use. Describe capabilities through observable behavior rather than internal mechanisms. Follow explicit user requirements and established repository conventions.
+
+For a component README, explain the component's role and the usage or maintenance information its intended readers need.
+
+## Other documentation
+
+For a runbook, make conditions, actions, checks, and stopping points explicit. For a decision record, state the decision, its relevant context, and its consequences; include status, date, owner, or alternatives only when the source supplies them. For reference material, organize by the questions readers need to answer rather than by the order in which the information was discovered.
 
 For a code comment, explain why non-obvious behavior or a constraint exists. Do not restate the code, narrate implementation history, or record rejected versions.
 
