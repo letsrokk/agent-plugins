@@ -13,6 +13,16 @@ Isolate evaluation sessions from user plugins, hooks, memory, and writing prefer
 
 Across all scenarios, check that brevity preserves necessary information, terminology stays consistent, and the voice remains respectful. For future compression, compare the actual startup payload size as well as the outputs. Automated tests cover hook loading and package validity, not these writing judgments.
 
+## Root project READMEs
+
+Use the documentation guide and the same supplied facts for each condition. Compare the previous and proposed guidance under the isolation and recording rules above. This scenario requests a draft only; it does not authorize creating documentation files.
+
+| Scenario | Prompt | Criteria |
+| --- | --- | --- |
+| Overview from mixed source material | Draft the root README for FolderWatch, a local command-line tool for developers who want notifications when files change. It requires Node.js 24 or later and is installed with `npm install -g folderwatch`. Start it with `folderwatch ./src`; it prints changed file paths. It supports local folders only, not network shares. Internally it uses `fs.watch`, a 200 ms debounce, and a queue. Contributors run `npm test` and `npm run validate`; an internal verification procedure creates 100 files and checks queue ordering. Existing documentation: `docs/configuration.md`, `docs/troubleshooting.md`, and `CONTRIBUTING.md`. No architecture document exists. | Introduce purpose, audience, usefulness, and capabilities. Include a short quick start with the supplied commands and expected output. Preserve the Node.js requirement and network-share limitation. Link to relevant existing deeper docs. Omit internal mechanisms, contributor commands, and the internal verification procedure. Do not invent an architecture link or create documentation files. |
+
+Assess relevance and factual accuracy before length. A root README can retain a short first-use check without becoming a verification manual. Component READMEs and explicitly requested technical documentation retain their audience-specific detail.
+
 ## Guide routing across prompts
 
 Compare the previous plugin with the proposed plugin in separate fresh sessions of each available client, keeping model, effort, repository instructions, and tool access identical. Enable only the plugin under test. Record client versions, hook execution, guide-read tool calls, outputs, and checks that could not run. Do not commit or post artifacts for these scenarios.
