@@ -19,3 +19,11 @@ Treat the parent comment as shared context. Add acknowledgment and only new info
 - **Disagreeing or blocked:** Identify the unresolved point and supporting evidence. Make partial completion explicit: "The fix covers retries; cancellation still needs investigation," when those facts are supplied.
 
 Keep accepted, verified, fixed, and tested distinct. Use brief prose without mandatory labels, headings, bullets, praise, or sign-offs. Do not invent commitments or checks, or imply that replying authorizes posting, changing issue state, or resolving a thread.
+
+When posting a reply is authorized:
+
+- Post in the parent comment's thread when the tracker supports threaded replies.
+- Use a native account mention when notification is needed and the tracker supports mentions. Do not assume plain `@Name` text notifies the author or add a mention when the thread already provides the needed notification.
+- If the current tool cannot create a threaded reply, try another available route, such as the tracker API or browser, before falling back.
+- If no available route supports threading, post a top-level comment that links the parent comment and uses a native account mention when needed and supported. Report the threading limitation.
+- After posting, confirm the reply's parent. Report any stray top-level copy; delete it only with the user's authorization.
