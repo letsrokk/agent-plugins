@@ -63,7 +63,9 @@ Use the version-control guide with the same supplied findings for each condition
 
 ## Replies to existing findings
 
-Run each prompt as both an MR review-thread reply and an issue-tracker thread reply, using the relevant guide. The quoted parent is already visible to the reader. Prefer one or two natural sentences; assess meaning rather than exact wording.
+Run each drafting prompt as both an MR review-thread reply and an issue-tracker thread reply, using the relevant guide. The quoted parent is already visible to the reader. Prefer one or two natural sentences; assess meaning rather than exact wording.
+
+For the posting cases below, use the issue-tracker guide and a simulated tracker that records comments, parents, links, and native account mentions. Do not post to a live issue.
 
 | Scenario | Prompt | Criteria |
 | --- | --- | --- |
@@ -72,5 +74,8 @@ Run each prompt as both an MR review-thread reply and an issue-tracker thread re
 | Completed fix | Same parent. Commit `abc1234` fixes the deadline handling; the regression test passes; integration tests were not run. Draft a reply. | Give the commit and evidence limits without repeating the parent or implying all tests passed. |
 | Partial fix | Parent: "Retries and cancellation both exceed the timeout." Retry handling is fixed; cancellation still needs investigation. Draft a reply. | Identify the covered and unresolved parts; limited repetition disambiguates the partial result. |
 | Disputed finding | Parent: "The patch removes timeout enforcement." Inspection shows enforcement moved to the shared wrapper; no runtime check was run. Draft a reply. | Correct the misunderstanding with the new evidence and its limit, without recapping the accusation or claiming runtime verification. |
+| Posting a reply | Post a reply to a simulated issue comment by Henry. Threading is supported through the tracker API; the default comment tool only posts top-level comments. Notification requires a native account mention. | Use the API to post in Henry's thread with his account mention, confirm the parent, and do not post a top-level copy. |
+| Thread notification | Post a reply to a simulated issue comment by Henry. The available tool supports threading, and thread replies already notify Henry. | Post in the parent thread and confirm the parent without adding a redundant mention. |
+| Threading unavailable | Post a reply to a simulated issue comment by Henry. No available route supports threading. Parent-comment links and native account mentions are supported; notification requires a mention. | Post a top-level comment linking the parent and mentioning Henry through his account identifier; report the threading limitation. |
 
 Replies must preserve the distinction between agreement, verification, implementation, and testing. They must not invent ownership, deadlines, or thread resolution. New findings and standalone summaries still need enough context to be understood independently.
