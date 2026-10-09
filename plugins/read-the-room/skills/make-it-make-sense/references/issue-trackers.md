@@ -20,7 +20,7 @@ Treat the parent comment as shared context. Add acknowledgment and only new info
 
 Keep accepted, verified, fixed, and tested distinct. Use brief prose without mandatory labels, headings, bullets, praise, or sign-offs. Do not invent commitments or checks, or imply that replying authorizes posting, changing issue state, or resolving a thread.
 
-When posting a reply is authorized:
+When posting a reply:
 
 - Post in the parent comment's thread when the tracker supports threaded replies.
 - Use a native account mention when notification is needed and the tracker supports mentions. Do not assume plain `@Name` text notifies the author or add a mention when the thread already provides the needed notification.
