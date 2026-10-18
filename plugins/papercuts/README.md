@@ -46,16 +46,18 @@ After installation or an update, inspect the hook in Codex `/hooks`, review its 
 
 ## User storage and migration from 0.2
 
+Papercuts stores records in a fixed user journal for each harness:
+
 | Client | Journal |
 | --- | --- |
 | Codex | `~/.codex/papercuts.jsonl` |
 | Claude Code | `~/.claude/papercuts.jsonl` |
-| Copilot | `~/.copilot/papercuts.jsonl` |
+| Copilot CLI | `~/.copilot/papercuts.jsonl` |
 | Grok Build | `~/.grok/papercuts.jsonl` |
 | OpenCode | `~/.config/opencode/papercuts.jsonl` |
 | Pi | `~/.pi/agent/papercuts.jsonl` |
 
-`CLIENT` is `codex`, `claude`, `copilot`, `grok`, `opencode`, or `pi`. These fixed Papercuts user paths do not follow host-specific directory overrides. New-client tools and automatic hooks have separate status in the [compatibility matrix](../../docs/compatibility.md).
+`CLIENT` is `codex`, `claude`, `copilot`, `grok`, `opencode`, or `pi`. These fixed Papercuts user paths do not follow host-specific directory overrides. See the [compatibility matrix](../../docs/compatibility.md) for supported plugin and harness combinations.
 
 Lists stay scoped to the current project unless `--all-projects` is supplied. The CLI selects its client from `--client`, then `PAPERCUTS_CLIENT`, then `codex`. No journal or backup falls back to another client.
 
