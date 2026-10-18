@@ -84,4 +84,30 @@ The root manifest retains Agent Plugins v1 metadata but omits `$schema` to selec
 
 ## Additional harnesses
 
-Experimental Copilot, Grok Build, OpenCode, and Pi routes are tracked per component in the [compatibility matrix](../../docs/compatibility.md). Use the linked installation instructions for an intact package. Grok’s passive startup hook does not inject policy; invoke the skill explicitly there. Copilot startup, OpenCode system/compaction hooks, and Pi before-turn system sections use native adapters. Authenticated model behavior and desktop surfaces require their own checks.
+For experimental Copilot CLI, Grok Build, OpenCode, and Pi installation, follow the [agent setup instructions](../../README.md#connect-your-agent). Keep the complete plugin package and Node.js 24 or later available.
+
+### Copilot CLI
+
+The native plugin manifest loads the canonical writing policy through a startup hook. Start a fresh session after installation and check the host’s hook execution information.
+
+### Grok Build
+
+Invoke the skill explicitly: “Use the make-it-make-sense skill for this response.”
+
+### OpenCode
+
+Merge this native extension into your existing OpenCode configuration, replacing the checkout path. Encode spaces in the file URL as `%20`:
+
+```json
+{
+  "plugin": [
+    "file:///absolute/path/agent-plugins/plugins/read-the-room/scripts/opencode.mjs"
+  ]
+}
+```
+
+For explicit skill discovery, also add `/absolute/path/agent-plugins/plugins/read-the-room/skills` to `skills.paths`. Restart OpenCode after configuration changes. The extension appends writing policy through the experimental system and compaction hooks, preserving the host’s instructions.
+
+### Pi
+
+The repository’s local Pi package includes the writing-policy extension. Enable it with `pi config`; it refreshes its owned system section before each turn while preserving other instructions.

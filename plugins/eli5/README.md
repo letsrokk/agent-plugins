@@ -14,4 +14,4 @@ Ported for Codex from Anthropic's [eli5 plugin](https://github.com/anthropics/cl
 
 ## Additional harnesses
 
-The complete package is available through experimental [Copilot](../../docs/installation/copilot.md), [Grok Build](../../docs/installation/grok.md), [OpenCode](../../docs/installation/opencode.md), and [Pi](../../docs/installation/pi.md) routes. Installation and discovery checks are separate from workflow behavior; see the [compatibility matrix](../../docs/compatibility.md). Retain the full package and use local execution when native specialist agents are unavailable.
+The complete package is available through experimental Copilot CLI, Grok Build, OpenCode, and Pi routes. Follow the [agent setup instructions](../../README.md#connect-your-agent) and consult the [compatibility matrix](../../docs/compatibility.md). Retain the full package and use local execution when native specialist agents are unavailable.

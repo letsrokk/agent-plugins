@@ -48,9 +48,13 @@ Replace `<plugin>` with a supported plugin name below, then start a fresh sessio
 ```sh
 copilot plugin marketplace add /absolute/path/agent-plugins
 copilot plugin install "<plugin>@rokk-club-copilot-plugins"
+copilot plugin list
+copilot skill list --json
 ```
 
-Replace `<plugin>` with a supported plugin name below. [Copilot CLI setup](docs/installation/copilot.md)
+Inspect each skill’s `source` and `path` to confirm the intended package. Project skills take precedence over personal skills, which take precedence over plugin skills.
+
+Use the full installed identity with `copilot plugin disable`, `enable`, `update`, or `uninstall`. Local marketplace packages load live from the checkout; `uninstall` disables the entry and retains checkout files.
 
 </details>
 
@@ -66,26 +70,34 @@ Use the source name printed by `marketplace list`. For a checkout registered as 
 
 ```sh
 grok plugin install "<plugin>@agent-plugins" --trust
+grok inspect --json
 ```
 
-Replace `<plugin>` with a supported plugin name below. Invoke Read the Room and Papercuts explicitly in Grok. [Grok Build setup](docs/installation/grok.md)
+Use `grok plugin disable NAME`, `enable NAME`, `update NAME`, or `uninstall NAME` to manage installed packages.
 
 </details>
 
 <details>
 <summary><strong>OpenCode</strong> · skill paths and native configuration</summary>
 
-Register the selected plugins’ complete skill directories in OpenCode’s configuration. For example:
+Merge the selected plugins’ complete skill directories into your existing OpenCode configuration. These entries register the four core workflow packages:
 
 ```json
 {
   "skills": {
-    "paths": ["/absolute/path/agent-plugins/plugins/eli5/skills"]
+    "paths": [
+      "/absolute/path/agent-plugins/plugins/eli5/skills",
+      "/absolute/path/agent-plugins/plugins/code-simplifier/skills",
+      "/absolute/path/agent-plugins/plugins/pr-review-toolkit/skills",
+      "/absolute/path/agent-plugins/plugins/copywriter/skills"
+    ]
   }
 }
 ```
 
-The [OpenCode setup guide](docs/installation/opencode.md) includes all core skill paths, automatic policy extensions, and Papercuts MCP configuration. Retain the full checkout so sibling resources and scripts stay available.
+Run `opencode debug skill` to confirm discovery, then explicitly request a workflow. Retain the full checkout so sibling resources and scripts stay available.
+
+See [Read the Room setup](plugins/read-the-room/README.md#additional-harnesses) and [Papercuts setup](plugins/papercuts/README.md#additional-harnesses) for their skill paths, automatic policy extensions, and MCP configuration.
 
 </details>
 
@@ -97,7 +109,9 @@ pi install /absolute/path/agent-plugins
 pi list
 ```
 
-The package includes eli5, code-simplifier, pr-review-toolkit, copywriter, Read the Room, and Papercuts. Select its skills and extensions with `pi config`. Keep Pi’s built-in MCP extension enabled for Papercuts. [Pi setup](docs/installation/pi.md)
+The package registers resources in place and includes eli5, code-simplifier, pr-review-toolkit, copywriter, Read the Room, and Papercuts. Select its skills and extensions with `pi config`, and keep the checkout available.
+
+Start an authenticated Pi session and explicitly request a selected workflow. Use `pi remove /absolute/path/agent-plugins` to unregister the package. Plugin-specific activation details are in each plugin’s README.
 
 </details>
 
