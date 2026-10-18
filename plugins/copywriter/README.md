@@ -53,3 +53,7 @@ Packaging copies shared files into `copywriter-portable/copywriter`, `copywriter
 The repository's MIT license applies to this new plugin. Bundled dependencies retain their own notices. The [source bibliography](skills/write/references/sources.md) attributes editorial guidance; it provides no evidence for product or marketing performance claims.
 
 The [social writing research](skills/blog-post/references/research.md) covers short posts, threads, LinkedIn, personal blogs, accessibility, and the limits of engagement advice. The [blog-post skill](skills/blog-post/SKILL.md) turns that research into a source-based drafting workflow.
+
+## Additional harnesses
+
+The complete package is available through experimental [Copilot](../../docs/installation/copilot.md), [Grok Build](../../docs/installation/grok.md), [OpenCode](../../docs/installation/opencode.md), and [Pi](../../docs/installation/pi.md) routes. Installation and discovery checks are separate from workflow behavior; see the [compatibility matrix](../../docs/compatibility.md). Retain the full package and use local execution when native specialist agents are unavailable.

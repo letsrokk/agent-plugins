@@ -24,11 +24,11 @@ test('packaged hook loads current guidance from any directory for each configure
   assert.equal(group.hooks[0].timeout, 5);
   assert.equal(group.hooks[0].async, undefined);
   assert.equal(group.hooks[0].statusMessage, 'Loading Read the Room writing guidance...');
-  for (const source of ['startup', 'resume', 'clear', 'compact']) {
+  for (const [source, rootVariable] of [['startup','CLAUDE_PLUGIN_ROOT'], ['resume','CLAUDE_PLUGIN_ROOT'], ['clear','CLAUDE_PLUGIN_ROOT'], ['compact','CLAUDE_PLUGIN_ROOT'], ['startup','PLUGIN_ROOT']]) {
     assert.equal(matcher.test(source), true);
     if (source === 'compact') appendFileSync(resolve(skill, 'SKILL.md'), '\nFresh policy after compaction.\n');
     const result = spawnSync(group.hooks[0].command, {
-      shell: true, cwd: root, env: { ...process.env, CLAUDE_PLUGIN_ROOT: plugin },
+      shell: true, cwd: root, env: { ...process.env, PLUGIN_ROOT: '', CLAUDE_PLUGIN_ROOT: '', [rootVariable]: plugin },
       input: JSON.stringify({ hook_event_name: 'SessionStart', source }), encoding: 'utf8',
     });
     assert.equal(result.status, 0, result.stderr);
@@ -59,9 +59,9 @@ test('packaged prompt hook repeats a short reminder with all channel references'
   assert.equal(group.hooks[0].timeout, 5);
   assert.equal(group.hooks[0].async, undefined);
   let previous;
-  for (const prompt of ['Draft a pull request description.', 'Now write a chat reply.']) {
+  for (const [prompt, rootVariable] of [['Draft a pull request description.','CLAUDE_PLUGIN_ROOT'], ['Now write a chat reply.','PLUGIN_ROOT']]) {
     const result = spawnSync(group.hooks[0].command, {
-      shell: true, cwd: root, env: { ...process.env, CLAUDE_PLUGIN_ROOT: plugin },
+      shell: true, cwd: root, env: { ...process.env, PLUGIN_ROOT: '', CLAUDE_PLUGIN_ROOT: '', [rootVariable]: plugin },
       input: JSON.stringify({ hook_event_name: 'UserPromptSubmit', prompt }), encoding: 'utf8',
     });
     assert.equal(result.status, 0, result.stderr);
@@ -103,4 +103,47 @@ test('missing or invalid policy files emit no partial context', async (t) => {
       assert.match(result.stderr, /could not load its writing policy/);
     });
   }
+});
+
+test('OpenCode adapters preserve host context and reload current policy', async t => {
+  const { plugin, skill } = fixture(t);
+  const { default: extension } = await import(require('node:url').pathToFileURL(resolve(plugin,'scripts/opencode.mjs')));
+  const hooks = await extension();
+  const output = { system: ['Existing host instructions'] };
+  await hooks['experimental.chat.system.transform']({},output);
+  assert.equal(output.system[0],'Existing host instructions');
+  assert.ok(output.system[1].includes('# Make It Make Sense'));
+  assert.ok(output.system[1].includes(skill));
+  appendFileSync(resolve(skill,'SKILL.md'),'\nUpdated installed policy.\n');
+  const compacted = { context: ['Existing summary'] };
+  await hooks['experimental.session.compacting']({},compacted);
+  assert.equal(compacted.context[0],'Existing summary');
+  assert.ok(compacted.context[1].includes('Updated installed policy.'));
+});
+
+test('Pi adapter owns one system section without replacing host instructions', async t => {
+  const { plugin, skill } = fixture(t);
+  const { default: extension } = await import(require('node:url').pathToFileURL(resolve(plugin,'scripts/pi.mjs')));
+  const handlers = new Map();
+  extension({ on: (event, handler) => handlers.set(event,handler) });
+  const event = { systemPromptOptions: { sections: { existing: 'Existing host instructions' } } };
+  await handlers.get('before_agent_start')(event);
+  assert.equal(event.systemPromptOptions.sections.existing,'Existing host instructions');
+  assert.ok(event.systemPromptOptions.sections['read-the-room'].includes('# Make It Make Sense'));
+  appendFileSync(resolve(skill,'SKILL.md'),'\nUpdated installed policy.\n');
+  await handlers.get('before_agent_start')(event);
+  assert.ok(event.systemPromptOptions.sections['read-the-room'].includes('Updated installed policy.'));
+  assert.equal(Object.keys(event.systemPromptOptions.sections).length,2);
+});
+
+test('Copilot startup emits its native top-level context envelope', t => {
+  const { plugin } = fixture(t);
+  const native = JSON.parse(readFileSync(resolve(plugin,'.plugin/plugin.json'),'utf8'));
+  const config = JSON.parse(readFileSync(resolve(plugin,native.hooks),'utf8'));
+  assert.equal(config.version,1);
+  const result = spawnSync(config.hooks.sessionStart[0].command,{shell:true,env:{...process.env,PLUGIN_ROOT:plugin},encoding:'utf8'});
+  assert.equal(result.status,0,result.stderr);
+  const output = JSON.parse(result.stdout);
+  assert.ok(output.additionalContext?.includes('# Make It Make Sense'));
+  assert.equal(output.hookSpecificOutput,undefined);
 });

@@ -81,3 +81,7 @@ For example, ask “Draft a concise pull request description” and the reminder
 Skills guide the agent's writing; they do not intercept outgoing messages. Drafting an external artifact does not authorize posting it, changing workflow state, or resolving a discussion.
 
 The root manifest retains Agent Plugins v1 metadata but omits `$schema` to select native Codex loading: Codex 0.153.4 otherwise skips hooks and ignores native MCP configuration. See the [manifest compatibility rules](../../docs/plugin-development.md#choosing-portable-or-native-loading).
+
+## Additional harnesses
+
+Experimental Copilot, Grok Build, OpenCode, and Pi routes are tracked per component in the [compatibility matrix](../../docs/compatibility.md). Use the linked installation instructions for an intact package. Grok’s passive startup hook does not inject policy; invoke the skill explicitly there. Copilot startup, OpenCode system/compaction hooks, and Pi before-turn system sections use native adapters. Authenticated model behavior and desktop surfaces require their own checks.

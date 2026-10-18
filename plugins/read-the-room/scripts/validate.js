@@ -9,7 +9,7 @@ const { spawnSync } = require('node:child_process');
 try {
   const root = resolve(__dirname, '..');
   for (const directory of ['scripts', 'tests']) {
-    for (const file of readdirSync(resolve(root, directory)).filter((name) => name.endsWith('.js'))) {
+    for (const file of readdirSync(resolve(root, directory)).filter((name) => /\.m?js$/.test(name))) {
       const result = spawnSync(process.execPath, ['--check', resolve(root, directory, file)], { stdio: 'inherit' });
       if (result.status !== 0) throw new Error(`Invalid JavaScript: ${directory}/${file}`);
     }
@@ -17,12 +17,12 @@ try {
   const config = JSON.parse(readFileSync(resolve(root, 'hooks/hooks.json'), 'utf8'));
   assert.deepEqual(config, { hooks: { SessionStart: [{ matcher: 'startup|resume|clear|compact', hooks: [{
     type: 'command',
-    command: 'node "${CLAUDE_PLUGIN_ROOT}/scripts/session_start.js"',
+    command: "node -e \"require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + '/scripts/session_start.js')\"",
     timeout: 5,
     statusMessage: 'Loading Read the Room writing guidance...',
   }] }], UserPromptSubmit: [{ hooks: [{
     type: 'command',
-    command: 'node "${CLAUDE_PLUGIN_ROOT}/scripts/user_prompt_submit.js"',
+    command: "node -e \"require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + '/scripts/user_prompt_submit.js')\"",
     timeout: 5,
     statusMessage: 'Refreshing Read the Room guide reminder...',
   }] }] } });

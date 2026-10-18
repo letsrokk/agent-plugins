@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/session_start.js\"",
+            "command": "node -e \"require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + '/scripts/session_start.js')\"",
             "timeout": 5,
             "statusMessage": "Loading Read the Room writing guidance..."
           }
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/user_prompt_submit.js\"",
+            "command": "node -e \"require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + '/scripts/user_prompt_submit.js')\"",
             "timeout": 5,
             "statusMessage": "Refreshing Read the Room guide reminder..."
           }

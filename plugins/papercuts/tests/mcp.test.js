@@ -25,10 +25,20 @@ async function connection(t,client) {
   const temporary = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'papercuts-offline-')));
   const installation = path.join(temporary,'plugin with spaces'),home = path.join(temporary,'home'),project = path.join(temporary,'project');
   fs.mkdirSync(installation); fs.mkdirSync(home,{mode:0o700}); fs.mkdirSync(project);
-  for (const name of ['dist','package.json','plugin.json']) fs.cpSync(path.join(root,name),path.join(installation,name),{recursive:true});
+  for (const name of ['dist','package.json','plugin.json','.plugin','.grok-plugin','.mcp.json']) fs.cpSync(path.join(root,name),path.join(installation,name),{recursive:true});
   assert.ok(!fs.existsSync(path.join(installation,'node_modules')));
   // No Python, npm, Git, or downloader is available to the packaged process.
-  const child = spawn(process.execPath,[path.join(installation,'dist/mcp_server.js')],{cwd:project,env:{HOME:home,USERPROFILE:home,PATH:installation,PAPERCUTS_CLIENT:client},stdio:['pipe','pipe','pipe']});
+  let args = [path.join(installation,'dist/mcp_server.js')], clientEnvironment = {PAPERCUTS_CLIENT:client};
+  if (client === 'grok' || client === 'copilot') {
+    const manifestPath = client === 'grok' ? 'plugin.json' : '.plugin/plugin.json';
+    const manifest = JSON.parse(fs.readFileSync(path.join(installation,manifestPath),'utf8'));
+    const server = JSON.parse(fs.readFileSync(path.join(installation,manifest.mcpServers),'utf8')).mcpServers.papercuts;
+    assert.equal(server.command,'node');
+    args = server.args.map(value => value.replaceAll('${GROK_PLUGIN_ROOT}',installation).replaceAll('${CLAUDE_PLUGIN_ROOT}',installation));
+    clientEnvironment = server.env;
+    assert.equal(clientEnvironment.PAPERCUTS_CLIENT,client);
+  }
+  const child = spawn(process.execPath,args,{cwd:project,env:{HOME:home,USERPROFILE:home,PATH:installation,...clientEnvironment},stdio:['pipe','pipe','pipe']});
   const pending = new Map(); let seq = 0,stderr = '';
   const closed = new Promise(resolve => child.once('close',resolve));
   t.after(async () => { child.stdin.end(); const timer = setTimeout(() => child.kill(),1000); await closed; clearTimeout(timer); fs.rmSync(temporary,{recursive:true,force:true}); });
@@ -57,7 +67,7 @@ async function connection(t,client) {
   };
   return {request,call,home,project,stderr:() => stderr};
 }
-for (const client of ['codex','claude']) test(`offline bundled MCP ${client} initialization, tools, evidence and lifecycle`,async t => {
+for (const [client, directory] of [['codex','.codex'], ['claude','.claude'], ['copilot','.copilot'], ['grok','.grok'], ['opencode','.config/opencode'], ['pi','.pi/agent']]) test(`offline bundled MCP ${client} initialization, tools, evidence and lifecycle`,async t => {
   const connection_ = await connection(t,client), {request,call,home} = connection_;
   const listing = await request('tools/list'); const tools = listing.result.tools;
   assert.deepEqual(tools.map(tool => tool.name).sort(),['apply_prune','get_complaint','inspect_storage','list_complaints','lodge_complaint','preview_prune','reopen_complaint','resolve_complaint','vote_for_complaint']);
@@ -66,7 +76,7 @@ for (const client of ['codex','claude']) test(`offline bundled MCP ${client} ini
   const lodgeTool = tools.find(tool => tool.name === 'lodge_complaint');
   assert.equal(lodgeTool.inputSchema.properties.dry_run.type,'boolean');
   assert.equal(lodgeTool.annotations.readOnlyHint,false);
-  const inspect = await call('inspect_storage'); assert.equal(inspect.storage.path,path.join(home,`.${client}`,'papercuts.jsonl'));
+  const inspect = await call('inspect_storage'); assert.equal(inspect.storage.path,path.join(home,directory,'papercuts.jsonl'));
   assert.ok(!fs.existsSync(path.dirname(inspect.storage.path)));
   const input = {text:'Offline friction in /tmp/client',evidence:'Observed during local test',severity:'major',tags:['tools'],command:'bash /tmp/client',stderr:'API_TOKEN=private',exit_status:2};
   const draft = await call('lodge_complaint',{...input,dry_run:true});

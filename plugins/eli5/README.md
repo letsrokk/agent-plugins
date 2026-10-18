@@ -11,3 +11,7 @@ Produces a visual HTML explainer with big pictures, one concrete analogy, and ve
 Uses an in-chat visualization or artifact capability when available. Otherwise, saves a self-contained `.html` file and links to it so you can open it in a browser. Standalone explainers work offline without dependencies or a server. Plain-text requests are honored; Markdown is the fallback when rendering and file creation are both unavailable.
 
 Ported for Codex from Anthropic's [eli5 plugin](https://github.com/anthropics/claude-plugins-community/tree/main/eli5), authored by Thariq Shihipar.
+
+## Additional harnesses
+
+The complete package is available through experimental [Copilot](../../docs/installation/copilot.md), [Grok Build](../../docs/installation/grok.md), [OpenCode](../../docs/installation/opencode.md), and [Pi](../../docs/installation/pi.md) routes. Installation and discovery checks are separate from workflow behavior; see the [compatibility matrix](../../docs/compatibility.md). Retain the full package and use local execution when native specialist agents are unavailable.

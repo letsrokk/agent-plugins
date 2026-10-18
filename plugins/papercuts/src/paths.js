@@ -4,9 +4,14 @@ import os from 'node:os';
 import {spawnSync} from 'node:child_process';
 import {hash, invalid, PapercutsError} from './models.js';
 
+export const CLIENT_DIRECTORIES = Object.freeze({
+  codex: '.codex', claude: '.claude', copilot: '.copilot', grok: '.grok',
+  opencode: '.config/opencode', pi: '.pi/agent',
+});
+
 export function resolveClient(explicit, environ = process.env) {
   const client = explicit ?? environ.PAPERCUTS_CLIENT ?? 'codex';
-  if (!['codex', 'claude'].includes(client)) throw new PapercutsError(explicit === undefined ? 'invalid_config' : 'usage', 'Client must be codex or claude');
+  if (!Object.hasOwn(CLIENT_DIRECTORIES, client)) throw new PapercutsError(explicit === undefined ? 'invalid_config' : 'usage', 'Client must be codex, claude, copilot, grok, opencode, or pi');
   return client;
 }
 export function discoverProject(cwd) {
@@ -50,12 +55,12 @@ function readConfig(file) {
   } finally { if (fd !== undefined) fs.closeSync(fd); }
 }
 export function resolveStorage(cwd, {client = resolveClient(), environ = process.env, home = os.homedir(), project_root, remote_url} = {}) {
-  if (!['codex','claude'].includes(client)) throw invalid('Client must be codex or claude');
+  if (!Object.hasOwn(CLIENT_DIRECTORIES, client)) throw invalid('Client must be codex, claude, copilot, grok, opencode, or pi');
   if (Object.hasOwn(environ, 'PAPERCUTS_FILE')) throw new PapercutsError('invalid_config', 'PAPERCUTS_FILE is no longer supported. Migrate the old journal manually before removing this setting.');
   const [discoveredRoot, discoveredRemote] = project_root === undefined || remote_url === undefined ? discoverProject(cwd) : [project_root, remote_url];
   const root = project_root ?? discoveredRoot;
   const resolvedHome = fs.realpathSync(home);
-  const projectConfig = readConfig(path.join(root, `.${client}`, 'papercuts.config.json'));
-  const userConfig = readConfig(path.join(resolvedHome, `.${client}`, 'papercuts.config.json'));
-  return {project: projectRef(root, remote_url ?? discoveredRemote), project_root: root, home: resolvedHome, journal_path: path.join(resolvedHome, `.${client}`, 'papercuts.jsonl'), scope: 'user', config_source: projectConfig ?? userConfig, client};
+  const projectConfig = readConfig(path.join(root, CLIENT_DIRECTORIES[client], 'papercuts.config.json'));
+  const userConfig = readConfig(path.join(resolvedHome, CLIENT_DIRECTORIES[client], 'papercuts.config.json'));
+  return {project: projectRef(root, remote_url ?? discoveredRemote), project_root: root, home: resolvedHome, journal_path: path.join(resolvedHome, CLIENT_DIRECTORIES[client], 'papercuts.jsonl'), scope: 'user', config_source: projectConfig ?? userConfig, client};
 }

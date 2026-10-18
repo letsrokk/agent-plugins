@@ -3,7 +3,7 @@ name: papercuts
 description: Record material engineering friction in tools, documentation, configuration, or repeated recovery work. Use also to review, vote on, resolve, reopen, inspect, or prune papercuts.
 ---
 
-Record material workflow friction in the client's user journal (`~/.codex/papercuts.jsonl` or `~/.claude/papercuts.jsonl`). No project/custom journals or storage configuration changes. Every MCP call must use the active workspace's absolute root as `project_root`, never the plugin directory, inferred working directory, or journal path.
+Record material workflow friction in the client's fixed user journal: Codex `~/.codex/papercuts.jsonl`, Claude `~/.claude/papercuts.jsonl`, Copilot `~/.copilot/papercuts.jsonl`, Grok `~/.grok/papercuts.jsonl`, OpenCode `~/.config/opencode/papercuts.jsonl`, or Pi `~/.pi/agent/papercuts.jsonl`. No project/custom journals or storage configuration changes. Every MCP call must use the active workspace's absolute root as `project_root`, never the plugin directory, inferred working directory, or journal path.
 
 ## Automatic lodging
 

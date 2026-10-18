@@ -54,6 +54,7 @@ function success(result) {
 test('apply patch bumps all changed plugins and synchronizes manifests; bot commits are idempotent', t => {
   const r = repository(t);
   r.plugin('alpha-plugin', '1.2.3', { claude: true });
+  r.writeJson('plugins/alpha-plugin/.plugin/plugin.json', { name: 'alpha-plugin', version: '1.2.3' });
   r.plugin('beta', '0.9.9');
   r.writeJson('plugins/alpha-plugin/package.json', { name: 'alpha-plugin', private: true });
   const base = r.commit('add plugins');
@@ -61,7 +62,7 @@ test('apply patch bumps all changed plugins and synchronizes manifests; bot comm
   r.write('plugins/beta/README.md', 'changed\n');
   const head = r.commit('change plugins');
   success(r.run('apply', base, head));
-  for (const filename of ['plugin.json', '.codex-plugin/plugin.json', '.claude-plugin/plugin.json']) {
+  for (const filename of ['plugin.json', '.codex-plugin/plugin.json', '.claude-plugin/plugin.json', '.plugin/plugin.json']) {
     assert.equal(r.version(`plugins/alpha-plugin/${filename}`), '1.2.4');
   }
   assert.equal(r.version('plugins/alpha-plugin/package.json'), undefined);

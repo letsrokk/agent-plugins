@@ -260,3 +260,76 @@ test('rejects PR Review Toolkit without required agent', () => {
   writeAdaptedPackage('pr-review-toolkit', { missingAgent: missing });
   hasError(validateRepository(root), `${missing}.toml is missing`);
 });
+
+for (const [client, catalog] of [['copilot', '.github/plugin/marketplace.json'], ['grok', '.grok-plugin/marketplace.json']]) {
+  test(`validates ${client} catalog paths without requiring a Claude manifest`, () => {
+    writePortableManifest('portable');
+    writeSkill('portable');
+    const manifest = {
+      name: `rokk-club-${client}-plugins`, owner: { name: 'Rokk Club' },
+      plugins: [{ name: 'portable', source: './plugins/../portable' }],
+    };
+    writeJson(catalog, manifest);
+    hasError(validateRepository(root), `${catalog}: plugins[0].source must be './plugins/portable'`);
+    manifest.plugins[0].source = './plugins/portable';
+    writeJson(catalog, manifest);
+    assert.deepEqual(validateRepository(root), []);
+    manifest.plugins.push({ name: 'missing', source: './plugins/missing' });
+    writeJson(catalog, manifest);
+    hasError(validateRepository(root), `${catalog}: plugin 'missing' directory is missing`);
+  });
+}
+
+test('rejects missing Pi package resources before distribution', () => {
+  writeJson('package.json', { pi: { skills: ['./plugins/portable/skills'] } });
+  hasError(validateRepository(root), 'package.json: pi.skills resource is missing: ./plugins/portable/skills');
+  writeSkill('portable');
+  assert.deepEqual(validateRepository(root), []);
+  writeJson('package.json', { pi: [] });
+  hasError(validateRepository(root), 'package.json: pi must be an object');
+});
+
+test('rejects an optional Copilot manifest with an inconsistent version', () => {
+  writeCatalogs([codexEntry('native')]);
+  writePortableManifest('native');
+  writeCodexManifest('native');
+  writeSkill('native');
+  writeJson('plugins/native/.plugin/plugin.json', {name:'native',version:'9.0.0'});
+  hasError(validateRepository(root), 'plugins/native/.plugin/plugin.json: version must match portable manifest');
+});
+
+
+test('schema-free root MCP paths remain contained and portable roots reject them', () => {
+  const name = 'grok-native';
+  writeCatalogs([codexEntry(name)]);
+  writeSkill(name);
+  writeCodexManifest(name);
+  const native = { name, version: '0.1.0', mcpServers: './.grok-plugin/mcp.json' };
+  writeJson(`plugins/${name}/plugin.json`, native);
+  writeJson(`plugins/${name}/.grok-plugin/mcp.json`, { mcpServers: {} });
+  assert.deepEqual(validateRepository(root), []);
+  writeJson(`plugins/${name}/plugin.json`, { ...native, $schema: 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json' });
+  hasError(validateRepository(root), "unknown field 'mcpServers'");
+  writeJson('plugins/outside.json', { mcpServers: {} });
+  for (const mcpServers of ['./missing.json', './../outside.json']) {
+    writeJson(`plugins/${name}/plugin.json`, { ...native, mcpServers });
+    hasError(validateRepository(root), 'mcpServers must reference a contained JSON file');
+  }
+  fs.symlinkSync(path.join(root, 'plugins/outside.json'), path.join(root, `plugins/${name}/linked.json`));
+  writeJson(`plugins/${name}/plugin.json`, { ...native, mcpServers: './linked.json' });
+  hasError(validateRepository(root), 'mcpServers must reference a contained JSON file');
+});
+
+
+test('Copilot-only native plugins do not require another client manifest', () => {
+  const name = 'copilot-only';
+  writeJson('.github/plugin/marketplace.json', {
+    name: 'rokk-club-copilot-plugins', owner: { name: 'Rokk Club' },
+    plugins: [{ name, source: `./plugins/${name}` }],
+  });
+  writeJson(`plugins/${name}/plugin.json`, { name, version: '0.1.0' });
+  writeJson(`plugins/${name}/.plugin/plugin.json`, { name, version: '0.1.0', hooks: './hooks/copilot.json' });
+  writeJson(`plugins/${name}/hooks/copilot.json`, { version: 1, hooks: {} });
+  writeSkill(name);
+  assert.deepEqual(validateRepository(root), []);
+});

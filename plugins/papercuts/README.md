@@ -50,6 +50,12 @@ After installation or an update, inspect the hook in Codex `/hooks`, review its 
 | --- | --- |
 | Codex | `~/.codex/papercuts.jsonl` |
 | Claude Code | `~/.claude/papercuts.jsonl` |
+| Copilot | `~/.copilot/papercuts.jsonl` |
+| Grok Build | `~/.grok/papercuts.jsonl` |
+| OpenCode | `~/.config/opencode/papercuts.jsonl` |
+| Pi | `~/.pi/agent/papercuts.jsonl` |
+
+`CLIENT` is `codex`, `claude`, `copilot`, `grok`, `opencode`, or `pi`. These fixed Papercuts user paths do not follow host-specific directory overrides. New-client tools and automatic hooks have separate status in the [compatibility matrix](../../docs/compatibility.md).
 
 Lists stay scoped to the current project unless `--all-projects` is supplied. The CLI selects its client from `--client`, then `PAPERCUTS_CLIENT`, then `codex`. No journal or backup falls back to another client.
 
@@ -71,16 +77,16 @@ The home and client directory must be owned by the current user and not writable
 All ordinary commands emit one JSON envelope on stdout. Errors emit one structured JSON envelope on stderr. `list --format md` is the only human-readable output mode.
 
 ```text
-papercuts [--client codex|claude] lodge TEXT [--dry-run] [--severity minor|major|blocker] [--tag TAG] [--cmd COMMAND] [--exit STATUS] [--stderr-file PATH] [--evidence NOTE]
-papercuts [--client codex|claude] list [--status open|resolved|all] [--query TEXT] [--tag TAG] [--severity minor|major|blocker] [--min-encounters N] [--recent-days N] [--all-projects] [--limit N] [--format json|md]
-papercuts [--client codex|claude] get ID [--all-projects]
-papercuts [--client codex|claude] vote ID [--note TEXT] [--cmd COMMAND] [--exit STATUS] [--stderr-file PATH]
-papercuts [--client codex|claude] resolve ID [--note TEXT]
-papercuts [--client codex|claude] reopen ID [--note TEXT]
-papercuts [--client codex|claude] doctor [--repair-tail]
-papercuts [--client codex|claude] prune preview [--resolved-older-than-days N] [--open-max-encounters N] [--open-inactive-for-days N] [--projects current|all]
-papercuts [--client codex|claude] prune apply PLAN_ID [--resolved-older-than-days N] [--open-max-encounters N] [--open-inactive-for-days N] [--projects current|all]
-papercuts [--client codex|claude] config show
+papercuts [--client CLIENT] lodge TEXT [--dry-run] [--severity minor|major|blocker] [--tag TAG] [--cmd COMMAND] [--exit STATUS] [--stderr-file PATH] [--evidence NOTE]
+papercuts [--client CLIENT] list [--status open|resolved|all] [--query TEXT] [--tag TAG] [--severity minor|major|blocker] [--min-encounters N] [--recent-days N] [--all-projects] [--limit N] [--format json|md]
+papercuts [--client CLIENT] get ID [--all-projects]
+papercuts [--client CLIENT] vote ID [--note TEXT] [--cmd COMMAND] [--exit STATUS] [--stderr-file PATH]
+papercuts [--client CLIENT] resolve ID [--note TEXT]
+papercuts [--client CLIENT] reopen ID [--note TEXT]
+papercuts [--client CLIENT] doctor [--repair-tail]
+papercuts [--client CLIENT] prune preview [--resolved-older-than-days N] [--open-max-encounters N] [--open-inactive-for-days N] [--projects current|all]
+papercuts [--client CLIENT] prune apply PLAN_ID [--resolved-older-than-days N] [--open-max-encounters N] [--open-inactive-for-days N] [--projects current|all]
+papercuts [--client CLIENT] config show
 ```
 
 For example:
@@ -116,4 +122,8 @@ node scripts/validate.js
 
 Commit the lockfile, `dist/mcp_server.js`, and `dist/THIRD_PARTY_NOTICES.txt` together when dependencies or server source change. Validation rebuilds in memory and compares both committed artifacts without rewriting them. Tests use Node's built-in runner, including a packaged-server lifecycle in an installation with spaces and no `node_modules` or tools on PATH. End users do not run npm.
 
-The root manifest retains Agent Plugins v1 metadata but omits `$schema` to select native Codex loading: Codex 0.153.4 otherwise skips hooks and ignores native MCP configuration. See the [manifest compatibility rules](../../docs/plugin-development.md#choosing-portable-or-native-loading).
+The root manifest retains Agent Plugins v1 metadata but omits `$schema` to select native Codex loading: Codex 0.153.4 otherwise skips hooks and ignores native MCP configuration. Grok also requires that selected root to point to `.grok-plugin/mcp.json`; Copilot's native manifest selects `.mcp.json`, with explicit client attribution in both configurations. See the [manifest compatibility rules](../../docs/plugin-development.md#choosing-portable-or-native-loading).
+
+## Additional harnesses
+
+Experimental Copilot, Grok Build, OpenCode, and Pi routes are tracked per component in the [compatibility matrix](../../docs/compatibility.md). Use the linked installation instructions for an intact package. Grok’s passive startup hook does not inject policy; invoke the skill explicitly there. Copilot startup, OpenCode system/compaction hooks, and Pi before-turn system sections use native adapters. Authenticated model behavior and desktop surfaces require their own checks.

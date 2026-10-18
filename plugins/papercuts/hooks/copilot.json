@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "command": "node \"${PLUGIN_ROOT}/scripts/session_start.js\" --copilot",
+        "timeoutSec": 5
+      }
+    ]
+  }
+}

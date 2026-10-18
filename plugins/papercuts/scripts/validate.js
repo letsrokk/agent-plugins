@@ -11,7 +11,7 @@ for (const [, reference] of policy.matchAll(/\]\((references\/[^)]+)\)/g)) {
   assert.ok(fs.statSync(path.join(skill,reference)).isFile(), `Missing reference: ${reference}`);
 }
 for (const directory of ['src','scripts','tests','dist']) {
-  for (const file of fs.readdirSync(path.join(root,directory),{recursive:true}).filter(name => name.endsWith('.js') || name === 'papercuts')) {
+  for (const file of fs.readdirSync(path.join(root,directory),{recursive:true}).filter(name => /\.m?js$/.test(name) || name === 'papercuts')) {
     const result = spawnSync(process.execPath,['--check',path.join(root,directory,file)],{stdio:'inherit'});
     if (result.status !== 0 || result.error) process.exit(1);
   }
@@ -20,7 +20,7 @@ const group = JSON.parse(fs.readFileSync(path.join(root,'hooks/hooks.json'),'utf
 assert.equal(group.matcher,'startup|resume|clear|compact');
 const hook = group.hooks[0];
 assert.equal(hook.statusMessage,'Loading Papercuts instructions...');
-assert.equal(hook.command,'node "${CLAUDE_PLUGIN_ROOT}/scripts/session_start.js"');
+assert.equal(hook.command,"node -e \"require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + '/scripts/session_start.js')\"");
 for (const name of ['.codex-plugin','.claude-plugin']) {
   const manifest = JSON.parse(fs.readFileSync(path.join(root,name,'plugin.json'),'utf8'));
   assert.equal(manifest.mcpServers.papercuts.command,'node');

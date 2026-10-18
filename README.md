@@ -4,6 +4,8 @@ Give your coding agent more ways to help: review a change, make sense of its set
 
 Rokk Club brings these workflows to Codex and Claude Code as plugins you can install individually. Browse the collection below and choose the ones that fit your work.
 
+Experimental local installation routes are available for [Copilot](docs/installation/copilot.md), [Grok Build](docs/installation/grok.md), [OpenCode](docs/installation/opencode.md), and [Pi](docs/installation/pi.md). See the [compatibility matrix](docs/compatibility.md) for verified components and remaining runtime checks.
+
 ## Marketplaces
 
 Start by adding the marketplace for your client, then install a plugin using its command below. The badges show which clients each plugin targets.

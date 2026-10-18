@@ -35819,9 +35819,17 @@ function sanitizeContext(context2 = {}) {
 }
 
 // src/paths.js
+var CLIENT_DIRECTORIES = Object.freeze({
+  codex: ".codex",
+  claude: ".claude",
+  copilot: ".copilot",
+  grok: ".grok",
+  opencode: ".config/opencode",
+  pi: ".pi/agent"
+});
 function resolveClient(explicit, environ = process.env) {
   const client = explicit ?? environ.PAPERCUTS_CLIENT ?? "codex";
-  if (!["codex", "claude"].includes(client)) throw new PapercutsError(explicit === void 0 ? "invalid_config" : "usage", "Client must be codex or claude");
+  if (!Object.hasOwn(CLIENT_DIRECTORIES, client)) throw new PapercutsError(explicit === void 0 ? "invalid_config" : "usage", "Client must be codex, claude, copilot, grok, opencode, or pi");
   return client;
 }
 function discoverProject(cwd) {
@@ -35874,14 +35882,14 @@ function readConfig(file2) {
   }
 }
 function resolveStorage(cwd, { client = resolveClient(), environ = process.env, home = os.homedir(), project_root, remote_url } = {}) {
-  if (!["codex", "claude"].includes(client)) throw invalid("Client must be codex or claude");
+  if (!Object.hasOwn(CLIENT_DIRECTORIES, client)) throw invalid("Client must be codex, claude, copilot, grok, opencode, or pi");
   if (Object.hasOwn(environ, "PAPERCUTS_FILE")) throw new PapercutsError("invalid_config", "PAPERCUTS_FILE is no longer supported. Migrate the old journal manually before removing this setting.");
   const [discoveredRoot, discoveredRemote] = project_root === void 0 || remote_url === void 0 ? discoverProject(cwd) : [project_root, remote_url];
   const root = project_root ?? discoveredRoot;
   const resolvedHome = fs2.realpathSync(home);
-  const projectConfig = readConfig(path.join(root, `.${client}`, "papercuts.config.json"));
-  const userConfig = readConfig(path.join(resolvedHome, `.${client}`, "papercuts.config.json"));
-  return { project: projectRef(root, remote_url ?? discoveredRemote), project_root: root, home: resolvedHome, journal_path: path.join(resolvedHome, `.${client}`, "papercuts.jsonl"), scope: "user", config_source: projectConfig ?? userConfig, client };
+  const projectConfig = readConfig(path.join(root, CLIENT_DIRECTORIES[client], "papercuts.config.json"));
+  const userConfig = readConfig(path.join(resolvedHome, CLIENT_DIRECTORIES[client], "papercuts.config.json"));
+  return { project: projectRef(root, remote_url ?? discoveredRemote), project_root: root, home: resolvedHome, journal_path: path.join(resolvedHome, CLIENT_DIRECTORIES[client], "papercuts.jsonl"), scope: "user", config_source: projectConfig ?? userConfig, client };
 }
 
 // src/store.js
@@ -35993,10 +36001,10 @@ var JournalStore = class {
     this.home = storage.home;
     this.directory = path2.dirname(this.path);
     this.lockPath = this.path + ".lock";
-    if (this.path !== path2.join(this.home, `.${storage.client}`, "papercuts.jsonl") || !["codex", "claude"].includes(storage.client)) throw unsafe(this.path);
+    if (!Object.hasOwn(CLIENT_DIRECTORIES, storage.client) || this.path !== path2.join(this.home, CLIENT_DIRECTORIES[storage.client], "papercuts.jsonl")) throw unsafe(this.path);
   }
   check(create = false) {
-    privateDirectory(this.home, false, true);
+    let stat = privateDirectory(this.home, false, true);
     const homeParent = path2.dirname(this.home);
     let ancestor = homeParent;
     while (true) {
@@ -36006,7 +36014,11 @@ var JournalStore = class {
       if (next === ancestor) break;
       ancestor = next;
     }
-    const stat = privateDirectory(this.directory, create, true);
+    let directory = this.home;
+    for (const part of path2.relative(this.home, this.directory).split(path2.sep)) {
+      directory = path2.join(directory, part);
+      stat = privateDirectory(directory, create, true);
+    }
     if (this.parentIdentity && !same(stat, this.parentIdentity)) throw unsafe(this.directory);
   }
   bytes() {

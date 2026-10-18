@@ -5,7 +5,7 @@ description: Use when asked how often a named plugin or skill was used in local 
 
 # Inspect Plugin Usage
 
-Use the bundled analyzer instead of searching session files ad hoc. It reads local history without changing it and never returns prompts or skill bodies.
+Use the bundled analyzer instead of searching session files ad hoc. It reads local Codex and Claude Code history without changing it and never returns prompts or skill bodies. It does not analyze Copilot, Grok Build, OpenCode, or Pi sessions; report that limit rather than interpreting zero Codex/Claude counts as usage in those harnesses.
 
 Require one exact-name target:
 

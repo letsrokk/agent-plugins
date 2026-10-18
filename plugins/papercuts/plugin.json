@@ -14,5 +14,6 @@
     "friction",
     "feedback",
     "developer-tools"
-  ]
+  ],
+  "mcpServers": "./.grok-plugin/mcp.json"
 }
