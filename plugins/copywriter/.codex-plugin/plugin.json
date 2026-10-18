@@ -1,6 +1,6 @@
 {
   "name": "copywriter",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Turn your source material into clear product copy, editable pitch decks, articles, and social posts.",
   "skills": "./skills/",
   "author": {
