@@ -10,5 +10,19 @@
   },
   "devDependencies": {
     "smol-toml": "1.8.0"
+  },
+  "pi": {
+    "skills": [
+      "./plugins/eli5/skills",
+      "./plugins/code-simplifier/skills",
+      "./plugins/pr-review-toolkit/skills",
+      "./plugins/copywriter/skills",
+      "./plugins/read-the-room/skills",
+      "./plugins/papercuts/skills"
+    ],
+    "extensions": [
+      "./plugins/read-the-room/scripts/pi.mjs",
+      "./plugins/papercuts/scripts/pi.mjs"
+    ]
   }
 }

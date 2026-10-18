@@ -17,7 +17,7 @@ function usage(message) { throw new PapercutsError('usage',message); }
 export function main(argv = process.argv.slice(2),{cwd = process.cwd(),environ = process.env,home,stdout = process.stdout,stderr = process.stderr} = {}) {
   try {
     if (argv.includes('--help') || argv.includes('-h')) {
-      stdout.write('Usage: papercuts [--client codex|claude] COMMAND\nCommands: lodge TEXT, list, get ID, vote ID, resolve ID, reopen ID, doctor, prune preview, prune apply PLAN_ID, config show\n' + Object.entries(optionsByCommand).map(([name,options]) => `${name}: ${Object.keys(options).map(key => `--${key}`).join(' ')}`).join('\n') + '\n');
+      stdout.write('Usage: papercuts [--client codex|claude|copilot|grok|opencode|pi] COMMAND\nCommands: lodge TEXT, list, get ID, vote ID, resolve ID, reopen ID, doctor, prune preview, prune apply PLAN_ID, config show\n' + Object.entries(optionsByCommand).map(([name,options]) => `${name}: ${Object.keys(options).map(key => `--${key}`).join(' ')}`).join('\n') + '\n');
       return 0;
     }
     if (argv.includes('--file') || argv.some(arg => arg.startsWith('--file=')) || (argv.includes('config') && argv.includes('set-scope'))) throw new PapercutsError('invalid_config','Custom journals and config set-scope are no longer supported; migrate old journals manually.');

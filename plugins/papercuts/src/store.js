@@ -4,6 +4,8 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 import {hash, stableJSON, isObject, nonempty, invalid, PapercutsError} from './models.js';
 
+import {CLIENT_DIRECTORIES} from './paths.js';
+
 const C = fs.constants;
 const malformed = (file, line, detail = '') => new PapercutsError('malformed_journal', `Malformed journal event at ${file}:${line}${detail ? ` (${detail})` : ''}`);
 const unsafe = file => invalid(`Storage must use private, user-owned real directories and regular files: ${file}`);
@@ -80,10 +82,10 @@ export function serializeEvents(events) {
 export class JournalStore {
   constructor(storage) {
     this.path = storage.journal_path; this.home = storage.home; this.directory = path.dirname(this.path); this.lockPath = this.path + '.lock';
-    if (this.path !== path.join(this.home, `.${storage.client}`, 'papercuts.jsonl') || !['codex','claude'].includes(storage.client)) throw unsafe(this.path);
+    if (!Object.hasOwn(CLIENT_DIRECTORIES, storage.client) || this.path !== path.join(this.home, CLIENT_DIRECTORIES[storage.client], 'papercuts.jsonl')) throw unsafe(this.path);
   }
   check(create = false) {
-    privateDirectory(this.home, false, true);
+    let stat = privateDirectory(this.home, false, true);
     // ponytail: private user storage limits path races; use native directory-relative I/O if shared storage returns.
     const homeParent = path.dirname(this.home);
     let ancestor = homeParent;
@@ -92,7 +94,11 @@ export class JournalStore {
       if (!stat.isDirectory() || (process.platform !== 'win32' && (stat.mode & 0o022) && !(stat.mode & 0o1000))) throw unsafe(ancestor);
       const next = path.dirname(ancestor); if (next === ancestor) break; ancestor = next;
     }
-    const stat = privateDirectory(this.directory, create, true);
+    let directory = this.home;
+    for (const part of path.relative(this.home, this.directory).split(path.sep)) {
+      directory = path.join(directory, part);
+      stat = privateDirectory(directory, create, true);
+    }
     if (this.parentIdentity && !same(stat, this.parentIdentity)) throw unsafe(this.directory);
   }
   bytes() {

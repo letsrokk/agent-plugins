@@ -1,0 +1,12 @@
+{
+  "name": "rokk-club-grok-plugins",
+  "owner": { "name": "Rokk Club" },
+  "plugins": [
+    { "name": "eli5", "source": "./plugins/eli5" },
+    { "name": "code-simplifier", "source": "./plugins/code-simplifier" },
+    { "name": "pr-review-toolkit", "source": "./plugins/pr-review-toolkit" },
+    { "name": "copywriter", "source": "./plugins/copywriter" },
+    { "name": "read-the-room", "source": "./plugins/read-the-room" },
+    { "name": "papercuts", "source": "./plugins/papercuts" }
+  ]
+}

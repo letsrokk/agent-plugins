@@ -2,15 +2,24 @@
 
 Repository tooling requires Node.js 24 or later. At the repository root, run `npm ci --ignore-scripts --no-audit --no-fund` to install the pinned TOML parser used to validate custom agents. Run `npm test` and `npm run validate` before committing. Plugin build dependencies remain separate and are installed from the relevant plugin directory.
 
+## Compatibility evidence
+
+Use the [compatibility matrix](compatibility.md) to record exact host versions, installation routes, and component-level evidence. Skill discovery, workflow invocation, MCP tools, automatic instructions, and native agents require separate checks. Keep complete plugin packages intact when registering skill paths; do not copy individual skills that depend on sibling or plugin-root resources. Preserve local specialist execution on hosts without native agents.
+
+## Marketplace catalogs
+
+Maintain the Codex (`.agents/plugins/marketplace.json`), Claude (`.claude-plugin/marketplace.json`), Copilot (`.github/plugin/marketplace.json`), and Grok Build (`.grok-plugin/marketplace.json`) catalogs by hand over the same `plugins/` tree. Each catalog lists only its eligible packages; inclusion records a distribution route, not feature parity. New native plugin manifests are required only when their host needs them.
+
 ## Manifest roles
 
 Use Agent Plugins v1 as the base for shared metadata and package layout. Accept native Codex and Claude Code structures where the portable format or a client’s implementation cannot express or load a required component. Keep one shared payload and separate client configuration; portability must not disable working hooks or MCP servers.
 
 | File | Role |
 | --- | --- |
-| `plugins/<name>/plugin.json` | Agent Plugins v1 identity and shared package metadata. Keep client-only `skills`, `hooks`, `mcpServers`, and `interface` fields in native manifests. Omit `$schema` when native loading is required, retaining the shared metadata. |
+| `plugins/<name>/plugin.json` | Agent Plugins v1 identity and shared package metadata. Keep client-only `skills`, `hooks`, and `interface` fields in native manifests. A schema-free root may use a contained JSON `mcpServers` path when Grok requires its selected root to name the native configuration. Omit `$schema` when native loading is required, retaining the shared metadata. |
 | `plugins/<name>/.codex-plugin/plugin.json` | Required for Codex catalog entries. It declares Codex discovery routes, MCP launch configuration, and UI metadata. Its `name` and `version` must match the portable manifest. |
 | `plugins/<name>/.claude-plugin/plugin.json` | Required only for Claude Code catalog entries. It contains Claude Code-specific metadata and MCP launch configuration. |
+| `plugins/<name>/.plugin/plugin.json` | Native Copilot hook selection for Papercuts and Read the Room. Root schema omission keeps this legacy path active; synchronize its name/version with the root manifest. |
 
 Portable skills live under `skills/<skill-name>/SKILL.md`. Codex custom agents live under `skills/<skill-name>/agents/<agent_name>.toml`. Portable MCP configuration may use `mcp.json`; client launch details remain in compatibility manifests when required.
 
@@ -20,7 +29,9 @@ Keep the Agent Plugins v1 `$schema` for plugins whose components load correctly 
 
 Verified with Codex CLI 0.153.4: the Agent Plugins v1 loader skips plugin hooks and reads MCP configuration from `mcp.json`, ignoring native `mcpServers` declarations. Declaring `hooks` in `.codex-plugin/plugin.json` alone does not overcome this. Papercuts and Read the Room therefore omit the root `$schema` so Codex selects native loading. Papercuts keeps its client-specific MCP launch settings in each native manifest. The validator rejects a Codex plugin combining the portable schema with native hooks or `mcpServers`. Recheck host behavior before changing this exception; see the [Codex loader](https://github.com/openai/codex/blob/main/codex-rs/core-plugins/src/loader.rs) and [portable manifest adapter](https://github.com/openai/codex/blob/main/codex-rs/core-plugins/src/agent_plugin_manifest.rs).
 
-Claude Code uses `.claude-plugin/plugin.json`, discovers `hooks/hooks.json` by default, and supports MCP configuration in its manifest or root `.mcp.json`. Do not confuse Claude's `.mcp.json` with portable `mcp.json`. Use `${CLAUDE_PLUGIN_ROOT}` for Claude launch paths; Codex native MCP settings may use plugin-relative paths and `cwd`. Keep the executable payload shared even when launch settings differ. See the [Claude Code plugin reference](https://code.claude.com/docs/en/plugins-reference).
+Claude Code uses `.claude-plugin/plugin.json`, discovers `hooks/hooks.json` by default, and supports MCP configuration in its manifest or root `.mcp.json`. Do not confuse Claude's `.mcp.json` with portable `mcp.json`. Use `${CLAUDE_PLUGIN_ROOT}` for Claude launch paths; Codex native MCP settings may use plugin-relative paths and `cwd`. Keep the executable payload shared even when launch settings differ. Shared hook commands resolve `PLUGIN_ROOT` or `CLAUDE_PLUGIN_ROOT` through Node because VS Code Local exports only the former for the selected native format. See the [Claude Code plugin reference](https://code.claude.com/docs/en/plugins-reference).
+
+Papercuts names `./.grok-plugin/mcp.json` from its schema-free root manifest because Grok selects the root before fallback manifests. Its Copilot `.plugin/plugin.json` names `./.mcp.json`. Each configuration explicitly sets `PAPERCUTS_CLIENT`; plugin-root substitution does not prove that the host exports identity markers to an MCP child. Existing Codex/Claude native launch behavior stays in place. OpenCode uses explicit native configuration; Pi’s extension registers the same bundled server.
 
 Keep each `SKILL.md` at or below 7,168 bytes to leave headroom when a host loads it into a prompt. Put only universal instructions and routing in the main file. Move task-, channel-, or artifact-specific guidance into focused files under the skill's `references/` directory, and direct the agent to read only the relevant reference. Repository validation enforces the byte limit; check a file directly with `wc -c skills/<skill-name>/SKILL.md`.
 
@@ -89,7 +100,7 @@ Codex plugin installation does not trust hooks automatically. After installation
 Release versions on `main` use stable `MAJOR.MINOR.PATCH` SemVer. A pull request that
 changes an existing plugin can leave its version unchanged; after validation succeeds on
 `main`, GitHub Actions increments the patch version and synchronizes the portable, Codex,
-and Claude plugin manifests that exist for that plugin. New and deleted plugins
+Claude, and native Copilot plugin manifests that exist for that plugin. New and deleted plugins
 are excluded from automatic bumps.
 
 Set a strictly higher version in the pull request when the change needs an intentional major,

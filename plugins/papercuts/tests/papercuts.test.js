@@ -224,3 +224,32 @@ test('CLI dry-run exposes sanitized evidence and leaves missing storage untouche
   assert.deepEqual(data.preview,Object.fromEntries(Object.keys(data.preview).map(key => [key,record[key]])));
   assert.match(cli(f,['--help']).stdout,/--dry-run/);
 });
+
+test('new clients use private user journals without changing existing client data', t => {
+  const f = fixture(t);
+  f.service.lodge('Existing Codex record');
+  const before = fs.readFileSync(f.storage.journal_path);
+  for (const [client, directory] of [['copilot','.copilot'], ['grok','.grok'], ['opencode','.config/opencode'], ['pi','.pi/agent']]) {
+    assert.equal(resolveClient(client, {PAPERCUTS_CLIENT:'claude'}), client);
+    const storage = resolveStorage(f.root, {client,home:f.home,environ:{},project_root:f.root,remote_url:remote});
+    assert.equal(storage.journal_path, path.join(f.home,directory,'papercuts.jsonl'));
+    const service = new PapercutsService(storage);
+    assert.equal(service.list().length,0);
+    const complaint = service.lodge(`Record for ${client}`).record;
+    assert.equal(service.get(complaint.id).agent,client);
+    assert.equal(service.list().length,1);
+    assert.deepEqual(fs.readFileSync(f.storage.journal_path),before);
+  }
+  assert.throws(() => resolveClient('unsupported',{}),errorCode('usage'));
+});
+
+test('nested client journals reject symlinked user-directory ancestors', t => {
+  const f = fixture(t);
+  const outside = path.join(f.temporary,'outside');
+  fs.mkdirSync(outside);
+  fs.symlinkSync(outside,path.join(f.home,'.config'),'dir');
+  const storage = resolveStorage(f.root,{client:'opencode',home:f.home,environ:{},project_root:f.root,remote_url:remote});
+  const service = new PapercutsService(storage);
+  assert.throws(() => service.lodge('Must not escape user storage'),errorCode('invalid_input'));
+  assert.deepEqual(fs.readdirSync(outside),[]);
+});

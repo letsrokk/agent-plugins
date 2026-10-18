@@ -9,7 +9,7 @@ Audit the current agent client without changing its files. Separate what is prov
 
 ## Scope
 
-Inspect the current client only: Codex when running in Codex, or Claude Code when running in Claude Code. Do not infer the client from files on disk.
+Inspect the current client only: Codex when running in Codex, or Claude Code when running in Claude Code. Do not infer the client from files on disk. If the current harness is neither, report that settings inspection is unsupported before reading client configuration; do not substitute another client.
 
 - Default: project scope. An explicit project path bounds reads; otherwise use the current directory as the target and its enclosing project root as the boundary. Ancestor layers outside that boundary remain unseen.
 - `user`: user scope only.

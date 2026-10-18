@@ -46,8 +46,8 @@ function loadJson(root, relativePath, errors) {
   return payload;
 }
 
-function validateManifestMetadata(relativePath, manifest, errors) {
-  for (const field of Object.keys(manifest).filter(field => !PORTABLE_MANIFEST_FIELDS.has(field)).sort()) {
+function validateManifestMetadata(relativePath, manifest, errors, native = false) {
+  for (const field of Object.keys(manifest).filter(field => !PORTABLE_MANIFEST_FIELDS.has(field) && !(native && field === 'mcpServers')).sort()) {
     errors.push(`${relativePath}: unknown field '${field}'`);
   }
   for (const field of ['description', 'homepage', 'license', 'repository', 'version']) {
@@ -206,7 +206,7 @@ function validatePortableManifest(root, name, catalog, errors) {
     }
     return null;
   }
-  const hasNativeManifest = ['.codex-plugin', '.claude-plugin']
+  const hasNativeManifest = ['.codex-plugin', '.claude-plugin', '.plugin']
     .some(client => isFile(path.join(root, 'plugins', name, client, 'plugin.json')));
   if (manifest.$schema !== AGENT_PLUGIN_SCHEMA && !(!Object.hasOwn(manifest, '$schema') && hasNativeManifest)) {
     errors.push(`${relativePath}: $schema must be ${AGENT_PLUGIN_SCHEMA}`);
@@ -215,7 +215,31 @@ function validatePortableManifest(root, name, catalog, errors) {
   if (typeof manifest.version !== 'string' || !manifest.version) {
     errors.push(`${relativePath}: version must be a non-empty string`);
   }
-  validateManifestMetadata(relativePath, manifest, errors);
+  const native = !Object.hasOwn(manifest, '$schema') && hasNativeManifest;
+  validateManifestMetadata(relativePath, manifest, errors, native);
+  if (native && Object.hasOwn(manifest, 'mcpServers')) {
+    const pluginRoot = path.join(root, 'plugins', name);
+    const resource = manifest.mcpServers;
+    const file = typeof resource === 'string' && resource.startsWith('./') && resource.endsWith('.json')
+      ? path.resolve(pluginRoot, resource) : null;
+    const relative = file && isFile(file)
+      ? path.relative(fs.realpathSync(pluginRoot), fs.realpathSync(file)) : null;
+    if (!relative || relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+      errors.push(`${relativePath}: mcpServers must reference a contained JSON file`);
+    } else loadJson(root, path.relative(root, file), errors);
+  }
+  const copilotPath = `plugins/${name}/.plugin/plugin.json`;
+  if (isFile(path.join(root, copilotPath))) {
+    const native = loadJson(root, copilotPath, errors);
+    if (native !== null) {
+      if (native.name !== name) errors.push(`${copilotPath}: name must match portable manifest '${name}'`);
+      if (native.version !== manifest.version) errors.push(`${copilotPath}: version must match portable manifest '${manifest.version}'`);
+      if (manifest.$schema === AGENT_PLUGIN_SCHEMA && (native.hooks || native.mcpServers)) {
+        errors.push(`${relativePath}: portable schema shadows native Copilot hooks or mcpServers`);
+      }
+    }
+  }
+
   validatePluginComponents(root, name, errors);
   if (typeof manifest.license === 'string' && manifest.license !== 'MIT' && !isFile(path.join(root, 'plugins', name, 'LICENSE'))) {
     errors.push(`plugins/${name}: declares ${manifest.license} but has no package LICENSE`);
@@ -253,7 +277,8 @@ function validateClientManifest(root, name, portableManifest, codex, errors) {
   }
 }
 
-function validatePlugins(root, catalogPath, plugins, codex, errors) {
+function validatePlugins(root, catalogPath, plugins, client, errors) {
+  const codex = client === 'codex';
   if (!Array.isArray(plugins)) {
     errors.push(`${catalogPath}: plugins must be an array`);
     return;
@@ -294,7 +319,9 @@ function validatePlugins(root, catalogPath, plugins, codex, errors) {
       continue;
     }
     const portableManifest = validatePortableManifest(root, name, catalogPath, errors);
-    if (!codex || portableManifest !== null) validateClientManifest(root, name, portableManifest, codex, errors);
+    if ((client === 'claude' || codex) && (!codex || portableManifest !== null)) {
+      validateClientManifest(root, name, portableManifest, codex, errors);
+    }
   }
 }
 
@@ -307,14 +334,53 @@ function validateRepository(root) {
     if (!isDeepStrictEqual(codex.interface, { displayName: 'Rokk Club Codex Plugins' })) {
       errors.push(`${CODEX_CATALOG}: interface.displayName must be 'Rokk Club Codex Plugins'`);
     }
-    validatePlugins(root, CODEX_CATALOG, codex.plugins, true, errors);
+    validatePlugins(root, CODEX_CATALOG, codex.plugins, 'codex', errors);
   }
   const claude = loadJson(root, CLAUDE_CATALOG, errors);
   if (claude !== null) {
     if (claude.$schema !== CLAUDE_MARKETPLACE_SCHEMA) errors.push(`${CLAUDE_CATALOG}: $schema must be ${CLAUDE_MARKETPLACE_SCHEMA}`);
     if (claude.name !== 'rokk-club-claude-plugins') errors.push(`${CLAUDE_CATALOG}: name must be 'rokk-club-claude-plugins'`);
     if (!isDeepStrictEqual(claude.owner, { name: 'Rokk Club' })) errors.push(`${CLAUDE_CATALOG}: owner.name must be 'Rokk Club'`);
-    validatePlugins(root, CLAUDE_CATALOG, claude.plugins, false, errors);
+    validatePlugins(root, CLAUDE_CATALOG, claude.plugins, 'claude', errors);
+  }
+  for (const [client, catalogPath] of [
+    ['copilot', '.github/plugin/marketplace.json'],
+    ['grok', '.grok-plugin/marketplace.json'],
+  ]) {
+    if (!fs.existsSync(path.join(root, catalogPath))) continue;
+    const catalog = loadJson(root, catalogPath, errors);
+    if (catalog === null) continue;
+    if (catalog.name !== `rokk-club-${client}-plugins`) {
+      errors.push(`${catalogPath}: name must be 'rokk-club-${client}-plugins'`);
+    }
+    if (!isDeepStrictEqual(catalog.owner, { name: 'Rokk Club' })) {
+      errors.push(`${catalogPath}: owner.name must be 'Rokk Club'`);
+    }
+    validatePlugins(root, catalogPath, catalog.plugins, client, errors);
+  }
+  if (isFile(path.join(root, 'package.json'))) {
+    const manifest = loadJson(root, 'package.json', errors);
+    if (manifest?.pi != null && !isObject(manifest.pi)) {
+      errors.push('package.json: pi must be an object');
+    } else if (manifest?.pi != null) {
+      for (const kind of ['skills', 'extensions']) {
+        const resources = manifest.pi[kind];
+        if (resources === undefined) continue;
+        if (!Array.isArray(resources)) {
+          errors.push(`package.json: pi.${kind} must be an array`);
+          continue;
+        }
+        for (const resource of resources) {
+          const validPath = typeof resource === 'string' && (kind === 'skills'
+            ? /^\.\/plugins\/[a-z0-9.-]+\/skills$/.test(resource)
+            : /^\.\/plugins\/[a-z0-9.-]+\/scripts\/[^/]+\.(?:m?js|ts)$/.test(resource));
+          if (!validPath) errors.push(`package.json: pi.${kind} must reference an explicit plugin resource`);
+          else if (!(kind === 'skills' ? isDirectory : isFile)(path.join(root, resource))) {
+            errors.push(`package.json: pi.${kind} resource is missing: ${resource}`);
+          }
+        }
+      }
+    }
   }
   if (!isFile(path.join(root, 'AGENTS.md'))) errors.push('AGENTS.md is missing');
   const instructions = path.join(root, 'CLAUDE.md');

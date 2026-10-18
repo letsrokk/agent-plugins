@@ -83,7 +83,7 @@ function jsonVersion(text, filename, errors) {
 }
 
 function manifestPaths(name) {
-  return ['plugin.json', '.codex-plugin/plugin.json', '.claude-plugin/plugin.json']
+  return ['plugin.json', '.codex-plugin/plugin.json', '.claude-plugin/plugin.json', '.plugin/plugin.json']
     .map(filename => `plugins/${name}/${filename}`);
 }
 
