@@ -128,4 +128,38 @@ The root manifest retains Agent Plugins v1 metadata but omits `$schema` to selec
 
 ## Additional harnesses
 
-Experimental Copilot, Grok Build, OpenCode, and Pi routes are tracked per component in the [compatibility matrix](../../docs/compatibility.md). Use the linked installation instructions for an intact package. Grok’s passive startup hook does not inject policy; invoke the skill explicitly there. Copilot startup, OpenCode system/compaction hooks, and Pi before-turn system sections use native adapters. Authenticated model behavior and desktop surfaces require their own checks.
+For experimental Copilot CLI, Grok Build, OpenCode, and Pi installation, follow the [agent setup instructions](../../README.md#connect-your-agent). Keep the complete plugin package and Node.js 24 or later available. Each integration uses the fixed journal listed under [user storage](#user-storage-and-migration-from-02).
+
+### Copilot CLI
+
+The native plugin manifest loads Papercuts instructions through a startup hook and registers the bundled MCP server with `PAPERCUTS_CLIENT=copilot`. Start a fresh session after installation. Inspect the effective registration with `copilot mcp get papercuts`.
+
+### Grok Build
+
+Invoke the Papercuts skill explicitly to load its workflow instructions. The selected root manifest registers the bundled MCP server with `PAPERCUTS_CLIENT=grok`. Check connectivity with `grok mcp doctor`.
+
+### OpenCode
+
+Merge these entries into your existing OpenCode configuration, replacing the checkout path. Encode spaces in the file URL as `%20`:
+
+```json
+{
+  "plugin": [
+    "file:///absolute/path/agent-plugins/plugins/papercuts/scripts/opencode.mjs"
+  ],
+  "mcp": {
+    "papercuts": {
+      "type": "local",
+      "command": ["node", "/absolute/path/agent-plugins/plugins/papercuts/dist/mcp_server.js"],
+      "environment": { "PAPERCUTS_CLIENT": "opencode" },
+      "enabled": true
+    }
+  }
+}
+```
+
+For explicit skill discovery, also add `/absolute/path/agent-plugins/plugins/papercuts/skills` to `skills.paths`. Restart OpenCode and check its MCP status. The extension appends workflow instructions through the experimental system and compaction hooks.
+
+### Pi
+
+The repository’s local Pi package includes the Papercuts extension. Enable it with `pi config` and keep Pi’s built-in MCP extension enabled. It registers the bundled server with `PAPERCUTS_CLIENT=pi` and refreshes its owned policy section before each turn. A same-name server in native file configuration takes precedence over the packaged registration.

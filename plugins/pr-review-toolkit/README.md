@@ -12,4 +12,4 @@ Adapted from Anthropic's PR Review Toolkit for Codex. See [NOTICE](NOTICE) for s
 
 ## Additional harnesses
 
-The complete package is available through experimental [Copilot](../../docs/installation.md#copilot-cli), [Grok Build](../../docs/installation.md#grok-build), [OpenCode](../../docs/installation.md#opencode), and [Pi](../../docs/installation.md#pi) routes. Installation and discovery checks are separate from workflow behavior; see the [compatibility matrix](../../docs/compatibility.md). Retain the full package and use local execution when native specialist agents are unavailable.
+The complete package is available through experimental Copilot CLI, Grok Build, OpenCode, and Pi routes. Follow the [agent setup instructions](../../README.md#connect-your-agent) and consult the [compatibility matrix](../../docs/compatibility.md). Retain the full package and use local execution when native specialist agents are unavailable.
