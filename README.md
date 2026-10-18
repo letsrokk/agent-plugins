@@ -2,155 +2,137 @@
 
 Give your coding agent more ways to help: review a change, make sense of its settings, explain an unfamiliar topic, or shape an engaging piece of writing.
 
-Rokk Club brings these workflows to Codex and Claude Code as plugins you can install individually. Browse the collection below and choose the ones that fit your work.
+Rokk Club brings these workflows to your coding agent as plugins you can install individually. Browse the collection below and choose the ones that fit your work.
 
-Experimental local installation routes are available for [Copilot](docs/installation/copilot.md), [Grok Build](docs/installation/grok.md), [OpenCode](docs/installation/opencode.md), and [Pi](docs/installation/pi.md). See the [compatibility matrix](docs/compatibility.md) for verified components and remaining runtime checks.
+![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg) ![Copilot CLI](assets/agent-badges/copilot-cli.svg) ![Grok Build](assets/agent-badges/grok-build.svg) ![OpenCode](assets/agent-badges/opencode.svg) ![Pi](assets/agent-badges/pi.svg)
 
-## Marketplaces
+[Compatibility matrix](docs/compatibility.md) · [Plugin development](docs/plugin-development.md)
 
-Start by adding the marketplace for your client, then install a plugin using its command below. The badges show which clients each plugin targets.
+Copilot CLI, Grok Build, OpenCode, and Pi routes are experimental. Scripted workflows require Node.js 24 or later on your agent’s `PATH`.
 
-For Codex, run in your terminal:
+## Connect your agent
+
+Add the marketplace or register this checkout, then choose the plugins you want. Replace `<plugin>` with a supported plugin name before running the commands. For the experimental routes, use a complete checkout containing these integrations and replace `/absolute/path/agent-plugins` with its location.
+
+<details>
+<summary><strong>Codex</strong> · marketplace</summary>
+
+Run in your terminal:
 
 ```sh
 codex plugin marketplace add letsrokk/agent-plugins
+codex plugin add "<plugin>@rokk-club-codex-plugins"
 ```
 
-For Claude Code, run inside the app:
+Replace `<plugin>` with a supported plugin name below. For Papercuts and Read the Room, review and trust the startup hooks in `/hooks`, then start a fresh session.
+
+</details>
+
+<details>
+<summary><strong>Claude Code</strong> · marketplace</summary>
+
+Run inside Claude Code:
 
 ```text
 /plugin marketplace add letsrokk/agent-plugins
+/plugin install <plugin>@rokk-club-claude-plugins
 ```
 
-Papercuts and Read the Room require Node.js 24 or later on your client’s `PATH`. In Codex, review and trust their startup hooks in `/hooks`, then start a fresh session. Other requirements and activation steps are documented in each plugin’s README under [`plugins/`](plugins/README.md).
+Replace `<plugin>` with a supported plugin name below, then start a fresh session.
 
-## Plugins
+</details>
 
-### Rokk Club plugins
-
-#### papercuts ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
-
-Keep a local record of tool failures, confusing instructions, and recurring workflow problems. Review what keeps getting in the way and track which issues have been resolved.
-
-Codex:
+<details>
+<summary><strong>Copilot CLI</strong> · marketplace</summary>
 
 ```sh
-codex plugin add papercuts@rokk-club-codex-plugins
+copilot plugin marketplace add /absolute/path/agent-plugins
+copilot plugin install "<plugin>@rokk-club-copilot-plugins"
 ```
 
-Claude:
+Replace `<plugin>` with a supported plugin name below. [Copilot CLI setup](docs/installation/copilot.md)
 
-```text
-/plugin install papercuts@rokk-club-claude-plugins
-```
+</details>
 
-#### agent-doctor ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
-
-Inspect agent settings, plugin structure and prompts, and plugin and skill usage in local Codex and Claude Code sessions. Use `$inspect-plugin-config` to review a plugin package against official guidance. Get suggested fixes without changing your files.
-
-Codex:
+<details>
+<summary><strong>Grok Build</strong> · marketplace</summary>
 
 ```sh
-codex plugin add agent-doctor@rokk-club-codex-plugins
+grok plugin marketplace add /absolute/path/agent-plugins
+grok plugin marketplace list
 ```
 
-Claude:
-
-```text
-/plugin install agent-doctor@rokk-club-claude-plugins
-```
-
-#### read-the-room ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
-
-Help your agent write clear updates, reviews, documentation, and chat messages suited to the reader. Preserve the facts, uncertainty, and detail people need.
-
-Codex:
+Use the source name printed by `marketplace list`. For a checkout registered as `agent-plugins`, review the selected package before enabling its executable capabilities with `--trust`:
 
 ```sh
-codex plugin add read-the-room@rokk-club-codex-plugins
+grok plugin install "<plugin>@agent-plugins" --trust
 ```
 
-Claude:
+Replace `<plugin>` with a supported plugin name below. Invoke Read the Room and Papercuts explicitly in Grok. [Grok Build setup](docs/installation/grok.md)
 
-```text
-/plugin install read-the-room@rokk-club-claude-plugins
+</details>
+
+<details>
+<summary><strong>OpenCode</strong> · skill paths and native configuration</summary>
+
+Register the selected plugins’ complete skill directories in OpenCode’s configuration. For example:
+
+```json
+{
+  "skills": {
+    "paths": ["/absolute/path/agent-plugins/plugins/eli5/skills"]
+  }
+}
 ```
 
-#### copywriter ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg)
+The [OpenCode setup guide](docs/installation/opencode.md) includes all core skill paths, automatic policy extensions, and Papercuts MCP configuration. Retain the full checkout so sibling resources and scripts stay available.
 
-Turn your source material into clear, engaging product copy, editable pitch decks, articles, and social posts. Articles and social posts start from your draft, outline, or notes.
+</details>
 
-Codex:
+<details>
+<summary><strong>Pi</strong> · local package</summary>
 
 ```sh
-codex plugin add copywriter@rokk-club-codex-plugins
+pi install /absolute/path/agent-plugins
+pi list
 ```
 
-Claude:
+The package includes eli5, code-simplifier, pr-review-toolkit, copywriter, Read the Room, and Papercuts. Select its skills and extensions with `pi config`. Keep Pi’s built-in MCP extension enabled for Papercuts. [Pi setup](docs/installation/pi.md)
 
-```text
-/plugin install copywriter@rokk-club-claude-plugins
-```
+</details>
 
-### Ports
+## Rokk Club plugins
 
-#### eli5 ![Codex](assets/agent-badges/codex.svg)
+| Plugin | What it helps with | Agents |
+| --- | --- | --- |
+| [papercuts](plugins/papercuts/README.md) | Keep a local record of tool failures, confusing instructions, and recurring workflow problems so you can review what keeps getting in the way. | ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg) ![Copilot CLI](assets/agent-badges/copilot-cli.svg) ![Grok Build](assets/agent-badges/grok-build.svg) ![OpenCode](assets/agent-badges/opencode.svg) ![Pi](assets/agent-badges/pi.svg) |
+| [agent-doctor](plugins/agent-doctor/README.md) | Inspect agent settings, plugin structure, and local skill usage. Get configuration findings and suggested fixes while leaving your files unchanged. | ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg) |
+| [read-the-room](plugins/read-the-room/README.md) | Help your agent write clear updates, reviews, documentation, and chat messages suited to the reader. | ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg) ![Copilot CLI](assets/agent-badges/copilot-cli.svg) ![Grok Build](assets/agent-badges/grok-build.svg) ![OpenCode](assets/agent-badges/opencode.svg) ![Pi](assets/agent-badges/pi.svg) |
+| [copywriter](plugins/copywriter/README.md) | Turn source material into product copy and editable pitch decks. Shape your drafts, outlines, and notes into articles and social posts. | ![Codex](assets/agent-badges/codex.svg) ![Claude Code](assets/agent-badges/claude-code.svg) ![Copilot CLI](assets/agent-badges/copilot-cli.svg) ![Grok Build](assets/agent-badges/grok-build.svg) ![OpenCode](assets/agent-badges/opencode.svg) ![Pi](assets/agent-badges/pi.svg) |
 
-Make unfamiliar topics easier to understand with a concrete analogy, simple visuals, and few words.
+## Ports
 
-Codex:
+Adapted from upstream plugins. Each package retains its attribution and license information.
 
-```sh
-codex plugin add eli5@rokk-club-codex-plugins
-```
-
-#### pr-review-toolkit ![Codex](assets/agent-badges/codex.svg)
-
-Review pull requests and local changes for bugs, gaps in test coverage, unclear comments, and error-handling and type issues. Get actionable findings; code simplification requires an explicit request.
-
-Codex:
-
-```sh
-codex plugin add pr-review-toolkit@rokk-club-codex-plugins
-```
-
-#### code-simplifier ![Codex](assets/agent-badges/codex.svg)
-
-Make the code you choose easier to read and maintain while preserving its behavior.
-
-Codex:
-
-```sh
-codex plugin add code-simplifier@rokk-club-codex-plugins
-```
+| Plugin | What it helps with | Agents |
+| --- | --- | --- |
+| [eli5](plugins/eli5/README.md) | Make unfamiliar topics easier to understand with a concrete analogy, simple visuals, and few words. | ![Codex](assets/agent-badges/codex.svg) ![Copilot CLI](assets/agent-badges/copilot-cli.svg) ![Grok Build](assets/agent-badges/grok-build.svg) ![OpenCode](assets/agent-badges/opencode.svg) ![Pi](assets/agent-badges/pi.svg) |
+| [pr-review-toolkit](plugins/pr-review-toolkit/README.md) | Review pull requests and local changes for bugs, test gaps, unclear comments, error handling, and type issues. | ![Codex](assets/agent-badges/codex.svg) ![Copilot CLI](assets/agent-badges/copilot-cli.svg) ![Grok Build](assets/agent-badges/grok-build.svg) ![OpenCode](assets/agent-badges/opencode.svg) ![Pi](assets/agent-badges/pi.svg) |
+| [code-simplifier](plugins/code-simplifier/README.md) | Make the code you choose easier to read and maintain while preserving its behavior. | ![Codex](assets/agent-badges/codex.svg) ![Copilot CLI](assets/agent-badges/copilot-cli.svg) ![Grok Build](assets/agent-badges/grok-build.svg) ![OpenCode](assets/agent-badges/opencode.svg) ![Pi](assets/agent-badges/pi.svg) |
 
 ## Try a plugin
 
-After installing Agent Doctor, start a fresh session in your project and ask:
+After installing Read the Room, ask your agent:
 
 ```text
-Use the inspect-agent-config skill to audit this project’s settings and instructions.
+Use make-it-make-sense to rewrite this update: "Tests pass. The migration still needs review."
 ```
 
-Expect a report explaining configuration problems, suggested fixes, and anything the agent could not verify. The audit leaves your files unchanged.
+Expect a clear update that preserves both the passing tests and the pending review. Each plugin’s README has more examples and setup details.
 
 ## Add a plugin
 
-Have a workflow to share? Follow the [plugin development workflow](docs/plugin-development.md). Packages use the [Agent Plugins v1 specification](https://agent-plugins.org/specification) as a base, with native client manifests where needed. The Codex and Claude Code catalogs point to the same shared plugin directories.
-
-1. Create `plugins/<plugin-name>/plugin.json` using the documented manifest rules.
-2. Add the plugin components in their standard locations.
-3. Add the compatibility manifest for each target catalog.
-4. Add a matching entry to one or both marketplace catalogs.
-5. With Node.js 24 or later, run the repository checks before committing:
-
-   ```sh
-   npm ci --ignore-scripts --no-audit --no-fund
-   npm test
-   npm run validate
-   ```
-
-The tests should pass and validation should print `Marketplace validation passed.` Scripted plugins also need their own test and validation entrypoints, as described in the development workflow.
+Have a workflow to share? Follow the [plugin development workflow](docs/plugin-development.md) for package layout, client manifests, catalog entries, and required checks. All catalogs use the same shared `plugins/` tree.
 
 ## License
 
