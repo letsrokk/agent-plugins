@@ -50,7 +50,7 @@ copilot plugin marketplace add /absolute/path/agent-plugins
 copilot plugin install "<plugin>@rokk-club-copilot-plugins"
 ```
 
-Replace `<plugin>` with a supported plugin name below. [Copilot CLI setup](docs/installation/copilot.md)
+Replace `<plugin>` with a supported plugin name below. [Copilot CLI setup](docs/installation.md#copilot-cli)
 
 </details>
 
@@ -68,7 +68,7 @@ Use the source name printed by `marketplace list`. For a checkout registered as 
 grok plugin install "<plugin>@agent-plugins" --trust
 ```
 
-Replace `<plugin>` with a supported plugin name below. Invoke Read the Room and Papercuts explicitly in Grok. [Grok Build setup](docs/installation/grok.md)
+Replace `<plugin>` with a supported plugin name below. Invoke Read the Room and Papercuts explicitly in Grok. [Grok Build setup](docs/installation.md#grok-build)
 
 </details>
 
@@ -85,7 +85,7 @@ Register the selected plugins’ complete skill directories in OpenCode’s conf
 }
 ```
 
-The [OpenCode setup guide](docs/installation/opencode.md) includes all core skill paths, automatic policy extensions, and Papercuts MCP configuration. Retain the full checkout so sibling resources and scripts stay available.
+The [OpenCode setup guide](docs/installation.md#opencode) includes all core skill paths, automatic policy extensions, and Papercuts MCP configuration. Retain the full checkout so sibling resources and scripts stay available.
 
 </details>
 
@@ -97,7 +97,7 @@ pi install /absolute/path/agent-plugins
 pi list
 ```
 
-The package includes eli5, code-simplifier, pr-review-toolkit, copywriter, Read the Room, and Papercuts. Select its skills and extensions with `pi config`. Keep Pi’s built-in MCP extension enabled for Papercuts. [Pi setup](docs/installation/pi.md)
+The package includes eli5, code-simplifier, pr-review-toolkit, copywriter, Read the Room, and Papercuts. Select its skills and extensions with `pi config`. Keep Pi’s built-in MCP extension enabled for Papercuts. [Pi setup](docs/installation.md#pi)
 
 </details>
 
